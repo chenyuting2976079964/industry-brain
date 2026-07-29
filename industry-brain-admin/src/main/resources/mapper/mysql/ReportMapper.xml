@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.ReportMapper">
+
+    <resultMap type="com.industrybrain.domain.model.ReportRecord" id="ReportRecordMap">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="reportType" column="report_type"/>
+        <result property="scope" column="scope"/>
+        <result property="outputFormat" column="format"/>
+        <result property="status" column="status"/>
+        <result property="regionId" column="region_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="fileId" column="file_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="ReportRecordMap">
+        select * from report where id = #{id}
+    </select>
+
+    <select id="selectList" resultMap="ReportRecordMap">
+        select * from report order by created_at desc
+        <if test="limit != null">limit #{offset}, #{limit}</if>
+    </select>
+
+    <select id="countAll" resultType="int">
+        select count(*) from report
+    </select>
+
+    <insert id="insert" parameterType="com.industrybrain.domain.model.ReportRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into report
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="title != null">title,</if>
+            <if test="reportType != null">report_type,</if>
+            <if test="scope != null">scope,</if>
+            <if test="outputFormat != null">format,</if>
+            <if test="status != null">status,</if>
+            <if test="regionId != null">region_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="fileId != null">file_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="title != null">#{title},</if>
+            <if test="reportType != null">#{reportType},</if>
+            <if test="scope != null">#{scope},</if>
+            <if test="outputFormat != null">#{outputFormat},</if>
+            <if test="status != null">#{status},</if>
+            <if test="regionId != null">#{regionId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="fileId != null">#{fileId},</if>
+        </trim>
+    </insert>
+
+    <update id="update" parameterType="com.industrybrain.domain.model.ReportRecord">
+        update report
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="title != null">title = #{title},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="scope != null">scope = #{scope},</if>
+            <if test="outputFormat != null">format = #{outputFormat},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from report where id = #{id}
+    </delete>
+
+    <select id="countMonthly" resultType="int">
+        select count(*) from report
+        where date_format(created_at, '%Y-%m') = date_format(now(), '%Y-%m')
+    </select>
+
+    <select id="countTotal" resultType="int">
+        select count(*) from report
+    </select>
+
+    <select id="countCoveredEnterprises" resultType="int">
+        select count(distinct enterprise_id) from investment_recommendation
+        where status in ('wishlist', 'contacted', 'signed')
+    </select>
+
+    <select id="countLastMonth" resultType="int">
+        select count(*) from report
+        where date_format(created_at, '%Y-%m') = date_format(date_sub(now(), interval 1 month), '%Y-%m')
+    </select>
+
+</mapper>

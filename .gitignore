@@ -1,0 +1,46 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Node / Frontend
+node_modules/
+dist/
+.npm
+.cache/
+
+# Logs
+*.log
+logs/
+
+# Temp / Backup
+*.tmp
+*.bak
+*.orig
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Claude
+.claude/
+CLAUDE.md
+MEMORY.md

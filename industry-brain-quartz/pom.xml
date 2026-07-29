@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.industrybrain</groupId>
+        <artifactId>industry-brain</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>industry-brain-quartz</artifactId>
+    <packaging>jar</packaging>
+    <name>quartz</name>
+    <description>定时任务模块（若依 Quartz 扩展）</description>
+
+    <dependencies>
+        <!-- 通用模块 -->
+        <dependency>
+            <groupId>com.industrybrain</groupId>
+            <artifactId>industry-brain-common</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Quartz -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+    </dependencies>
+</project>

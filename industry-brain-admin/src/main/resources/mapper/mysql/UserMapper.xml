@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.UserMapper">
+
+    <resultMap id="UserMap" type="com.industrybrain.domain.model.User">
+        <id column="id" property="id"/>
+        <result column="password" property="passwordHash"/>
+        <result column="role_code" property="role"/>
+        <result column="status" property="isActive"/>
+        <result column="lock_until" property="lockedUntil"/>
+    </resultMap>
+
+    <select id="selectByUsername" resultMap="UserMap">
+        SELECT id, username, password, real_name, email, phone,
+               role_code, region_id, status, login_fail_count,
+               lock_until, password_updated_at,
+               is_deleted, created_at, updated_at
+        FROM user
+        WHERE username = #{username} AND is_deleted = 0 AND status = 1
+    </select>
+
+</mapper>

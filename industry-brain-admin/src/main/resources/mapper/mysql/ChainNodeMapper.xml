@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.ChainNodeMapper">
+
+    <resultMap id="ChainNodeMap" type="com.industrybrain.domain.model.ChainNode">
+        <result column="name" property="nodeName"/>
+        <result column="parent_id" property="parentId"/>
+    </resultMap>
+
+    <!-- 按产业链ID查询所有节点 -->
+    <select id="selectByChainId" resultMap="ChainNodeMap">
+        SELECT n.id, n.chain_id, n.name, n.parent_id, n.sort_order,
+               n.is_deleted, n.deleted_at, n.created_at, n.updated_at
+        FROM chain_node n
+        WHERE n.chain_id = #{chainId}
+          AND n.is_deleted = 0
+        ORDER BY n.sort_order ASC, n.id ASC
+    </select>
+
+    <!-- 按产业链ID和层级查询节点 (layer字段不存在, 改用parent_id过滤顶层) -->
+    <select id="selectByChainIdAndLayer" resultMap="ChainNodeMap">
+        SELECT id, chain_id, name, parent_id, sort_order,
+               is_deleted, deleted_at, created_at, updated_at
+        FROM chain_node
+        WHERE chain_id = #{chainId}
+          AND is_deleted = 0
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <!-- 查询某节点下专利数量最多的企业 Top N -->
+    <select id="selectTopEnterprisesByNodeId" resultType="java.util.HashMap">
+        SELECT
+            e.id               AS enterprise_id,
+            e.name             AS enterprise_name,
+            e.unified_code     AS unified_code,
+            e.legal_representative AS legal_representative,
+            e.registered_address   AS registered_address,
+            e.region_id        AS region_id,
+            e.is_local         AS is_local,
+            COUNT(DISTINCT p.id) AS patent_count,
+            COUNT(DISTINCT CASE WHEN p.maintenance_years >= 5 THEN p.id END) AS high_value_count
+        FROM enterprise e
+        INNER JOIN enterprise_node en ON e.id = en.enterprise_id
+        INNER JOIN patent_node pn ON en.node_id = pn.node_id
+        INNER JOIN patent p ON pn.patent_id = p.id AND p.is_deleted = 0
+        WHERE en.node_id = #{nodeId}
+          AND e.is_deleted = 0
+        GROUP BY e.id, e.name, e.unified_code, e.legal_representative, e.registered_address, e.region_id, e.is_local
+        ORDER BY patent_count DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

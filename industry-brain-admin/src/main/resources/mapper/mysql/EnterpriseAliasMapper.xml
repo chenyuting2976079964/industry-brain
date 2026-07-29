@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.EnterpriseAliasMapper">
+
+    <select id="selectByEnterpriseId" resultType="com.industrybrain.domain.model.EnterpriseAlias">
+        SELECT id, enterprise_id, alias_name, alias_type, created_at
+        FROM enterprise_alias
+        WHERE enterprise_id = #{enterpriseId}
+    </select>
+
+</mapper>

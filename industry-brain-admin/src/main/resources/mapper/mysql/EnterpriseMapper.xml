@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.EnterpriseMapper">
+
+    <resultMap id="EnterpriseWithPatentCountMap" type="java.util.HashMap">
+        <result column="id" property="id" javaType="java.lang.Long"/>
+        <result column="name" property="name" javaType="java.lang.String"/>
+        <result column="unified_code" property="unifiedCode" javaType="java.lang.String"/>
+        <result column="legal_representative" property="legalRepresentative" javaType="java.lang.String"/>
+        <result column="registered_capital" property="registeredCapital" javaType="java.lang.String"/>
+        <result column="establishment_date" property="establishmentDate" javaType="java.time.LocalDate"/>
+        <result column="business_status" property="businessStatus" javaType="java.lang.String"/>
+        <result column="registered_address" property="registeredAddress" javaType="java.lang.String"/>
+        <result column="region_id" property="regionId" javaType="java.lang.Integer"/>
+        <result column="is_local" property="isLocal" javaType="java.lang.Integer"/>
+        <result column="external_id" property="externalId" javaType="java.lang.String"/>
+        <result column="contact_phone" property="contactPhone" javaType="java.lang.String"/>
+        <result column="data_version" property="dataVersion" javaType="java.lang.Integer"/>
+        <result column="patent_count" property="patentCount" javaType="java.lang.Long"/>
+        <result column="high_value_patent_count" property="highValuePatentCount" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <!-- 查询企业并附带专利数量统计 -->
+    <select id="selectWithPatentCount" resultMap="EnterpriseWithPatentCountMap">
+        SELECT
+            e.id,
+            e.name,
+            e.unified_code,
+            e.legal_representative,
+            e.registered_capital,
+            e.establishment_date,
+            e.business_status,
+            e.registered_address,
+            e.region_id,
+            e.is_local,
+            e.external_id,
+            e.contact_phone,
+            e.data_version,
+            COALESCE(pat_stats.patent_count, 0)          AS patent_count,
+            COALESCE(pat_stats.high_value_patent_count, 0) AS high_value_patent_count
+        FROM enterprise e
+        LEFT JOIN (
+            SELECT
+                applicant_enterprise_id,
+                COUNT(*)                                  AS patent_count,
+                COUNT(CASE WHEN maintenance_years >= 5 THEN 1 END) AS high_value_patent_count
+            FROM patent
+            WHERE is_deleted = 0
+            GROUP BY applicant_enterprise_id
+        ) pat_stats ON e.id = pat_stats.applicant_enterprise_id
+        WHERE e.is_deleted = 0
+        ORDER BY patent_count DESC, e.id ASC
+    </select>
+
+    <!-- 按企业名称模糊搜索 -->
+    <select id="searchByName" resultType="com.industrybrain.domain.model.Enterprise">
+        SELECT id, name, unified_code, legal_representative, registered_capital,
+               establishment_date, business_status, registered_address,
+               contact_phone, industry, city, district, registration_no,
+               website, business_scope, region_id, is_local, external_id,
+               data_version, created_at, updated_at
+        FROM enterprise
+        WHERE is_deleted = 0
+          AND (name LIKE CONCAT('%', #{keyword}, '%')
+               OR unified_code LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY name ASC
+        LIMIT 50
+    </select>
+
+</mapper>

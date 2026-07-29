@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.UserTokenMapper">
+
+    <resultMap id="UserTokenMap" type="com.industrybrain.domain.model.UserToken">
+        <id column="id" property="id"/>
+        <result column="expires_at" property="expireAt"/>
+    </resultMap>
+
+    <select id="selectByToken" resultMap="UserTokenMap">
+        SELECT id, user_id, token, token_type, expires_at, is_revoked, created_at
+        FROM user_token
+        WHERE token = #{token}
+    </select>
+
+    <delete id="deleteExpired">
+        DELETE FROM user_token WHERE expires_at &lt; NOW()
+    </delete>
+
+</mapper>

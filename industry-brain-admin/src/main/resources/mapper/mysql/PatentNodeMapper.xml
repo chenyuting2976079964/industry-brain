@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.PatentNodeMapper">
+
+    <select id="selectByPatentId" resultType="com.industrybrain.domain.model.PatentNode">
+        SELECT id, patent_id, node_id, match_type, created_at, updated_at
+        FROM patent_node
+        WHERE patent_id = #{patentId}
+    </select>
+
+    <select id="selectByNodeId" resultType="com.industrybrain.domain.model.PatentNode">
+        SELECT id, patent_id, node_id, match_type, created_at, updated_at
+        FROM patent_node
+        WHERE node_id = #{nodeId}
+    </select>
+
+</mapper>

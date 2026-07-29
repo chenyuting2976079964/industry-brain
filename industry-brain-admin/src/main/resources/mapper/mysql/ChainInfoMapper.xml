@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.ChainInfoMapper">
+
+    <resultMap id="ChainWithStatsMap" type="java.util.HashMap">
+        <result column="id" property="id" javaType="java.lang.Long"/>
+        <result column="name" property="name" javaType="java.lang.String"/>
+        <result column="code" property="code" javaType="java.lang.String"/>
+        <result column="node_count" property="nodeCount" javaType="java.lang.Long"/>
+        <result column="enterprise_count" property="enterpriseCount" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <!-- 按ID排序查询所有产业链 -->
+    <select id="selectAllOrdered" resultType="com.industrybrain.domain.model.IndustryChain">
+        SELECT id, name, code, is_deleted, created_at, updated_at
+        FROM industry_chain
+        WHERE is_deleted = 0
+        ORDER BY id ASC
+    </select>
+
+    <!-- 查询产业链统计信息: 节点数 + 企业数 -->
+    <select id="selectWithStats" resultMap="ChainWithStatsMap">
+        SELECT
+            c.id,
+            c.name,
+            c.code,
+            COALESCE(node_stats.node_count, 0) AS node_count,
+            COALESCE(ent_stats.enterprise_count, 0) AS enterprise_count
+        FROM industry_chain c
+        LEFT JOIN (
+            SELECT chain_id, COUNT(*) AS node_count
+            FROM chain_node
+            WHERE is_deleted = 0
+            GROUP BY chain_id
+        ) node_stats ON c.id = node_stats.chain_id
+        LEFT JOIN (
+            SELECT cn.chain_id, COUNT(DISTINCT en.enterprise_id) AS enterprise_count
+            FROM enterprise_node en
+            INNER JOIN chain_node cn ON en.node_id = cn.id AND cn.is_deleted = 0
+            GROUP BY cn.chain_id
+        ) ent_stats ON c.id = ent_stats.chain_id
+        WHERE c.id = #{chainId}
+          AND c.is_deleted = 0
+    </select>
+
+</mapper>

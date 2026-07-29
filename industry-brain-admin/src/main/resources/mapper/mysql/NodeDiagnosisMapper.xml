@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.NodeDiagnosisMapper">
+
+    <resultMap id="NodeDiagnosisMap" type="com.industrybrain.domain.model.NodeDiagnosis">
+        <id column="id" property="id"/>
+        <result column="region_id" property="regionId"/>
+        <result column="node_id" property="nodeId"/>
+        <result column="diagnosis_tag" property="diagnosisTag"/>
+        <result column="high_value_patent_count" property="highValuePatentCount"/>
+        <result column="total_patent_count" property="totalPatentCount"/>
+        <result column="enterprise_count" property="enterpriseCount"/>
+        <result column="diagnosis_basis" property="diagnosisBasis"/>
+        <result column="diagnosis_date" property="diagnosisDate"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 查询每个节点每个区域最新的诊断结果 (子查询: MAX(diagnosis_date) GROUP BY region_id, node_id) -->
+    <select id="selectLatestPerNode" resultType="java.util.HashMap">
+        SELECT
+            nd.id,
+            nd.region_id,
+            nd.node_id,
+            nd.diagnosis_tag,
+            nd.high_value_patent_count,
+            nd.total_patent_count,
+            nd.enterprise_count,
+            nd.diagnosis_basis,
+            nd.diagnosis_date,
+            nd.created_at,
+            n.node_name,
+            n.chain_id,
+            n.layer
+        FROM node_diagnosis nd
+        INNER JOIN chain_node n ON nd.node_id = n.id AND n.is_deleted = 0
+        INNER JOIN (
+            SELECT region_id, node_id, MAX(diagnosis_date) AS max_date
+            FROM node_diagnosis
+            WHERE is_deleted = 0
+            GROUP BY region_id, node_id
+        ) latest ON nd.region_id = latest.region_id
+                AND nd.node_id = latest.node_id
+                AND nd.diagnosis_date = latest.max_date
+        WHERE nd.is_deleted = 0
+        ORDER BY n.chain_id ASC, n.sort_order ASC
+    </select>
+
+    <!-- 按诊断标签统计节点数量 -->
+    <select id="selectStatusSummary" resultType="java.util.HashMap">
+        SELECT
+            nd.diagnosis_tag,
+            COUNT(DISTINCT nd.node_id) AS node_count,
+            SUM(nd.total_patent_count)    AS total_patents,
+            SUM(nd.high_value_patent_count) AS total_high_value_patents,
+            SUM(nd.enterprise_count)      AS total_enterprises
+        FROM node_diagnosis nd
+        INNER JOIN (
+            SELECT region_id, node_id, MAX(diagnosis_date) AS max_date
+            FROM node_diagnosis
+            WHERE is_deleted = 0
+            GROUP BY region_id, node_id
+        ) latest ON nd.region_id = latest.region_id
+                AND nd.node_id = latest.node_id
+                AND nd.diagnosis_date = latest.max_date
+        WHERE nd.is_deleted = 0
+        GROUP BY nd.diagnosis_tag
+        ORDER BY
+            CASE nd.diagnosis_tag
+                WHEN '强链' THEN 1
+                WHEN '补链' THEN 2
+                WHEN '弱链' THEN 3
+                WHEN '缺链' THEN 4
+                ELSE 5
+            END
+    </select>
+
+    <!-- 查询某节点某区域最新的诊断结果 -->
+    <select id="selectLatestByNodeId" resultMap="NodeDiagnosisMap">
+        SELECT *
+        FROM node_diagnosis
+        WHERE node_id = #{nodeId}
+          AND is_deleted = 0
+        ORDER BY diagnosis_date DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询某节点的历史诊断记录 (按诊断日期倒序) -->
+    <select id="selectHistoryByNodeId" resultMap="NodeDiagnosisMap">
+        SELECT *
+        FROM node_diagnosis
+        WHERE node_id = #{nodeId}
+          AND is_deleted = 0
+        ORDER BY diagnosis_date DESC
+    </select>
+
+    <!-- 查询指定区域和产业链的最新诊断结果 -->
+    <select id="selectLatestByChainId" resultMap="NodeDiagnosisMap">
+        SELECT nd.*
+        FROM node_diagnosis nd
+        INNER JOIN chain_node n ON nd.node_id = n.id AND n.is_deleted = 0
+        INNER JOIN (
+            SELECT nd2.region_id, nd2.node_id, MAX(nd2.diagnosis_date) AS max_date
+            FROM node_diagnosis nd2
+            INNER JOIN chain_node n2 ON nd2.node_id = n2.id AND n2.is_deleted = 0
+            WHERE nd2.is_deleted = 0
+              AND n2.chain_id = #{chainId}
+            GROUP BY nd2.region_id, nd2.node_id
+        ) latest ON nd.region_id = latest.region_id
+                AND nd.node_id = latest.node_id
+                AND nd.diagnosis_date = latest.max_date
+        WHERE nd.is_deleted = 0
+          AND n.chain_id = #{chainId}
+    </select>
+
+</mapper>

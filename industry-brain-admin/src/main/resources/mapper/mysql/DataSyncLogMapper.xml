@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.DataSyncLogMapper">
+
+    <select id="selectByType" resultType="com.industrybrain.domain.model.DataSyncLog">
+        SELECT id, sync_type, data_source, sync_start_time, sync_end_time,
+               total_count, success_count, fail_count, sync_status, error_msg, created_at
+        FROM data_sync_log
+        WHERE sync_type = #{syncType}
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

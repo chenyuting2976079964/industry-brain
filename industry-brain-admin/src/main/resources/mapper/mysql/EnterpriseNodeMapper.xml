@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.EnterpriseNodeMapper">
+
+    <select id="selectByEnterpriseId" resultType="com.industrybrain.domain.model.EnterpriseNode">
+        SELECT id, enterprise_id, node_id, match_type, created_at, updated_at
+        FROM enterprise_node
+        WHERE enterprise_id = #{enterpriseId}
+    </select>
+
+    <select id="selectByNodeId" resultType="com.industrybrain.domain.model.EnterpriseNode">
+        SELECT id, enterprise_id, node_id, match_type, created_at, updated_at
+        FROM enterprise_node
+        WHERE node_id = #{nodeId}
+    </select>
+
+</mapper>

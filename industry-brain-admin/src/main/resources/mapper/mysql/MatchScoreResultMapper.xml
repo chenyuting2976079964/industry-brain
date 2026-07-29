@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.MatchScoreResultMapper">
+
+    <resultMap type="com.industrybrain.domain.MatchScoreResult" id="MatchScoreResultMap">
+        <id property="id" column="id"/>
+        <result property="enterpriseId" column="enterprise_id"/>
+        <result property="enterpriseName" column="enterprise_name"/>
+        <result property="chainId" column="chain_id"/>
+        <result property="chainName" column="chain_name"/>
+        <result property="techMatchScore" column="tech_match_score"/>
+        <result property="industryFitScore" column="industry_fit_score"/>
+        <result property="overallScore" column="overall_score"/>
+        <result property="matchLevel" column="match_level"/>
+        <result property="matchDetail" column="match_detail"/>
+    </resultMap>
+
+    <select id="selectByEnterpriseAndChain" resultMap="MatchScoreResultMap">
+        SELECT id, enterprise_id, enterprise_name, chain_id, chain_name,
+               tech_match_score, industry_fit_score, overall_score,
+               match_level, match_detail
+        FROM match_score_result
+        WHERE enterprise_id = #{enterpriseId} AND chain_id = #{chainId}
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.industrybrain.domain.MatchScoreResult" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO match_score_result
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="enterpriseId != null">enterprise_id,</if>
+            <if test="enterpriseName != null">enterprise_name,</if>
+            <if test="chainId != null">chain_id,</if>
+            <if test="chainName != null">chain_name,</if>
+            <if test="techMatchScore != null">tech_match_score,</if>
+            <if test="industryFitScore != null">industry_fit_score,</if>
+            <if test="overallScore != null">overall_score,</if>
+            <if test="matchLevel != null">match_level,</if>
+            <if test="matchDetail != null">match_detail,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="enterpriseId != null">#{enterpriseId},</if>
+            <if test="enterpriseName != null">#{enterpriseName},</if>
+            <if test="chainId != null">#{chainId},</if>
+            <if test="chainName != null">#{chainName},</if>
+            <if test="techMatchScore != null">#{techMatchScore},</if>
+            <if test="industryFitScore != null">#{industryFitScore},</if>
+            <if test="overallScore != null">#{overallScore},</if>
+            <if test="matchLevel != null">#{matchLevel},</if>
+            <if test="matchDetail != null">#{matchDetail},</if>
+        </trim>
+    </insert>
+
+    <update id="update" parameterType="com.industrybrain.domain.MatchScoreResult">
+        UPDATE match_score_result
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="enterpriseName != null">enterprise_name = #{enterpriseName},</if>
+            <if test="chainName != null">chain_name = #{chainName},</if>
+            <if test="techMatchScore != null">tech_match_score = #{techMatchScore},</if>
+            <if test="industryFitScore != null">industry_fit_score = #{industryFitScore},</if>
+            <if test="overallScore != null">overall_score = #{overallScore},</if>
+            <if test="matchLevel != null">match_level = #{matchLevel},</if>
+            <if test="matchDetail != null">match_detail = #{matchDetail},</if>
+        </trim>
+        WHERE id = #{id}
+    </update>
+
+    <insert id="batchInsert">
+        INSERT INTO match_score_result (enterprise_id, enterprise_name, chain_id, chain_name,
+            tech_match_score, industry_fit_score, overall_score, match_level, match_detail)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.enterpriseId}, #{item.enterpriseName}, #{item.chainId}, #{item.chainName},
+             #{item.techMatchScore}, #{item.industryFitScore}, #{item.overallScore},
+             #{item.matchLevel}, #{item.matchDetail})
+        </foreach>
+    </insert>
+
+</mapper>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.IpcChainMappingMapper">
+
+    <!-- 按IPC分类号前缀匹配查询映射规则 -->
+    <select id="selectByIpcPrefix" resultType="com.industrybrain.domain.model.IpcChainMapping">
+        SELECT id, ipc_code, ipc_level, node_id, weight, description, create_time
+        FROM ipc_chain_mapping
+        WHERE #{ipcCode} LIKE CONCAT(ipc_code, '%')
+        ORDER BY weight DESC, ipc_level ASC
+    </select>
+
+</mapper>

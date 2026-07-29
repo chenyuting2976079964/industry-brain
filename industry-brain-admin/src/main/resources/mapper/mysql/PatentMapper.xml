@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.industrybrain.mapper.mysql.PatentMapper">
+
+    <resultMap id="PatentMap" type="com.industrybrain.domain.model.Patent">
+        <id column="id" property="id"/>
+        <result column="patent_number" property="patentNumber"/>
+        <result column="patent_name" property="patentName"/>
+        <result column="patent_type" property="patentType"/>
+        <result column="applicant" property="applicant"/>
+        <result column="applicant_enterprise_id" property="applicantEnterpriseId"/>
+        <result column="ipc_main" property="ipcMain"/>
+        <result column="application_date" property="applicationDate"/>
+        <result column="legal_status" property="legalStatus"/>
+        <result column="maintenance_years" property="maintenanceYears"/>
+        <result column="data_source" property="dataSource"/>
+        <result column="region_id" property="regionId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 分页查询某企业的专利 (支持关键词模糊搜索和类型筛选) -->
+    <select id="selectPageByEnterprise" resultMap="PatentMap">
+        SELECT id, patent_number, patent_name, patent_type, applicant,
+               applicant_enterprise_id, ipc_main, application_date, legal_status,
+               maintenance_years, data_source, region_id, created_at, updated_at
+        FROM patent
+        WHERE applicant_enterprise_id = #{enterpriseId}
+          AND is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (patent_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR patent_number LIKE CONCAT('%', #{keyword}, '%')
+                 OR applicant LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="patentType != null and patentType != ''">
+            AND patent_type = #{patentType}
+        </if>
+        ORDER BY application_date DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计某企业的专利总数 -->
+    <select id="selectTotalCount" resultType="long">
+        SELECT COUNT(*)
+        FROM patent
+        WHERE applicant_enterprise_id = #{enterpriseId}
+          AND is_deleted = 0
+    </select>
+
+    <!-- 统计某企业的高价值专利数量 (maintenance_years >= 5 视为高价值) -->
+    <select id="selectHighValueCount" resultType="long">
+        SELECT COUNT(*)
+        FROM patent
+        WHERE applicant_enterprise_id = #{enterpriseId}
+          AND maintenance_years >= 5
+          AND is_deleted = 0
+    </select>
+
+    <!-- 查询某企业的高价值专利 Top 5 (按维护年限排序) -->
+    <select id="selectTop5HighValue" resultMap="PatentMap">
+        SELECT id, patent_number, patent_name, patent_type, applicant,
+               applicant_enterprise_id, ipc_main, application_date, legal_status,
+               maintenance_years, data_source, region_id, created_at, updated_at
+        FROM patent
+        WHERE applicant_enterprise_id = #{enterpriseId}
+          AND is_deleted = 0
+        ORDER BY maintenance_years DESC, application_date DESC
+        LIMIT 5
+    </select>
+
+    <!-- 按IPC主分类统计专利分布 (GROUP BY ipc_main) -->
+    <select id="selectTechDistribution" resultType="java.util.HashMap">
+        SELECT
+            COALESCE(ipc_main, '未分类') AS tech_field,
+            COUNT(*)                      AS patent_count,
+            COUNT(CASE WHEN maintenance_years >= 5 THEN 1 END) AS high_value_count,
+            ROUND(AVG(maintenance_years), 2) AS avg_maintenance_years
+        FROM patent
+        WHERE applicant_enterprise_id = #{enterpriseId}
+          AND is_deleted = 0
+        GROUP BY ipc_main
+        ORDER BY patent_count DESC
+    </select>
+
+    <!-- 查询某节点下专利持有量最多的企业 Top N (通过 patent_node 关联) -->
+    <select id="selectTopHoldersByNodeId" resultType="java.util.HashMap">
+        SELECT
+            e.id                 AS enterprise_id,
+            e.name               AS enterprise_name,
+            e.unified_code       AS unified_code,
+            e.legal_representative AS legal_representative,
+            e.registered_address AS registered_address,
+            e.region_id          AS region_id,
+            e.is_local           AS is_local,
+            COUNT(DISTINCT p.id) AS patent_count,
+            COUNT(DISTINCT CASE WHEN p.maintenance_years >= 5 THEN p.id END) AS high_value_count
+        FROM enterprise e
+        INNER JOIN patent p ON e.id = p.applicant_enterprise_id AND p.is_deleted = 0
+        INNER JOIN patent_node pn ON p.id = pn.patent_id
+        WHERE pn.node_id = #{nodeId}
+          AND e.is_deleted = 0
+        GROUP BY e.id, e.name, e.unified_code, e.legal_representative, e.registered_address, e.region_id, e.is_local
+        ORDER BY patent_count DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
