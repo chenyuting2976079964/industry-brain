@@ -18,12 +18,6 @@
           </select>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs font-medium text-slate-600 w-16">所属园区</span>
-          <select v-model="filters.park" class="select-field text-xs w-40" @change="applyFilters">
-            <option value="">全部园区</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2">
           <span class="text-xs font-medium text-slate-600 w-16">企业类型</span>
           <select v-model="filters.type" class="select-field text-xs w-36" @change="applyFilters">
             <option value="">全部类型</option>
@@ -84,8 +78,6 @@
             </div>
             <p class="text-xs text-slate-400 mt-0.5">
               <i class="fa-solid fa-location-dot mr-0.5"></i>{{ e.loc }}
-              <span class="mx-1">|</span>
-              <i class="fa-regular fa-building mr-0.5"></i>{{ e.park }}
             </p>
           </div>
           <i class="fa-solid fa-chevron-right text-slate-300 text-xs mt-2"></i>
@@ -118,7 +110,6 @@
           </div>
           <p class="text-xs text-slate-400">
             <i class="fa-solid fa-location-dot mr-0.5"></i>{{ e.loc }}
-            <span class="mx-1">|</span>{{ e.park }}
             <span class="mx-1">|</span>专利 {{ e.p }}
             <span class="mx-1">|</span>发明 {{ e.i }}
           </p>
@@ -149,7 +140,6 @@ const colors = ['blue', 'purple', 'emerald', 'amber', 'cyan', 'indigo', 'rose', 
 const viewMode = ref('grid')
 const filters = reactive({
   district: '',
-  park: '',
   type: '',
   search: ''
 })
@@ -169,7 +159,6 @@ function typeClass(type) {
 const filteredEnterprises = computed(() => {
   return enterprises.filter(e => {
     if (filters.district && e.loc !== filters.district) return false
-    if (filters.park && e.park !== filters.park) return false
     if (filters.type && e.type !== filters.type) return false
     if (filters.search && !e.name.toLowerCase().includes(filters.search.toLowerCase())) return false
     return true
@@ -179,7 +168,6 @@ const filteredEnterprises = computed(() => {
 const activeTags = computed(() => {
   const tags = []
   if (filters.district) tags.push({ key: 'district', label: '地区: ' + filters.district })
-  if (filters.park) tags.push({ key: 'park', label: '园区: ' + filters.park })
   if (filters.type) tags.push({ key: 'type', label: '类型: ' + filters.type })
   if (filters.search) tags.push({ key: 'search', label: '搜索: "' + filters.search + '"' })
   return tags
@@ -192,14 +180,12 @@ function applyFilters() {
 
 function resetFilters() {
   filters.district = ''
-  filters.park = ''
   filters.type = ''
   filters.search = ''
 }
 
 function removeFilter(key) {
   if (key === 'district') filters.district = ''
-  else if (key === 'park') filters.park = ''
   else if (key === 'type') filters.type = ''
   else if (key === 'search') filters.search = ''
 }
@@ -226,7 +212,6 @@ onMounted(async () => {
       if (ctx.filter.category && categoryMap[ctx.filter.category]) {
         filters.type = categoryMap[ctx.filter.category]
       }
-      if (ctx.filter.park) filters.park = ctx.filter.park
       if (ctx.filter.district) filters.district = ctx.filter.district
       sessionStorage.removeItem('navContext')
     }
