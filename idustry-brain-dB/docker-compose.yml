@@ -10,11 +10,14 @@ services:
       MYSQL_DATABASE: industry_brain
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
+      # 远程用户密码（可通过 .env 文件覆盖）
+      MYSQL_REMOTE_USER_PASSWORD: ${MYSQL_REMOTE_USER_PASSWORD:-RemotePass123!}
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
+      - ./config/my-custom.cnf:/etc/mysql/conf.d/custom.cnf
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
