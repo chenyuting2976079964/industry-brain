@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.industrybrain.mapper.mysql.InvestmentRecommendationMapper">
 
-    <resultMap type="com.industrybrain.domain.InvestmentRecommendation" id="InvestmentRecommendationMap">
+    <resultMap type="com.industrybrain.domain.model.InvestmentRecommendation" id="InvestmentRecommendationMap">
         <id property="id" column="id"/>
         <result property="regionId" column="region_id"/>
         <result property="targetNodeId" column="target_node_id"/>
@@ -124,7 +124,7 @@
         where id = #{id}
     </update>
 
-    <insert id="insert" parameterType="com.industrybrain.domain.InvestmentRecommendation" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.industrybrain.domain.model.InvestmentRecommendation" useGeneratedKeys="true" keyProperty="id">
         insert into investment_recommendation
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="regionId != null">region_id,</if>
@@ -172,7 +172,7 @@
         </foreach>
     </insert>
 
-    <update id="update" parameterType="com.industrybrain.domain.InvestmentRecommendation">
+    <update id="update" parameterType="com.industrybrain.domain.model.InvestmentRecommendation">
         update investment_recommendation
         <trim prefix="SET" suffixOverrides=",">
             <if test="techMatchScore != null">tech_match_score = #{techMatchScore},</if>

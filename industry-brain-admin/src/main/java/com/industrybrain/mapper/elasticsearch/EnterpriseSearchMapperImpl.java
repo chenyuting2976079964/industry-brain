@@ -3,6 +3,7 @@ package com.industrybrain.mapper.elasticsearch;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnBean(name = "restClient")
 public class EnterpriseSearchMapperImpl implements EnterpriseSearchMapper {
 
     private static final String INDEX = "industry_brain_enterprise";

@@ -197,9 +197,12 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
     // ─── IEnterpriseService (保持兼容) ───
     @Override
     public List<EnterpriseDetailResponse> searchEnterprises(EnterpriseSearchRequest request) {
-        log.info("搜索企业, name={}, industry={}, region={}",
-                request.getEnterpriseName(), request.getIndustry(), request.getRegionCode());
-        List<com.industrybrain.domain.model.Enterprise> ents;
+        log.info("搜索企业, name={}, industry={}, regionCode={}, type={}",
+                request.getEnterpriseName(), request.getIndustry(), request.getRegionCode(), request.getEnterpriseType());
+
+        List<com.industrybrain.domain.model.Enterprise> ents = null;
+
+        // 先按条件获取基础列表
         if (request.getEnterpriseName() != null && !request.getEnterpriseName().isEmpty()) {
             ents = enterpriseMapper.searchByName(request.getEnterpriseName(), 50);
         } else if (request.getRegionCode() != null && !request.getRegionCode().isEmpty()) {
@@ -207,8 +210,42 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         } else {
             ents = enterpriseMapper.selectList(null);
         }
-        if (ents == null) return Collections.emptyList();
+
+        if (ents == null || ents.isEmpty()) return Collections.emptyList();
+
+        // 根据企业类型过滤（如果指定了类型）
+        String enterpriseType = request.getEnterpriseType();
+        if (enterpriseType != null && !enterpriseType.trim().isEmpty()) {
+            ents = ents.stream()
+                    .filter(e -> enterpriseType.equals(e.getEnterpriseType()))
+                    .collect(Collectors.toList());
+        }
+
         return ents.stream().map(this::toDetailResponse).collect(Collectors.toList());
+    }
+
+    /**
+     * 按企业类型查询企业列表（新接口）
+     */
+    @Override
+    public List<Enterprise> getEnterprisesByType(String type) {
+        return enterpriseMapper.selectByType(type);
+    }
+
+    /**
+     * 按企业类型统计企业数（新接口）
+     */
+    @Override
+    public Long getEnterprisesCountByType(String type) {
+        return enterpriseMapper.selectCountByType(type);
+    }
+
+    /**
+     * 获取企业类型的分布统计（新接口）
+     */
+    @Override
+    public List<Map<String, Object>> getEnterpriseTypeStats() {
+        return enterpriseMapper.selectTypeStats();
     }
 
     @Override
@@ -307,36 +344,23 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
     private String deriveTypeFromDb(Map<String, Object> m) {
         String dbType = (String) m.get("enterprise_type");
         if (dbType != null && !dbType.isEmpty()) return dbType;
-        // 后备：从is_local和注册资本推导
-        Integer isLocal = m.get("is_local") instanceof Integer ? (Integer) m.get("is_local") : null;
-        return isLocal != null && isLocal == 1 ? "本地企业" : "其他";
+        // 用专利数据推导企业类型
+        int patentCount = toInt(m.get("patent_count"));
+        int highValueCount = toInt(m.get("high_value_count"));
+        if (patentCount >= 20 && highValueCount >= 5) return "龙头企业";
+        if (patentCount >= 10) return "高新技术企业";
+        if (patentCount >= 3) return "科技型中小企业";
+        return "其他";
     }
 
     /**
      * 从数据库字段提取区县。
      */
     private String extractDistrictFromDb(Map<String, Object> m) {
-        String district = (String) m.get("district");
-        if (district != null && !district.isEmpty()) return district;
-        String city = (String) m.get("city");
-        if (city != null && !city.isEmpty()) return city;
-        // 最后尝试从地址中提取
-        String address = (String) m.get("registered_address");
-        if (address == null) return "未知";
-        // 从region表查询匹配
-        try {
-            List<Region> allRegions = regionMapper.selectList(null);
-            if (allRegions != null) {
-                for (Region r : allRegions) {
-                    if (r.getName() != null && address.contains(r.getName())) {
-                        return r.getName();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("从区域表匹配地址失败: {}", e.getMessage());
-        }
-        return address.length() > 20 ? address.substring(0, 20) : address;
+        // 优先使用 region 表 JOIN 出来的区县名称
+        String districtName = (String) m.get("district_name");
+        if (districtName != null && !districtName.isEmpty()) return districtName;
+        return "其他";
     }
 
     /**
@@ -357,6 +381,21 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         // 后备：判断本地/外地
         Integer isLocal = m.get("is_local") instanceof Integer ? (Integer) m.get("is_local") : null;
         return isLocal != null && isLocal == 1 ? "本地园区" : "外地";
+    }
+
+    @Override
+    public List<Enterprise> getEnterprisesByType(String type) {
+        return enterpriseMapper.selectByType(type);
+    }
+
+    @Override
+    public Long getEnterprisesCountByType(String type) {
+        return enterpriseMapper.selectCountByType(type);
+    }
+
+    @Override
+    public List<Map<String, Object>> getEnterpriseTypeStats() {
+        return enterpriseMapper.selectTypeStats();
     }
 
     private EnterpriseDetailResponse toDetailResponse(com.industrybrain.domain.model.Enterprise ent) {

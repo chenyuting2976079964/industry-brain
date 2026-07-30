@@ -28,9 +28,9 @@
         <div class="flex items-start justify-between">
           <div>
             <p class="text-slate-400 text-xs font-medium uppercase tracking-wide">专利总量</p>
-            <p class="text-3xl font-bold text-slate-800 mt-1">{{ kpiData.patent?.total?.toLocaleString() || '--' }}</p>
+            <p class="text-3xl font-bold text-slate-800 mt-1">{{ (kpiData.patent?.total || 0).toLocaleString() }}</p>
             <p class="text-emerald-500 text-xs mt-1">
-              <i class="fa-solid fa-arrow-up mr-0.5"></i>较上月 {{ kpiData.patent?.change || '--' }}
+              <i class="fa-regular fa-circle-check mr-0.5"></i>数据实时更新
             </p>
           </div>
           <div class="w-11 h-11 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -49,9 +49,9 @@
         <div class="flex items-start justify-between">
           <div>
             <p class="text-slate-400 text-xs font-medium uppercase tracking-wide">企业数量</p>
-            <p class="text-3xl font-bold text-slate-800 mt-1">{{ kpiData.enterprise?.total?.toLocaleString() || '--' }}</p>
+            <p class="text-3xl font-bold text-slate-800 mt-1">{{ (kpiData.enterprise?.total || 0).toLocaleString() }}</p>
             <p class="text-emerald-500 text-xs mt-1">
-              <i class="fa-solid fa-arrow-up mr-0.5"></i>较上月 {{ kpiData.enterprise?.change || '--' }}
+              <i class="fa-regular fa-circle-check mr-0.5"></i>数据实时更新
             </p>
           </div>
           <div class="w-11 h-11 gradient-accent rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
@@ -70,9 +70,9 @@
         <div class="flex items-start justify-between">
           <div>
             <p class="text-slate-400 text-xs font-medium uppercase tracking-wide">强弱链诊断</p>
-            <p class="text-3xl font-bold text-slate-800 mt-1">{{ kpiData.diagnosis?.weakCount }}/{{ kpiData.diagnosis?.totalNodes }}</p>
-            <p class="text-red-400 text-xs mt-1">
-              <i class="fa-solid fa-exclamation-triangle mr-0.5"></i>发现 {{ kpiData.diagnosis?.weakCount }} 个薄弱环节
+            <p class="text-3xl font-bold text-slate-800 mt-1">{{ (kpiData.diagnosis?.totalNodes || 0) > 0 ? (kpiData.diagnosis?.weakCount || 0) + '/' + (kpiData.diagnosis?.totalNodes || 0) : '--' }}</p>
+            <p class="text-slate-400 text-xs mt-1">
+              <i class="fa-regular fa-circle-check mr-0.5"></i>待运行诊断
             </p>
           </div>
           <div class="w-11 h-11 gradient-success rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">

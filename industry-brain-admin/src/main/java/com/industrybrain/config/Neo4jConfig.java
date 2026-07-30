@@ -2,6 +2,8 @@ package com.industrybrain.config;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,13 +17,13 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "neo4j.enabled", havingValue = "true", matchIfMissing = false)
 public class Neo4jConfig {
 
-    @Value("${neo4j.uri}")
+    @Value("${neo4j.uri:bolt://localhost:7687}")
     private String neo4jUri;
 
-    @Value("${neo4j.username}")
+    @Value("${neo4j.username:neo4j}")
     private String neo4jUsername;
 
-    @Value("${neo4j.password}")
+    @Value("${neo4j.password:neo4j123}")
     private String neo4jPassword;
 
     /**

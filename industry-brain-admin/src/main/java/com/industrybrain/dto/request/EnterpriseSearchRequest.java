@@ -17,6 +17,9 @@ public class EnterpriseSearchRequest {
     /** 区域编码 */
     private String regionCode;
 
+    /** 企业类型（LEADER/SPECIALIZED/HIGH_TECH/TECH_SMALL/OTHER） */
+    private String enterpriseType;
+
     /** 专利数最小值 */
     private Integer minPatentCount;
 

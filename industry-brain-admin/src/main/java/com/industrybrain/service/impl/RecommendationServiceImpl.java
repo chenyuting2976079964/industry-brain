@@ -1,4 +1,5 @@
 package com.industrybrain.service.impl;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import com.industrybrain.domain.model.IndustryChain;

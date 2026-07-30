@@ -5,7 +5,6 @@ import io.minio.*;
 import io.minio.http.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -19,7 +18,6 @@ import java.util.concurrent.TimeUnit;
  * 当 minio.enabled=false 时跳过（无 MinIO 环境）
  */
 @Service
-@ConditionalOnProperty(name = "minio.enabled", havingValue = "true", matchIfMissing = false)
 public class MinioFileService {
 
     private static final Logger log = LoggerFactory.getLogger(MinioFileService.class);

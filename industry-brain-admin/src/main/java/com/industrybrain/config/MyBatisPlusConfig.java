@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,6 +64,12 @@ public class MyBatisPlusConfig {
         // Mapper XML 文件
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         factory.setMapperLocations(resolver.getResources("classpath:mapper/mysql/*.xml"));
+
+        // ⚠️ 注册全局类型处理器：支持 enterprise_type 字段的 enum 转换
+        configuration.getTypeRegistry().register(
+            String.class,
+            com.industrybrain.common.typehandler.EnterpriseTypeHandler.class
+        );
 
         return factory.getObject();
     }

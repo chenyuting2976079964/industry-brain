@@ -6,9 +6,10 @@ import com.industrybrain.dto.request.EnterpriseSearchRequest;
 import com.industrybrain.dto.response.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * 企业信息业务接口 — E01~E05
+ * 企业信息业务接口 — E01~E05 + enterprise_type 扩展
  * @author 何锦鹏
  */
 public interface IEnterpriseService {
@@ -26,4 +27,12 @@ public interface IEnterpriseService {
     EnterpriseEvaluateResponse getEvaluate(Long id);
     List<LocalEnterpriseResponse> getLocalEnterprises(String keyword);
     List<EnterpriseResponse> searchEnterprise(String keyword);
+
+    // ─── enterprise_type 新增接口 ───
+    /** 按企业类型查询企业列表 */
+    List<Enterprise> getEnterprisesByType(String type);
+    /** 按企业类型统计企业数 */
+    Long getEnterprisesCountByType(String type);
+    /** 获取企业类型的分布统计 */
+    List<Map<String, Object>> getEnterpriseTypeStats();
 }

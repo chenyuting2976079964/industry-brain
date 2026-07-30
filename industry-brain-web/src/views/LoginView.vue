@@ -37,42 +37,24 @@
             </div>
           </div>
 
-          <!-- Region Selector -->
+<!-- Region Selector -->
           <div class="field-group">
             <label class="field-label">所在地区</label>
             <div class="region-wrap" ref="regionWrapRef">
               <i class="fa-solid fa-location-dot region-icon"></i>
-              <div
-                class="region-display"
-                :class="{ focused: regionOpen }"
-                @click="toggleRegion"
-              >
+              <div class="region-display" :class="{ focused: regionOpen }" @click="toggleRegion">
                 <span class="truncate">{{ form.region }}</span>
-                <i
-                  class="fa-solid fa-chevron-down region-arrow"
-                  :class="{ rotated: regionOpen }"
-                ></i>
+                <i class="fa-solid fa-chevron-down region-arrow" :class="{ rotated: regionOpen }"></i>
               </div>
               <div class="region-dropdown" :class="{ open: regionOpen }">
-                <div class="region-search">
-                  <div class="search-inner">
-                    <i class="fa-solid fa-search search-icon-inner"></i>
-                    <input
-                      v-model="regionQuery"
-                      type="text"
-                      placeholder="搜索城市..."
-                      @input="filterRegions"
-                    />
-                  </div>
+                <div style="padding:6px 10px;border-bottom:1px solid #e2e8f0">
+                  <input v-model="regionQuery" type="text" placeholder="搜索城市..."
+                         @input="filterRegions"
+                         style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;background:#f8fafc;color:#334155;box-sizing:border-box" />
                 </div>
                 <div class="region-options">
-                  <div
-                    v-for="r in filteredRegions"
-                    :key="r"
-                    class="region-option"
-                    :class="{ active: form.region === r }"
-                    @click="selectRegion(r)"
-                  >
+                  <div v-for="r in filteredRegions" :key="r" class="region-option"
+                       :class="{ active: form.region === r }" @click="selectRegion(r)">
                     <i class="fa-solid fa-check check-icon" :class="{ visible: form.region === r }"></i>
                     <span>{{ r }}</span>
                     <span v-if="r === '马鞍山市'" class="default-tag">默认</span>
@@ -120,6 +102,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { get } from '@/services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -127,7 +110,7 @@ const authStore = useAuthStore()
 const form = reactive({
   username: '',
   password: '',
-  region: ''
+  region: '马鞍山市'
 })
 
 const regionOpen = ref(false)
@@ -135,8 +118,36 @@ const regionQuery = ref('')
 const errorMsg = ref('')
 const loading = ref(false)
 
-const allRegions = []
-const filteredRegions = ref([...allRegions])
+// 地区列表：预先填充常用城市，再从后端加载补充
+const defaultCities = ['马鞍山市', '合肥市', '芜湖市', '南京市', '苏州市', '上海市', '北京市', '深圳市', '广州市']
+const allRegions = ref([...defaultCities])
+const filteredRegions = ref([...defaultCities])
+
+// 从后端加载补充的地区列表
+onMounted(async () => {
+  document.addEventListener('click', onDocClick)
+  try {
+    const data = await get('/admin/regions?parentId=0')
+    const cities = []
+    for (const prov of data) {
+      if (prov.children) {
+        for (const city of prov.children) {
+          if (prov.name === city.name) cities.push(city.name)
+          else if (['北京市','天津市','上海市','重庆市'].includes(prov.name)) {
+            if (!cities.includes(prov.name)) cities.push(prov.name)
+          } else {
+            cities.push(city.name)
+          }
+        }
+      }
+    }
+    const uniqueCities = [...new Set(cities)]
+    allRegions.value = uniqueCities
+    filteredRegions.value = uniqueCities
+  } catch (e) {
+    console.error('Failed to load regions:', e)
+  }
+})
 
 function toggleRegion() {
   regionOpen.value = !regionOpen.value
@@ -149,7 +160,7 @@ function selectRegion(val) {
 
 function filterRegions() {
   const q = regionQuery.value
-  filteredRegions.value = allRegions.filter(r => r.includes(q))
+  filteredRegions.value = allRegions.value.filter(r => r.includes(q))
 }
 
 function onFocus(e) {

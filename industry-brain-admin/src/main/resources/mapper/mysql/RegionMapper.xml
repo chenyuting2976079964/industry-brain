@@ -3,7 +3,7 @@
 <mapper namespace="com.industrybrain.mapper.mysql.RegionMapper">
 
     <select id="selectByParentId" resultType="com.industrybrain.domain.model.Region">
-        SELECT id, name, code, level, parent_id, is_deleted, created_at, updated_at
+        SELECT id, name, code, parent_id, is_deleted, created_at, updated_at
         FROM region
         WHERE parent_id = #{parentId} AND is_deleted = 0
         ORDER BY id

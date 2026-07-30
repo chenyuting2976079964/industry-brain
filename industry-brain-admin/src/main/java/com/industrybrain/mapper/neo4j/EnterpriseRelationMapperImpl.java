@@ -2,6 +2,7 @@ package com.industrybrain.mapper.neo4j;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@ConditionalOnBean(name = "neo4jDriver")
 public class EnterpriseRelationMapperImpl implements EnterpriseRelationMapper {
 
     @Resource

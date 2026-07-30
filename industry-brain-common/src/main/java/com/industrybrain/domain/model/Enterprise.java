@@ -1,6 +1,7 @@
 package com.industrybrain.domain.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.industrybrain.common.typehandler.EnterpriseTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -55,6 +56,7 @@ public class Enterprise {
     private Long parkId;
 
     /** 企业类型：龙头企业/专精特新/高新技术企业/科技型中小企业/其他 (v2.1) */
+    @TableField(typeHandler = EnterpriseTypeHandler.class)
     private String enterpriseType;
 
     /** 人员规模 (v2.1) */

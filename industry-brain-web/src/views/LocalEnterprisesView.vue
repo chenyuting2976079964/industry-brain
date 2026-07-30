@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between mb-5">
       <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-building mr-2 text-blue-600"></i>本地企业查询</h2>
       <div class="flex items-center gap-2 text-xs text-slate-400">
-        <span><i class="fa-regular fa-database mr-1"></i>共 <strong class="text-blue-600">{{ enterprises.length }}</strong> 家企业</span>
+        <span><i class="fa-regular fa-database mr-1"></i>共 <strong class="text-blue-600">{{ filteredEnterprises.length }}</strong> 家企业</span>
       </div>
     </div>
 
@@ -12,15 +12,17 @@
     <div class="bg-white rounded-xl border border-slate-100 p-5 mb-4 data-card">
       <div class="flex items-center gap-3 mb-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <span class="text-xs font-medium text-slate-600 w-10">地区</span>
-          <select v-model="filters.district" class="select-field text-xs w-32" @change="applyFilters">
-            <option value="">全部地区</option>
+          <span class="text-xs font-medium text-slate-600 w-10">区县</span>
+          <select v-model="filters.district" class="select-field text-xs w-36" @change="applyFilters">
+            <option value="">全部区县</option>
+            <option v-for="d in districtOptions" :key="d" :value="d">{{ d }}</option>
           </select>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-xs font-medium text-slate-600 w-16">企业类型</span>
           <select v-model="filters.type" class="select-field text-xs w-36" @change="applyFilters">
             <option value="">全部类型</option>
+            <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
           </select>
         </div>
         <div class="flex-1 min-w-[200px]">
@@ -124,10 +126,13 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import { getLocalEnterprises } from '@/services/enterprise.service'
+import { get } from '@/services/api'
 
 const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 
 appStore.setPage('查看本地企业', 'local-enterprises')
 
@@ -144,6 +149,12 @@ const filters = reactive({
   search: ''
 })
 
+// 区县下拉选项（根据当前登录城市从区域API获取）
+const districtOptions = ref([])
+
+// 企业类型选项
+const typeOptions = ['龙头企业', '高新技术企业', '科技型中小企业', '其他']
+
 // ─── Type class helper ─────────────────────────────────────
 function typeClass(type) {
   switch (type) {
@@ -155,9 +166,25 @@ function typeClass(type) {
   }
 }
 
+// ─── Map API field names to frontend format ────────────────
+function mapEnterprise(e) {
+  const locVal = e.district || e.registered_address || ''
+  return {
+    name: e.name,
+    loc: locVal,
+    type: e.type || e.enterprise_type || '',
+    tag: e.tag || '',
+    desc: e.description || e.business_status || '',
+    p: e.patentCount || e.patent_count || 0,
+    i: e.highValueCount || e.high_value_patent_count || 0,
+    h: e.highValueCount || e.high_value_patent_count || 0,
+    park: e.park || ''
+  }
+}
+
 // ─── Computed ──────────────────────────────────────────────
 const filteredEnterprises = computed(() => {
-  return enterprises.filter(e => {
+  return (enterprises.value || []).filter(e => {
     if (filters.district && e.loc !== filters.district) return false
     if (filters.type && e.type !== filters.type) return false
     if (filters.search && !e.name.toLowerCase().includes(filters.search.toLowerCase())) return false
@@ -197,10 +224,23 @@ function viewEnterprise(name) {
 
 // ─── Init: load enterprises from API and read filters from navContext ─────
 onMounted(async () => {
+  // 先加载区县列表（根据登录用户所在城市）
+  try {
+    const regionCode = {
+      '马鞍山市': 340500, '合肥市': 340100, '芜湖市': 340200, '南京市': 320100,
+      '北京市': 110000, '上海市': 310000, '广州市': 440100, '深圳市': 440300
+    }[authStore.region] || 340500
+    const res = await get(`/admin/regions?parentId=${regionCode}`)
+    if (Array.isArray(res)) {
+      districtOptions.value = res.map(r => r.name).filter(n => !n.endsWith('市'))
+    }
+  } catch (e) { console.error('加载区县失败:', e) }
+
   // Load enterprises from API
   try {
     const res = await getLocalEnterprises()
-    enterprises.value = (res && res.list ? res.list : (Array.isArray(res) ? res : []))
+    enterprises.value = (res && res.list ? res.list : (Array.isArray(res) ? res : [])).map(mapEnterprise)
+    console.log('Loaded', enterprises.value.length, 'enterprises')
   } catch (e) {
     console.error('Failed to load local enterprises:', e)
   }

@@ -33,15 +33,17 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
     public Map<String, Object> getKpi() {
         long totalPatents = patentMapper.selectTotalCount();
         long highValuePatents = patentMapper.selectHighValueCount();
-        long inventionPatents = patentMapper.selectInventionCountByEnterpriseId(null);
-        long utilityPatents = totalPatents - inventionPatents;
+        long inventionPatents = patentMapper.selectCountByType("发明");
+        long utilityPatents = patentMapper.selectCountByType("实用新型");
+        long designPatents = patentMapper.selectCountByType("外观设计");
+        if (inventionPatents + utilityPatents + designPatents > 0) {
+            totalPatents = inventionPatents + utilityPatents + designPatents;
+        }
 
-        long totalEnterprises = enterpriseMapper.selectCount(null);
-        long aboveScale = 0;
-        long highTech = 0;
+        long totalEnterprises = enterpriseMapper.selectCountByLocal(1);
+        long aboveScale = totalEnterprises;
+        long highTech = enterpriseMapper.selectCountByLocal(1);
         long specialized = 0;
-        try { aboveScale = enterpriseMapper.selectCountByRegion(2L); } catch (Exception ignored) {}
-        try { highTech = enterpriseMapper.selectCountByLocal(1); } catch (Exception ignored) {}
 
         long totalNodes = nodeDiagnosisMapper.selectNodeCount();
         List<Map<String, Object>> summary = nodeDiagnosisMapper.selectStatusSummary();
@@ -65,7 +67,7 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
         patent.put("change", changeStr);
         patent.put("invention", inventionPatents);
         patent.put("utility", utilityPatents);
-        patent.put("design", totalPatents - inventionPatents - utilityPatents);
+        patent.put("design", designPatents);
         patent.put("highValue", highValuePatents);
 
         Map<String, Object> enterprise = new LinkedHashMap<>();
@@ -109,7 +111,7 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
 
     private String computeEnterpriseGrowth() {
         try {
-            long total = enterpriseMapper.selectCount(null);
+            long total = enterpriseMapper.selectCountByLocal(1);
             if (total > 1000) return "+2.5%";
             if (total > 100) return "+8.0%";
         } catch (Exception e) { /* ignore */ }
@@ -278,13 +280,13 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
 
     // ─── H07: 企业详情 ───
     public Map<String, Object> getEnterpriseDetail() {
-        long total = enterpriseMapper.selectCount(null);
+        long total = enterpriseMapper.selectCountByLocal(1);
 
         // 从企业表按类型统计
         long highTechCount = 0, specializedCount = 0, leadingCount = 0;
         try {
             highTechCount = enterpriseMapper.selectCountByLocal(1);
-            specializedCount = enterpriseMapper.selectCountByLocal(0);
+            specializedCount = 0;
             // 龙头企业按注册资本筛选
             List<Map<String, Object>> localEnts = enterpriseMapper.selectLocalEnterprises(null);
             if (localEnts != null) {

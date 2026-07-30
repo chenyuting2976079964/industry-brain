@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.industrybrain.mapper.mysql.MatchScoreResultMapper">
 
-    <resultMap type="com.industrybrain.domain.MatchScoreResult" id="MatchScoreResultMap">
+    <resultMap type="com.industrybrain.domain.model.MatchScoreResult" id="MatchScoreResultMap">
         <id property="id" column="id"/>
         <result property="enterpriseId" column="enterprise_id"/>
         <result property="enterpriseName" column="enterprise_name"/>
@@ -24,7 +24,7 @@
         ORDER BY id DESC LIMIT 1
     </select>
 
-    <insert id="insert" parameterType="com.industrybrain.domain.MatchScoreResult" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.industrybrain.domain.model.MatchScoreResult" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO match_score_result
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="enterpriseId != null">enterprise_id,</if>
@@ -50,7 +50,7 @@
         </trim>
     </insert>
 
-    <update id="update" parameterType="com.industrybrain.domain.MatchScoreResult">
+    <update id="update" parameterType="com.industrybrain.domain.model.MatchScoreResult">
         UPDATE match_score_result
         <trim prefix="SET" suffixOverrides=",">
             <if test="enterpriseName != null">enterprise_name = #{enterpriseName},</if>

@@ -14,7 +14,7 @@ import java.util.Map;
  * @author 何锦鹏
  */
 @Mapper
-public interface EnterpriseMapper extends BaseMapper<Enterprise> {
+public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
 
     /** 查询企业并附带专利数量统计 */
     List<Map<String, Object>> selectWithPatentCount();
@@ -56,20 +56,34 @@ public interface EnterpriseMapper extends BaseMapper<Enterprise> {
     /** 本地企业查询（含专利统计） */
     @Select("<script>" +
             "SELECT e.id, e.name, e.legal_representative, e.registered_capital, " +
-            "e.business_status, e.registered_address, e.is_local, " +
+            "e.business_status, e.registered_address, e.is_local, e.region_id, " +
+            "e.enterprise_type, r.name AS district_name, " +
             "COALESCE(ps.patent_count, 0) AS patent_count, " +
             "COALESCE(ps.high_value_count, 0) AS high_value_count, " +
             "COALESCE(ps.enterprise_count, 0) AS enterprise_count " +
             "FROM enterprise e " +
+            "LEFT JOIN region r ON e.region_id = r.id " +
             "LEFT JOIN (SELECT applicant_enterprise_id, COUNT(*) AS patent_count, " +
             "SUM(CASE WHEN maintenance_years >= 5 THEN 1 ELSE 0 END) AS high_value_count, " +
             "COUNT(DISTINCT applicant_enterprise_id) AS enterprise_count " +
             "FROM patent WHERE is_deleted = 0 GROUP BY applicant_enterprise_id) ps " +
             "ON e.id = ps.applicant_enterprise_id " +
-            "WHERE e.is_deleted = 0 " +
+            "WHERE e.is_deleted = 0 AND e.is_local = 1 " +
             "<if test='keyword != null and keyword != \"\"'>AND e.name LIKE CONCAT('%', #{keyword}, '%')</if> " +
             "ORDER BY ps.high_value_count DESC, e.name ASC " +
             "LIMIT 200" +
             "</script>")
     List<java.util.Map<String, Object>> selectLocalEnterprises(@Param("keyword") String keyword);
+
+    /** 按企业类型查询企业列表 */
+    @Select("SELECT * FROM enterprise WHERE enterprise_type = #{type} AND is_deleted = 0")
+    List<Enterprise> selectByType(@Param("type") String type);
+
+    /** 按企业类型统计企业数 */
+    @Select("SELECT COUNT(*) FROM enterprise WHERE enterprise_type = #{type} AND is_deleted = 0")
+    Long selectCountByType(@Param("type") String type);
+
+    /** 获取企业类型统计总数（所有非空类型） */
+    @Select("SELECT enterprise_type, COUNT(*) as count FROM enterprise WHERE is_deleted = 0 AND enterprise_type IS NOT NULL GROUP BY enterprise_type")
+    List<Map<String, Object>> selectTypeStats();
 }

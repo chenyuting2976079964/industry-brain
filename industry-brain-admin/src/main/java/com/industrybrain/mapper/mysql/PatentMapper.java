@@ -109,6 +109,10 @@ public interface PatentMapper extends BaseMapper<Patent> {
             "AND patent_type = '发明' AND is_deleted = 0")
     int selectInventionCountByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
 
+    /** 按专利类型统计数量 */
+    @Select("SELECT COUNT(*) FROM patent WHERE patent_type = #{type} AND is_deleted = 0")
+    long selectCountByType(@Param("type") String type);
+
     /** 按企业ID查询所有专利 — 别名 */
     @Select("SELECT * FROM patent WHERE applicant_enterprise_id = #{enterpriseId} AND is_deleted = 0 ORDER BY application_date DESC")
     List<Patent> selectByEnterpriseId(@Param("enterpriseId") Long enterpriseId);

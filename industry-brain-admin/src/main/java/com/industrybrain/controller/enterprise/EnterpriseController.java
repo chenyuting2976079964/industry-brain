@@ -9,9 +9,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * 企业详情 Controller — E01~E05
+ * 企业详情 Controller — E01~E05 + enterprise_type 扩展
  * 对标技术架构文档 §2.3 + §2.7 (EnterpriseController)
  *
  * @author 何锦鹏
@@ -66,5 +67,28 @@ public class EnterpriseController {
     @GetMapping("/local/list")
     public AjaxResult localEnterprises(@RequestParam(required = false) String keyword) {
         return AjaxResult.success(appService.getLocalEnterprises(keyword));
+    }
+
+    /** ── enterprise_type 新增接口 ── */
+
+    /** 按企业类型查询企业列表 */
+    @GetMapping("/listByType")
+    public AjaxResult listByType(@Param("type") String type) {
+        List<Enterprise> enterprises = appService.getEnterprisesByType(type);
+        return AjaxResult.success(enterprises);
+    }
+
+    /** 按企业类型统计企业数 */
+    @GetMapping("/countByType")
+    public AjaxResult countByType(@Param("type") String type) {
+        Long count = appService.getEnterprisesCountByType(type);
+        return AjaxResult.success(Map.of("count", count, "type", type));
+    }
+
+    /** 获取企业类型分布统计 */
+    @GetMapping("/typeStats")
+    public AjaxResult typeStats() {
+        List<Map<String, Object>> stats = appService.getEnterpriseTypeStats();
+        return AjaxResult.success(stats);
     }
 }
