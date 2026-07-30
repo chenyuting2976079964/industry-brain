@@ -1,16 +1,14 @@
+# MySQL 配置 - 允许远程访问
 [mysqld]
-# 允许远程连接 - 监听所有网络接口
 bind-address = 0.0.0.0
-
-# 字符集设置
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_ci
-
-# 默认认证插件（兼容旧客户端）
 default-authentication-plugin = mysql_native_password
-
-# 最大连接数（可根据需要调整）
 max_connections = 1000
-
-# 关闭 DNS 解析加速连接
 skip-name-resolve
+
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
