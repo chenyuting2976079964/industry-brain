@@ -80,8 +80,10 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
             vo.setId(n.getId());
             vo.setChainId(n.getChainId());
             vo.setNodeName(n.getNodeName());
-            vo.setNodeLevel(ChainUtils.layerToLabel(n.getLayer()));
+            // 前端 levelMap = {1:'up', 2:'mid', 3:'down'}，nodeLevel 发送 "1"/"2"/"3"
+            vo.setNodeLevel(layerToCode(n.getLayer()));
             vo.setNodeLevelCode(n.getLayer() != null ? n.getLayer() : "0");
+            vo.setNodeLevelLabel(ChainUtils.layerToLabel(n.getLayer()));
             vo.setSortOrder(n.getSortOrder());
 
             NodeDiagnosis dr = resultMap.get(n.getId());
@@ -142,8 +144,9 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
         NodeDetailResponse vo = new NodeDetailResponse();
         vo.setId(node.getId());
         vo.setNodeName(node.getNodeName());
-        vo.setNodeLevel(ChainUtils.layerToLabel(node.getLayer()));
+        vo.setNodeLevel(layerToCode(node.getLayer()));
         vo.setNodeLevelCode(node.getLayer() != null ? node.getLayer() : "0");
+        vo.setNodeLevelLabel(ChainUtils.layerToLabel(node.getLayer()));
 
         NodeDiagnosis dr = nodeDiagnosisMapper.selectLatestByNodeId(nodeId);
         if (dr != null) {
@@ -160,13 +163,21 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
         if (topEnts != null) {
             vo.setEnterprises(topEnts.stream().map(m -> {
                 NodeDetailResponse.AssociatedEnterprise ae = new NodeDetailResponse.AssociatedEnterprise();
-                ae.setEnterpriseId(toLong(m.get("enterpriseId")));
-                ae.setEnterpriseName((String) m.get("name"));
-                ae.setPatentCount(toInt(m.get("patentCount")));
+                ae.setEnterpriseId(toLong(m.get("enterprise_id")));
+                ae.setEnterpriseName((String) m.get("enterprise_name"));
+                ae.setPatentCount(toInt(m.get("patent_count")));
                 return ae;
             }).collect(Collectors.toList()));
         }
         return vo;
+    }
+
+    /** layer (up/mid/down) → 前端编码 ("1"/"2"/"3") */
+    private String layerToCode(String layer) {
+        if ("up".equals(layer)) return "1";
+        if ("mid".equals(layer)) return "2";
+        if ("down".equals(layer)) return "3";
+        return "2";
     }
 
     /** C05: 创建节点 */

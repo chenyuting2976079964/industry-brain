@@ -97,8 +97,9 @@ public class IndustryController {
         return AjaxResult.success();
     }
 
-    /** C10: 重建产业链图谱（从企业标签聚类生成节点/连线/专利映射/诊断） */
+    /** C10: 重建产业链图谱（IPC 专利自动聚合生成链/节点/连线/专利映射/诊断） */
     @PostMapping("/api/v1/industry/chain/rebuild-graph")
+    @org.springframework.cache.annotation.CacheEvict(value = "chain:list", allEntries = true)
     public AjaxResult rebuildGraph() {
         try {
             graphBuildService.rebuildGraph();

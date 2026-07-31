@@ -28,7 +28,7 @@
             nd.diagnosis_basis,
             nd.diagnosis_date,
             nd.created_at,
-            n.node_name,
+            n.name AS node_name,
             n.chain_id,
             n.layer
         FROM node_diagnosis nd

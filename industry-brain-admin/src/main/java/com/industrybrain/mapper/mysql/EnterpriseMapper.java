@@ -86,4 +86,9 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
     /** 获取企业类型统计总数（所有非空类型） */
     @Select("SELECT enterprise_type, COUNT(*) as count FROM enterprise WHERE is_deleted = 0 AND enterprise_type IS NOT NULL GROUP BY enterprise_type")
     List<Map<String, Object>> selectTypeStats();
+
+    /** 查询规模企业 ID 列表（员工规模 中型/中大型/大型）— 产业链存在性判定用 */
+    @Select("SELECT id FROM enterprise WHERE is_deleted = 0 "
+            + "AND employee_scale IN ('中型','中大型','大型')")
+    List<Long> selectScaleEnterpriseIds();
 }
