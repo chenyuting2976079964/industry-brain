@@ -348,7 +348,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
     private double calculatePatentStrength(Long enterpriseId) {
         // 企业专利数据
         int totalPatents = patentMapper.countByEnterpriseId(enterpriseId);
-        long highValuePatents = patentMapper.selectHighValueCount(enterpriseId);
+        long highValuePatents = patentMapper.selectHighValueCountByEnterprise(enterpriseId);
         int inventionPatents = patentMapper.selectInventionCount(enterpriseId);
 
         // 全局最大专利数（用于归一化）
@@ -688,7 +688,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
         StatCards stats = new StatCards();
         stats.setTotalPatents(patentMapper.countByEnterpriseId(enterpriseId));
-        stats.setHighValuePatents((int) patentMapper.selectHighValueCount(enterpriseId));
+        stats.setHighValuePatents((int) patentMapper.selectHighValueCountByEnterprise(enterpriseId));
         stats.setInventionCount(patentMapper.selectInventionCount(enterpriseId));
         response.setStats(stats);
 

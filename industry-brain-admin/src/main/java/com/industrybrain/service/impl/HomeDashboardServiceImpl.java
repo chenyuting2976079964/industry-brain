@@ -43,9 +43,9 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
         }
 
         long totalEnterprises = enterpriseMapper.selectCountByLocal(1);
-        long aboveScale = totalEnterprises;
-        long highTech = enterpriseMapper.selectCountByLocal(1);
-        long specialized = 0;
+        long aboveScale = Optional.ofNullable(enterpriseMapper.countByTypeLocal("龙头企业")).orElse(0L);
+        long highTech = Optional.ofNullable(enterpriseMapper.countByTypeLocal("高新技术企业")).orElse(0L);
+        long specialized = Optional.ofNullable(enterpriseMapper.countByTypeLocal("专精特新")).orElse(0L);
 
         long totalNodes = nodeDiagnosisMapper.selectNodeCount();
         List<Map<String, Object>> summary = nodeDiagnosisMapper.selectStatusSummary();
@@ -240,7 +240,7 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
     public Map<String, Object> getPatentDetail() {
         long total = patentMapper.selectTotalCount();
         long highValue = patentMapper.selectHighValueCount();
-        long invention = patentMapper.selectInventionCount(null);
+        long invention = patentMapper.selectCountByType("发明");
         long utility = total - invention;
 
         // 从ES/MySQL获取技术领域分布
@@ -284,28 +284,19 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
 
     // ─── H07: 企业详情 ───
     public Map<String, Object> getEnterpriseDetail() {
+        // 本地企业（is_local=1）按 enterprise_type 统计
         long total = enterpriseMapper.selectCountByLocal(1);
-
-        // 从企业表按类型统计
-        long highTechCount = 0, specializedCount = 0, leadingCount = 0;
+        long leadingCount = 0, specializedCount = 0, highTechCount = 0, techSmallCount = 0;
         try {
-            highTechCount = enterpriseMapper.selectCountByLocal(1);
-            specializedCount = 0;
-            // 龙头企业按注册资本筛选
-            List<Map<String, Object>> localEnts = enterpriseMapper.selectLocalEnterprises(null);
-            if (localEnts != null) {
-                leadingCount = localEnts.stream()
-                    .filter(m -> {
-                        String cap = (String) m.get("registered_capital");
-                        return cap != null && (cap.contains("亿") || cap.startsWith("100000"));
-                    })
-                    .count();
-            }
+            leadingCount = Optional.ofNullable(enterpriseMapper.countByTypeLocal("龙头企业")).orElse(0L);
+            specializedCount = Optional.ofNullable(enterpriseMapper.countByTypeLocal("专精特新")).orElse(0L);
+            highTechCount = Optional.ofNullable(enterpriseMapper.countByTypeLocal("高新技术企业")).orElse(0L);
+            techSmallCount = Optional.ofNullable(enterpriseMapper.countByTypeLocal("科技型中小企业")).orElse(0L);
         } catch (Exception e) {
             log.debug("查询企业类型统计数据失败: {}", e.getMessage());
         }
 
-        long otherCount = total - leadingCount - highTechCount - specializedCount;
+        long otherCount = total - leadingCount - specializedCount - highTechCount - techSmallCount;
         if (otherCount < 0) otherCount = 0;
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -317,8 +308,8 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
         tiers.add(Map.of("name", "龙头企业", "count", leadingCount, "pct", total > 0 ? (int)(leadingCount * 100 / total) : 0, "icon", "crown", "color", "amber"));
         tiers.add(Map.of("name", "专精特新企业", "count", specializedCount, "pct", total > 0 ? (int)(specializedCount * 100 / total) : 0, "icon", "medal", "color", "purple"));
         tiers.add(Map.of("name", "高新技术企业", "count", highTechCount, "pct", total > 0 ? (int)(highTechCount * 100 / total) : 0, "icon", "flask", "color", "blue"));
-        tiers.add(Map.of("name", "科技型中小企业", "count", otherCount, "pct", total > 0 ? (int)(otherCount * 100 / total) : 0, "icon", "microchip", "color", "cyan"));
-        tiers.add(Map.of("name", "其他企业", "count", 0, "pct", 100, "icon", "building", "color", "slate"));
+        tiers.add(Map.of("name", "科技型中小企业", "count", techSmallCount, "pct", total > 0 ? (int)(techSmallCount * 100 / total) : 0, "icon", "microchip", "color", "cyan"));
+        tiers.add(Map.of("name", "其他企业", "count", otherCount, "pct", total > 0 ? (int)(otherCount * 100 / total) : 0, "icon", "building", "color", "red"));
         result.put("tiers", tiers);
         result.put("description", "龙头企业引领、专精特新攻坚、高新技术支撑的梯度培育体系。");
         return result;

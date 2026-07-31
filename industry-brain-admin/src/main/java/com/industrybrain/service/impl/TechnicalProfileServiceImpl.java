@@ -218,7 +218,7 @@ public class TechnicalProfileServiceImpl implements ITechnicalProfileService {
         response.setNoveltyScore(noveltyScore);
 
         // 技术影响力评分（基于高价值专利占比和被引次数）
-        long highValueCount = patentMapper.selectHighValueCount(enterpriseId);
+        long highValueCount = patentMapper.selectHighValueCountByEnterprise(enterpriseId);
         int totalCitations = allPatents.stream()
                 .mapToInt(p -> p.getCitationCount() != null ? p.getCitationCount() : 0)
                 .sum();
