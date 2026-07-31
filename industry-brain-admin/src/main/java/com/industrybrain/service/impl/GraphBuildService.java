@@ -513,10 +513,10 @@ public class GraphBuildService implements ApplicationRunner {
                 chainTags.addAll(stage.tags);
             }
 
-            // 该链覆盖的企业（所有环节标签的企业并集）
+            // 该链覆盖的企业（所有环节标签的本地企业并集 — 产业链只用本地企业构建）
             Set<Long> chainEnts = new HashSet<>();
             for (String tag : chainTags) {
-                List<Long> ents = enterpriseTagMapper.selectEnterpriseIdsByTagName(tag);
+                List<Long> ents = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
                 if (ents != null) chainEnts.addAll(ents);
             }
             // 存在性判定：企业数 ≥5 且至少 1 家规模企业
@@ -617,8 +617,8 @@ public class GraphBuildService implements ApplicationRunner {
 
             for (ChainStage stage : stages) {
                 for (String tag : stage.tags) {
-                    // 领域必须要有公司：查该标签企业数
-                    List<Long> tagEnts = enterpriseTagMapper.selectEnterpriseIdsByTagName(tag);
+                    // 领域必须要有公司：查该标签本地企业数
+                    List<Long> tagEnts = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
                     int entCount = tagEnts == null ? 0 : tagEnts.size();
                     if (entCount == 0) continue;
 
@@ -731,7 +731,7 @@ public class GraphBuildService implements ApplicationRunner {
         int inserted = 0;
         List<EnterpriseNode> batch = new ArrayList<>();
         for (ChainNode node : allNodes) {
-            List<Long> enterpriseIds = enterpriseTagMapper.selectEnterpriseIdsByTagName(node.getNodeName());
+            List<Long> enterpriseIds = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(node.getNodeName());
             if (enterpriseIds == null || enterpriseIds.isEmpty()) continue;
             for (Long eid : enterpriseIds) {
                 batch.add(EnterpriseNode.builder()
@@ -757,25 +757,27 @@ public class GraphBuildService implements ApplicationRunner {
     }
 
     /**
-     * 运行 A1 算法，将专利映射到节点
+     * 专利归属：每个节点（领域标签）的专利 = 该领域覆盖企业的专利
+     * 直接按企业归属，不依赖 A1 算法（A1 依赖 IPC 规则，标签节点匹配不上）
      */
     private int buildPatentNodes() {
-        List<Patent> patents = patentMapper.selectList(null);
-        if (patents == null || patents.isEmpty()) return 0;
+        List<ChainNode> allNodes = chainNodeMapper.selectList(null);
+        if (allNodes == null || allNodes.isEmpty()) return 0;
 
         int inserted = 0;
-        int total = patents.size();
-        int processed = 0;
         List<PatentNode> batch = new ArrayList<>();
-        for (Patent patent : patents) {
-            try {
-                List<IPatentMappingService.MappingResult> results = patentMappingService.mapPatentToNode(patent);
-                for (IPatentMappingService.MappingResult r : results) {
-                    if (r.getNodeId() == null) continue;
-                    if ("LOW".equals(r.getConfidenceLevel())) continue;
+        for (ChainNode node : allNodes) {
+            List<Long> enterpriseIds = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(node.getNodeName());
+            if (enterpriseIds == null || enterpriseIds.isEmpty()) continue;
+            // 分批查询该领域企业的专利
+            for (int i = 0; i < enterpriseIds.size(); i += 500) {
+                List<Long> subIds = enterpriseIds.subList(i, Math.min(i + 500, enterpriseIds.size()));
+                List<Patent> patents = patentMapper.selectByEnterpriseIds(subIds);
+                if (patents == null) continue;
+                for (Patent patent : patents) {
                     batch.add(PatentNode.builder()
                             .patentId(patent.getId())
-                            .nodeId(r.getNodeId())
+                            .nodeId(node.getId())
                             .matchType("auto")
                             .createdAt(NOW)
                             .updatedAt(NOW)
@@ -786,17 +788,13 @@ public class GraphBuildService implements ApplicationRunner {
                         batch.clear();
                     }
                 }
-            } catch (Exception e) {
-                log.debug("专利映射失败: id={}, error={}", patent.getId(), e.getMessage());
             }
-            processed++;
-            if (processed % 500 == 0) log.info("专利映射进度: {}/{}", processed, total);
         }
         if (!batch.isEmpty()) {
             patentNodeMapper.batchInsert(batch);
             batch.clear();
         }
-        log.info("生成专利-节点映射: {}", inserted);
+        log.info("生成专利-节点映射（企业专利归属）: {}", inserted);
         return inserted;
     }
 
@@ -812,7 +810,7 @@ public class GraphBuildService implements ApplicationRunner {
         for (ChainNode node : allNodes) {
             int enterpriseCount = enterpriseNodeMapper.countByNodeId(node.getId());
             int patentCount = patentNodeMapper.countByNodeId(node.getId());
-            int highValueCount = 0;
+            int highValueCount = patentNodeMapper.countHighValueByNodeId(node.getId());
 
             String tag;
             if (enterpriseCount >= 20 || patentCount >= 200) {

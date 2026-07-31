@@ -27,7 +27,7 @@
         ORDER BY sort_order ASC, id ASC
     </select>
 
-    <!-- 查询某节点下专利数量最多的企业 Top N -->
+    <!-- 查询某节点下专利数量最多的大规模企业 Top N（只检索规模企业，提高效率） -->
     <select id="selectTopEnterprisesByNodeId" resultType="java.util.HashMap">
         SELECT
             e.id               AS enterprise_id,
@@ -37,15 +37,22 @@
             e.registered_address   AS registered_address,
             e.region_id        AS region_id,
             e.is_local         AS is_local,
-            COUNT(DISTINCT p.id) AS patent_count,
-            COUNT(DISTINCT CASE WHEN p.maintenance_years >= 5 THEN p.id END) AS high_value_count
-        FROM enterprise e
-        INNER JOIN enterprise_node en ON e.id = en.enterprise_id
-        INNER JOIN patent_node pn ON en.node_id = pn.node_id
-        INNER JOIN patent p ON pn.patent_id = p.id AND p.is_deleted = 0
+            e.employee_scale   AS employee_scale,
+            COALESCE(ps.patent_count, 0) AS patent_count,
+            COALESCE(ps.high_value_count, 0) AS high_value_count
+        FROM enterprise_node en
+        INNER JOIN enterprise e ON e.id = en.enterprise_id AND e.is_deleted = 0
+            AND e.employee_scale IN ('大型', '中大型', '中型')
+        LEFT JOIN (
+            SELECT p.applicant_enterprise_id,
+                   COUNT(DISTINCT p.id) AS patent_count,
+                   COUNT(DISTINCT CASE WHEN p.maintenance_years >= 10 THEN p.id END) AS high_value_count
+            FROM patent_node pn
+            INNER JOIN patent p ON pn.patent_id = p.id AND p.is_deleted = 0
+            WHERE pn.node_id = #{nodeId}
+            GROUP BY p.applicant_enterprise_id
+        ) ps ON ps.applicant_enterprise_id = e.id
         WHERE en.node_id = #{nodeId}
-          AND e.is_deleted = 0
-        GROUP BY e.id, e.name, e.unified_code, e.legal_representative, e.registered_address, e.region_id, e.is_local
         ORDER BY patent_count DESC
         LIMIT #{limit}
     </select>
