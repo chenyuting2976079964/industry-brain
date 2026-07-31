@@ -28,7 +28,7 @@
     </resultMap>
 
     <select id="selectById" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, cn.node_name, nd.diagnosis_tag
+        select ir.*, e.name as enterprise_name, cn.name as node_name, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
@@ -37,7 +37,7 @@
     </select>
 
     <select id="selectMatchList" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, e.industry, cn.node_name,
+        select ir.*, e.name as enterprise_name, e.description as industry, cn.name as node_name,
                cn.layer as node_layer, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
@@ -80,8 +80,8 @@
     </select>
 
     <select id="selectEnterpriseDetail" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, e.industry, e.region_code,
-               cn.node_name, cn.layer as node_layer, nd.diagnosis_tag
+        select ir.*, e.name as enterprise_name, e.description as industry, e.registered_address as region_code,
+               cn.name as node_name, cn.layer as node_layer, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
@@ -92,8 +92,8 @@
     </select>
 
     <select id="selectWishlist" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, e.industry,
-               cn.node_name, nd.diagnosis_tag
+        select ir.*, e.name as enterprise_name, e.description as industry,
+               cn.name as node_name, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
@@ -201,7 +201,7 @@
     </select>
 
     <select id="selectByEnterpriseId" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, cn.node_name, nd.diagnosis_tag
+        select ir.*, e.name as enterprise_name, cn.name as node_name, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
@@ -211,7 +211,7 @@
     </select>
 
     <select id="selectByNodeId" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, cn.node_name, nd.diagnosis_tag
+        select ir.*, e.name as enterprise_name, cn.name as node_name, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
