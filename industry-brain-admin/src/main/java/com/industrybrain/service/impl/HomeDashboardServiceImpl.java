@@ -50,9 +50,9 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
         long strong = 0, supplement = 0, weak = 0, missing = 0;
         if (summary != null) {
             for (Map<String, Object> row : summary) {
-                String tag = (String) (row.get("diagnosis_tag") != null ? row.get("diagnosis_tag") : row.get("diagnosisTag"));
-                Object cntVal = row.get("node_count");
-                if (cntVal == null) cntVal = row.get("cnt");
+                String tag = (String) (row.get("diagnosisTag") != null ? row.get("diagnosisTag") : row.get("diagnosis_tag"));
+                Object cntVal = row.get("nodeCount");
+                if (cntVal == null) cntVal = row.get("node_count");
                 long cnt = cntVal == null ? 0 : ((Number) cntVal).longValue();
                 if ("强链".equals(tag)) strong = cnt;
                 else if ("补链".equals(tag)) supplement = cnt;
@@ -325,9 +325,9 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
 
         if (summary != null) {
             for (Map<String, Object> row : summary) {
-                String tag = (String) (row.get("diagnosis_tag") != null ? row.get("diagnosis_tag") : row.get("diagnosisTag"));
-                Object cntVal = row.get("node_count");
-                if (cntVal == null) cntVal = row.get("cnt");
+                String tag = (String) (row.get("diagnosisTag") != null ? row.get("diagnosisTag") : row.get("diagnosis_tag"));
+                Object cntVal = row.get("nodeCount");
+                if (cntVal == null) cntVal = row.get("node_count");
                 long cnt = cntVal == null ? 0 : ((Number) cntVal).longValue();
                 if ("强链".equals(tag)) strong = cnt;
                 else if ("补链".equals(tag)) supplement = cnt;
