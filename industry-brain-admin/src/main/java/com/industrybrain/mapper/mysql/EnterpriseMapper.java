@@ -91,4 +91,8 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
     @Select("SELECT id FROM enterprise WHERE is_deleted = 0 "
             + "AND employee_scale IN ('中型','中大型','大型')")
     List<Long> selectScaleEnterpriseIds();
+
+    /** 按企业类型统计本地企业数（is_local=1） */
+    @Select("SELECT COUNT(*) FROM enterprise WHERE enterprise_type = #{type} AND is_local = 1 AND is_deleted = 0")
+    Long countByTypeLocal(@Param("type") String type);
 }
