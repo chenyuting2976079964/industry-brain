@@ -188,6 +188,13 @@ public interface PatentMapper extends BaseMapper<Patent> {
             "GROUP BY a.ipc, b.ipc")
     List<java.util.Map<String, Object>> selectIpcSubclassCooccurrence();
 
+    /** 按企业ID集合查询专利（节点专利归属用） */
+    @Select("<script>SELECT * FROM patent WHERE is_deleted = 0 " +
+            "AND applicant_enterprise_id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>" +
+            "</script>")
+    List<Patent> selectByEnterpriseIds(@Param("ids") List<Long> ids);
+
     /**
      * 统计企业高价值专利数（发明类型 + 被引用>=5次）— 别名: selectHighValueCountForAlgorithm
      */
