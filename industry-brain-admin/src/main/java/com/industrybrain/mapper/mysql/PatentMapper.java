@@ -134,6 +134,14 @@ public interface PatentMapper extends BaseMapper<Patent> {
     List<java.util.Map<String, Object>> selectIpcDistribution(@Param("enterpriseId") Long enterpriseId);
 
     /**
+     * 统计全部专利的IPC主分类分布（图谱IPC映射规则填充用）
+     */
+    @Select("SELECT ipc_main AS ipcMain, COUNT(*) AS cnt FROM patent " +
+            "WHERE ipc_main IS NOT NULL AND is_deleted = 0 " +
+            "GROUP BY ipc_main ORDER BY cnt DESC")
+    List<java.util.Map<String, Object>> selectIpcStats();
+
+    /**
      * 统计企业高价值专利数（发明类型 + 被引用>=5次）— 别名: selectHighValueCountForAlgorithm
      */
     int selectHighValueCountForAlgorithm(@Param("enterpriseId") Long enterpriseId);

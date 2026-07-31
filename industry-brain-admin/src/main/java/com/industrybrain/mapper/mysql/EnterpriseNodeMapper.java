@@ -21,4 +21,7 @@ public interface EnterpriseNodeMapper extends BaseMapper<EnterpriseNode> {
 
     @Select("SELECT COUNT(*) FROM enterprise_node WHERE node_id = #{nodeId}")
     int countByNodeId(@Param("nodeId") Long nodeId);
+
+    /** 批量插入企业-节点关联（图谱构建用） */
+    int batchInsert(@Param("list") List<EnterpriseNode> list);
 }

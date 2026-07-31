@@ -1,6 +1,7 @@
 package com.industrybrain.service.impl;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.industrybrain.domain.model.IndustryChain;
 import com.industrybrain.domain.model.IndustryChainNode;
@@ -122,7 +123,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
     @Resource
     private IMatchScoreService matchScoreService;
 
-    @Resource
+    @Autowired(required = false)
     private MinioFileService minioFileService;
 
     @Resource
@@ -317,6 +318,10 @@ public class RecommendationServiceImpl implements IRecommendationService {
             String fileName = "investment_recommendation_" + timestamp + ".xlsx";
             String contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+            if (minioFileService == null) {
+                log.warn("MinIO 未启用，返回本地文件名");
+                return fileName;
+            }
             String url = minioFileService.uploadToCategory("reports", fileName, excelData, contentType);
 
             if (url == null) {
@@ -896,7 +901,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
                     if (queryIdx > 0) {
                         objectName = objectName.substring(0, queryIdx);
                     }
-                    minioFileService.delete(objectName);
+                    if (minioFileService != null) {
+                        minioFileService.delete(objectName);
+                    }
                 }
             } catch (Exception e) {
                 log.warn("删除 MinIO 文件失败: {}", e.getMessage());
@@ -986,6 +993,12 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
             String format = request.getFormat() != null ? request.getFormat() : "Excel";
             String fileName = "report_" + reportId + "_" + timestamp() + "." + format.toLowerCase();
+            if (minioFileService == null) {
+                log.warn("MinIO 未启用，跳过报告上传");
+                record.setStatus("failed");
+                reportMapper.update(record);
+                return;
+            }
             String url = minioFileService.uploadToCategory("reports", fileName, excelData, EXCEL_MIME);
 
             if (url == null) {
@@ -1030,6 +1043,10 @@ public class RecommendationServiceImpl implements IRecommendationService {
             byte[] excelData = buildBatchExportExcel(completedReports);
 
             String fileName = "batch_export_" + taskId + "_" + timestamp + ".xlsx";
+            if (minioFileService == null) {
+                log.warn("MinIO 未启用，跳过批量导出上传");
+                return;
+            }
             String url = minioFileService.uploadToCategory("exports", fileName, excelData, EXCEL_MIME);
 
             if (url != null) {

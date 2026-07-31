@@ -14,4 +14,12 @@
         WHERE node_id = #{nodeId}
     </select>
 
+    <insert id="batchInsert">
+        INSERT INTO patent_node (patent_id, node_id, match_type, created_at, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.patentId}, #{item.nodeId}, #{item.matchType}, #{item.createdAt}, #{item.updatedAt})
+        </foreach>
+    </insert>
+
 </mapper>

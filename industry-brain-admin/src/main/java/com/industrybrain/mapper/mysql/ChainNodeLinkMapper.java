@@ -15,7 +15,7 @@ import java.util.List;
 public interface ChainNodeLinkMapper extends BaseMapper<ChainNodeLink> {
 
     /** 查询所有关联关系 */
-    @Select("SELECT id, from_node_id, to_node_id, relation_type, created_at " +
-            "FROM chain_node_link")
+    @Select("SELECT id, source_node_id, target_node_id, relation_type, is_deleted, deleted_at, created_at, updated_at " +
+            "FROM chain_node_link WHERE is_deleted = 0")
     List<ChainNodeLink> selectAll();
 }

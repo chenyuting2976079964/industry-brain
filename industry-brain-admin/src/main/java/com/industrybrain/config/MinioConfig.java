@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * 条件加载：仅当 minio.enabled=true 时激活
  */
 @Configuration
+@ConditionalOnProperty(name = "minio.enabled", havingValue = "true", matchIfMissing = false)
 public class MinioConfig {
     private static final Logger log = LoggerFactory.getLogger(MinioConfig.class);
 

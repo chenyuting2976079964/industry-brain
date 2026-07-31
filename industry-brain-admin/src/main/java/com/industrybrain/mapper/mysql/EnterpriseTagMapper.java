@@ -25,4 +25,13 @@ public interface EnterpriseTagMapper extends BaseMapper<EnterpriseTag> {
     /** 按企业ID删除所有标签 */
     @Select("DELETE FROM enterprise_tag WHERE enterprise_id = #{enterpriseId}")
     int deleteByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
+
+    /** 统计各标签的企业数量（图谱节点生成用） */
+    @Select("SELECT tag_name AS tagName, COUNT(DISTINCT enterprise_id) AS enterpriseCount " +
+            "FROM enterprise_tag GROUP BY tag_name ORDER BY enterpriseCount DESC")
+    List<java.util.Map<String, Object>> selectTagStats();
+
+    /** 按标签名查询企业ID列表 */
+    @Select("SELECT DISTINCT enterprise_id FROM enterprise_tag WHERE tag_name = #{tagName}")
+    List<Long> selectEnterpriseIdsByTagName(@Param("tagName") String tagName);
 }

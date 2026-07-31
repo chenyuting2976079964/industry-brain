@@ -114,13 +114,19 @@ public class DashboardServiceImpl implements IDashboardService {
     public List<ChainStrengthResponse> getChainStrengthDistribution(String regionCode) {
         List<Map<String, Object>> rows = nodeDiagnosisMapper.selectStatusSummary();
         if (rows == null) return Collections.emptyList();
-        long total = rows.stream().mapToLong(m -> ((Number) m.get("cnt")).longValue()).sum();
+        long total = rows.stream().mapToLong(m -> {
+            Object v = m.get("node_count");
+            if (v == null) v = m.get("cnt");
+            return v == null ? 0 : ((Number) v).longValue();
+        }).sum();
 
         return rows.stream().map(m -> {
             ChainStrengthResponse vo = new ChainStrengthResponse();
-            String status = (String) m.get("diagnosisTag");
+            Object cntVal = m.get("node_count");
+            if (cntVal == null) cntVal = m.get("cnt");
+            String status = (String) (m.get("diagnosis_tag") != null ? m.get("diagnosis_tag") : m.get("diagnosisTag"));
             vo.setStatus(status);
-            vo.setCount(((Number) m.get("cnt")).longValue());
+            vo.setCount(cntVal == null ? 0 : ((Number) cntVal).longValue());
             vo.setPercentage(vo.getCount() * 100.0 / Math.max(total, 1));
             vo.setLabel(status != null ? status : "未知");
             // 颜色从诊断标签推导（通用规则）

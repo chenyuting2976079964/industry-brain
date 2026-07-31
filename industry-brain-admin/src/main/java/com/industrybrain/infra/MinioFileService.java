@@ -5,6 +5,7 @@ import io.minio.*;
 import io.minio.http.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
  * 当 minio.enabled=false 时跳过（无 MinIO 环境）
  */
 @Service
+@ConditionalOnBean(MinioClient.class)
 public class MinioFileService {
 
     private static final Logger log = LoggerFactory.getLogger(MinioFileService.class);
@@ -33,8 +35,20 @@ public class MinioFileService {
      */
     @PostConstruct
     public void ensureBucket() {
+        String[] buckets = {
+                minioConfig.getBucketName(),
+                "reports",
+                "attachments",
+                "data-import"
+        };
+        for (String bucket : buckets) {
+            ensureOneBucket(bucket);
+        }
+    }
+
+    private void ensureOneBucket(String bucket) {
+        if (bucket == null || bucket.isBlank()) return;
         try {
-            String bucket = minioConfig.getBucketName();
             boolean exists = minioClient.bucketExists(
                     BucketExistsArgs.builder().bucket(bucket).build());
             if (!exists) {

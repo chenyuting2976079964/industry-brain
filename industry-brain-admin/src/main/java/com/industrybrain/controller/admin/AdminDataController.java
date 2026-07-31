@@ -16,7 +16,7 @@ import java.util.*;
  * 当 mysql.enabled=false 时跳过（无 MySQL 环境降级为模拟实现）
  */
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "mysql.enabled", havingValue = "true", matchIfMissing = true)
 public class AdminDataController {
@@ -178,12 +178,56 @@ public class AdminDataController {
         status.put("timestamp", LocalDateTime.now().toString());
         try { chainInfoMapper.selectAllOrdered(); status.put("mysql", "UP"); }
         catch (Exception e) { status.put("mysql", "DOWN"); }
-        status.put("elasticsearch", "es:9200");   // S08: 具体连通性由 verify.sh 检查
-        status.put("neo4j",        "neo4j:7687");
-        status.put("redis",        "redis:6379");
-        status.put("minio",        "minio:9000");
-        status.put("canal",        "canal:11111");
+        status.put("elasticsearch", probeEs());
+        status.put("neo4j", probeNeo4j());
+        status.put("redis", probeRedis());
+        status.put("minio", probeMinio());
+        status.put("canal", "canal:11111");
         return AjaxResult.success(status);
+    }
+
+    private String probeEs() {
+        try {
+            java.net.Socket s = new java.net.Socket("localhost", 9200);
+            s.setSoTimeout(2000);
+            s.close();
+            return "UP (es:9200)";
+        } catch (Exception e) {
+            return "DOWN";
+        }
+    }
+
+    private String probeNeo4j() {
+        try {
+            java.net.Socket s = new java.net.Socket("localhost", 7687);
+            s.setSoTimeout(2000);
+            s.close();
+            return "UP (neo4j:7687)";
+        } catch (Exception e) {
+            return "DOWN";
+        }
+    }
+
+    private String probeRedis() {
+        try {
+            java.net.Socket s = new java.net.Socket("localhost", 6379);
+            s.setSoTimeout(2000);
+            s.close();
+            return "UP (redis:6379)";
+        } catch (Exception e) {
+            return "DOWN";
+        }
+    }
+
+    private String probeMinio() {
+        try {
+            java.net.Socket s = new java.net.Socket("localhost", 9000);
+            s.setSoTimeout(2000);
+            s.close();
+            return "UP (minio:9000)";
+        } catch (Exception e) {
+            return "DOWN";
+        }
     }
 
     // ==================== S08: 数据导出 ====================

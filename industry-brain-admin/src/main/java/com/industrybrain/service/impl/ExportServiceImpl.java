@@ -1,4 +1,5 @@
 package com.industrybrain.service.impl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import com.industrybrain.domain.model.ReportRecord;
@@ -38,7 +39,7 @@ public class ExportServiceImpl implements IExportService {
     @Resource
     private ITechnicalProfileService technicalProfileService;
 
-    @Resource
+    @Autowired(required = false)
     private MinioFileService minioFileService;
 
     @Resource
@@ -66,6 +67,10 @@ public class ExportServiceImpl implements IExportService {
             // 3. 上传到 MinIO
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FMT));
             String fileName = "technical_profile_" + enterpriseId + "_" + timestamp + ".xlsx";
+            if (minioFileService == null) {
+                log.warn("MinIO 未启用, 返回本地临时路径");
+                return "/tmp/" + fileName;
+            }
             String url = minioFileService.uploadToCategory("profile", fileName, excelData, EXCEL_MIME);
 
             if (url == null) {
@@ -106,6 +111,10 @@ public class ExportServiceImpl implements IExportService {
             // 3. 上传到 MinIO
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FMT));
             String fileName = "report_" + report.getId() + "_" + timestamp + ".xlsx";
+            if (minioFileService == null) {
+                log.warn("MinIO 未启用, 返回本地临时路径");
+                return "/tmp/" + fileName;
+            }
             String url = minioFileService.uploadToCategory("reports", fileName, excelData, EXCEL_MIME);
 
             if (url == null) {

@@ -21,4 +21,12 @@ public interface PatentNodeMapper extends BaseMapper<PatentNode> {
 
     @Select("SELECT COUNT(*) FROM patent_node WHERE node_id = #{nodeId}")
     int countByNodeId(@Param("nodeId") Long nodeId);
+
+    @Select("SELECT pn.* FROM patent_node pn " +
+            "INNER JOIN patent p ON pn.patent_id = p.id AND p.is_deleted = 0 " +
+            "WHERE p.applicant_enterprise_id = #{enterpriseId}")
+    List<PatentNode> selectByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
+
+    /** 批量插入专利-节点关联（图谱构建用） */
+    int batchInsert(@Param("list") List<PatentNode> list);
 }

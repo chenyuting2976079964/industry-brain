@@ -7,6 +7,7 @@ import com.industrybrain.service.IDashboardService;
 import com.industrybrain.service.IDiagnosisService;
 import com.industrybrain.service.IHomeDashboardService;
 import com.industrybrain.service.IIndustryChainService;
+import com.industrybrain.service.impl.GraphBuildService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ public class IndustryController {
     private final IDiagnosisService diagnosisService;
     private final IDashboardService dashboardService;
     private final IHomeDashboardService homeDashboardService;
+    private final GraphBuildService graphBuildService;
 
     // ==================== C01~C09: 产业链全景 ====================
 
@@ -93,6 +95,17 @@ public class IndustryController {
     public AjaxResult deleteChainLink(@PathVariable Long id) {
         industryChainService.deleteLink(id);
         return AjaxResult.success();
+    }
+
+    /** C10: 重建产业链图谱（从企业标签聚类生成节点/连线/专利映射/诊断） */
+    @PostMapping("/api/v1/industry/chain/rebuild-graph")
+    public AjaxResult rebuildGraph() {
+        try {
+            graphBuildService.rebuildGraph();
+            return AjaxResult.success("产业链图谱重建完成");
+        } catch (Exception e) {
+            return AjaxResult.error("产业链图谱重建失败: " + e.getMessage());
+        }
     }
 
     // ==================== D01~D04: 强弱诊断 ====================

@@ -128,8 +128,10 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
         if (rows == null) rows = Collections.emptyList();
         int strong = 0, supplement = 0, weak = 0, missing = 0;
         for (Map<String, Object> row : rows) {
-            String s = (String) row.get("diagnosisTag");
-            int count = toInt(row.get("cnt"));
+            String s = (String) (row.get("diagnosis_tag") != null ? row.get("diagnosis_tag") : row.get("diagnosisTag"));
+            Object cntVal = row.get("node_count");
+            if (cntVal == null) cntVal = row.get("cnt");
+            int count = toInt(cntVal);
             if ("强链".equals(s)) strong = count;
             else if ("补链".equals(s)) supplement = count;
             else if ("弱链".equals(s)) weak = count;

@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+  <script type="module" src="/@vite/client"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>产业大脑平台</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style type="text/css" data-vite-dev-id="D:/work2/industry-brain-web/src/styles/main.css">*, ::before, ::after {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x:  ;
+  --tw-pan-y:  ;
+  --tw-pinch-zoom:  ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position:  ;
+  --tw-gradient-via-position:  ;
+  --tw-gradient-to-position:  ;
+  --tw-ordinal:  ;
+  --tw-slashed-zero:  ;
+  --tw-numeric-figure:  ;
+  --tw-numeric-spacing:  ;
+  --tw-numeric-fraction:  ;
+  --tw-ring-inset:  ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgb(59 130 246 / 0.5);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-blur:  ;
+  --tw-brightness:  ;
+  --tw-contrast:  ;
+  --tw-grayscale:  ;
+  --tw-hue-rotate:  ;
+  --tw-invert:  ;
+  --tw-saturate:  ;
+  --tw-sepia:  ;
+  --tw-drop-shadow:  ;
+  --tw-backdrop-blur:  ;
+  --tw-backdrop-brightness:  ;
+  --tw-backdrop-contrast:  ;
+  --tw-backdrop-grayscale:  ;
+  --tw-backdrop-hue-rotate:  ;
+  --tw-backdrop-invert:  ;
+  --tw-backdrop-opacity:  ;
+  --tw-backdrop-saturate:  ;
+  --tw-backdrop-sepia:  ;
+  --tw-contain-size:  ;
+  --tw-contain-layout:  ;
+  --tw-contain-paint:  ;
+  --tw-contain-style:  ;
+}
+
+::backdrop {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x:  ;
+  --tw-pan-y:  ;
+  --tw-pinch-zoom:  ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position:  ;
+  --tw-gradient-via-position:  ;
+  --tw-gradient-to-position:  ;
+  --tw-ordinal:  ;
+  --tw-slashed-zero:  ;
+  --tw-numeric-figure:  ;
+  --tw-numeric-spacing:  ;
+  --tw-numeric-fraction:  ;
+  --tw-ring-inset:  ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgb(59 130 246 / 0.5);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-blur:  ;
+  --tw-brightness:  ;
+  --tw-contrast:  ;
+  --tw-grayscale:  ;
+  --tw-hue-rotate:  ;
+  --tw-invert:  ;
+  --tw-saturate:  ;
+  --tw-sepia:  ;
+  --tw-drop-shadow:  ;
+  --tw-backdrop-blur:  ;
+  --tw-backdrop-brightness:  ;
+  --tw-backdrop-contrast:  ;
+  --tw-backdrop-grayscale:  ;
+  --tw-backdrop-hue-rotate:  ;
+  --tw-backdrop-invert:  ;
+  --tw-backdrop-opacity:  ;
+  --tw-backdrop-saturate:  ;
+  --tw-backdrop-sepia:  ;
+  --tw-contain-size:  ;
+  --tw-contain-layout:  ;
+  --tw-contain-paint:  ;
+  --tw-contain-style:  ;
+}/*
+! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com
+*//*
+1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
+2. Allow adding a border to an element by just adding a border-width. (https://github.com/tailwindcss/tailwindcss/pull/116)
+*/
+
+*,
+::before,
+::after {
+  box-sizing: border-box; /* 1 */
+  border-width: 0; /* 2 */
+  border-style: solid; /* 2 */
+  border-color: #e5e7eb; /* 2 */
+}
+
+::before,
+::after {
+  --tw-content: '';
+}
+
+/*
+1. Use a consistent sensible line-height in all browsers.
+2. Prevent adjustments of font size after orientation changes in iOS.
+3. Use a more readable tab size.
+4. Use the user's configured `sans` font-family by default.
+5. Use the user's configured `sans` font-feature-settings by default.
+6. Use the user's configured `sans` font-variation-settings by default.
+7. Disable tap highlights on iOS
+*/
+
+html,
+:host {
+  line-height: 1.5; /* 1 */
+  -webkit-text-size-adjust: 100%; /* 2 */
+  -moz-tab-size: 4; /* 3 */
+  -o-tab-size: 4;
+     tab-size: 4; /* 3 */
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; /* 4 */
+  font-feature-settings: normal; /* 5 */
+  font-variation-settings: normal; /* 6 */
+  -webkit-tap-highlight-color: transparent; /* 7 */
+}
+
+/*
+1. Remove the margin in all browsers.
+2. Inherit line-height from `html` so users can set them as a class directly on the `html` element.
+*/
+
+body {
+  margin: 0; /* 1 */
+  line-height: inherit; /* 2 */
+}
+
+/*
+1. Add the correct height in Firefox.
+2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)
+3. Ensure horizontal rules are visible by default.
+*/
+
+hr {
+  height: 0; /* 1 */
+  color: inherit; /* 2 */
+  border-top-width: 1px; /* 3 */
+}
+
+/*
+Add the correct text decoration in Chrome, Edge, and Safari.
+*/
+
+abbr:where([title]) {
+  -webkit-text-decoration: underline dotted;
+          text-decoration: underline dotted;
+}
+
+/*
+Remove the default font size and weight for headings.
+*/
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/*
+Reset links to optimize for opt-in styling instead of opt-out.
+*/
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/*
+Add the correct font weight in Edge and Safari.
+*/
+
+b,
+strong {
+  font-weight: bolder;
+}
+
+/*
+1. Use the user's configured `mono` font-family by default.
+2. Use the user's configured `mono` font-feature-settings by default.
+3. Use the user's configured `mono` font-variation-settings by default.
+4. Correct the odd `em` font sizing in all browsers.
+*/
+
+code,
+kbd,
+samp,
+pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* 1 */
+  font-feature-settings: normal; /* 2 */
+  font-variation-settings: normal; /* 3 */
+  font-size: 1em; /* 4 */
+}
+
+/*
+Add the correct font size in all browsers.
+*/
+
+small {
+  font-size: 80%;
+}
+
+/*
+Prevent `sub` and `sup` elements from affecting the line height in all browsers.
+*/
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.5em;
+}
+
+/*
+1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
+2. Correct table border color inheritance in all Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
+3. Remove gaps between table borders by default.
+*/
+
+table {
+  text-indent: 0; /* 1 */
+  border-color: inherit; /* 2 */
+  border-collapse: collapse; /* 3 */
+}
+
+/*
+1. Change the font styles in all browsers.
+2. Remove the margin in Firefox and Safari.
+3. Remove default padding in all browsers.
+*/
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit; /* 1 */
+  font-feature-settings: inherit; /* 1 */
+  font-variation-settings: inherit; /* 1 */
+  font-size: 100%; /* 1 */
+  font-weight: inherit; /* 1 */
+  line-height: inherit; /* 1 */
+  letter-spacing: inherit; /* 1 */
+  color: inherit; /* 1 */
+  margin: 0; /* 2 */
+  padding: 0; /* 3 */
+}
+
+/*
+Remove the inheritance of text transform in Edge and Firefox.
+*/
+
+button,
+select {
+  text-transform: none;
+}
+
+/*
+1. Correct the inability to style clickable types in iOS and Safari.
+2. Remove default button styles.
+*/
+
+button,
+input:where([type='button']),
+input:where([type='reset']),
+input:where([type='submit']) {
+  -webkit-appearance: button; /* 1 */
+  background-color: transparent; /* 2 */
+  background-image: none; /* 2 */
+}
+
+/*
+Use the modern Firefox focus style for all focusable elements.
+*/
+
+:-moz-focusring {
+  outline: auto;
+}
+
+/*
+Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
+*/
+
+:-moz-ui-invalid {
+  box-shadow: none;
+}
+
+/*
+Add the correct vertical alignment in Chrome and Firefox.
+*/
+
+progress {
+  vertical-align: baseline;
+}
+
+/*
+Correct the cursor style of increment and decrement buttons in Safari.
+*/
+
+::-webkit-inner-spin-button,
+::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/*
+1. Correct the odd appearance in Chrome and Safari.
+2. Correct the outline style in Safari.
+*/
+
+[type='search'] {
+  -webkit-appearance: textfield; /* 1 */
+  outline-offset: -2px; /* 2 */
+}
+
+/*
+Remove the inner padding in Chrome and Safari on macOS.
+*/
+
+::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/*
+1. Correct the inability to style clickable types in iOS and Safari.
+2. Change font properties to `inherit` in Safari.
+*/
+
+::-webkit-file-upload-button {
+  -webkit-appearance: button; /* 1 */
+  font: inherit; /* 2 */
+}
+
+/*
+Add the correct display in Chrome and Safari.
+*/
+
+summary {
+  display: list-item;
+}
+
+/*
+Removes the default spacing and border for appropriate elements.
+*/
+
+blockquote,
+dl,
+dd,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+figure,
+p,
+pre {
+  margin: 0;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+ol,
+ul,
+menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+Reset default styling for dialogs.
+*/
+dialog {
+  padding: 0;
+}
+
+/*
+Prevent resizing textareas horizontally by default.
+*/
+
+textarea {
+  resize: vertical;
+}
+
+/*
+1. Reset the default placeholder opacity in Firefox. (https://github.com/tailwindlabs/tailwindcss/issues/3300)
+2. Set the default placeholder color to the user's configured gray 400 color.
+*/
+
+input::-moz-placeholder, textarea::-moz-placeholder {
+  opacity: 1; /* 1 */
+  color: #9ca3af; /* 2 */
+}
+
+input::placeholder,
+textarea::placeholder {
+  opacity: 1; /* 1 */
+  color: #9ca3af; /* 2 */
+}
+
+/*
+Set the default cursor for buttons.
+*/
+
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+/*
+Make sure disabled buttons don't get the pointer cursor.
+*/
+:disabled {
+  cursor: default;
+}
+
+/*
+1. Make replaced elements `display: block` by default. (https://github.com/mozdevs/cssremedy/issues/14)
+2. Add `vertical-align: middle` to align replaced elements more sensibly by default. (https://github.com/jensimmons/cssremedy/issues/14#issuecomment-634934210)
+   This can trigger a poorly considered lint error in some tools but is included by design.
+*/
+
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block; /* 1 */
+  vertical-align: middle; /* 2 */
+}
+
+/*
+Constrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)
+*/
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Make elements with the HTML hidden attribute stay hidden by default */
+[hidden]:where(:not([hidden="until-found"])) {
+  display: none;
+}
+.\!container {
+  width: 100% !important;
+}
+.container {
+  width: 100%;
+}
+@media (min-width: 640px) {
+
+  .\!container {
+    max-width: 640px !important;
+  }
+
+  .container {
+    max-width: 640px;
+  }
+}
+@media (min-width: 768px) {
+
+  .\!container {
+    max-width: 768px !important;
+  }
+
+  .container {
+    max-width: 768px;
+  }
+}
+@media (min-width: 1024px) {
+
+  .\!container {
+    max-width: 1024px !important;
+  }
+
+  .container {
+    max-width: 1024px;
+  }
+}
+@media (min-width: 1280px) {
+
+  .\!container {
+    max-width: 1280px !important;
+  }
+
+  .container {
+    max-width: 1280px;
+  }
+}
+@media (min-width: 1536px) {
+
+  .\!container {
+    max-width: 1536px !important;
+  }
+
+  .container {
+    max-width: 1536px;
+  }
+}
+.visible {
+  visibility: visible;
+}
+.collapse {
+  visibility: collapse;
+}
+.fixed {
+  position: fixed;
+}
+.absolute {
+  position: absolute;
+}
+.relative {
+  position: relative;
+}
+.sticky {
+  position: sticky;
+}
+.left-2\.5 {
+  left: 0.625rem;
+}
+.left-3 {
+  left: 0.75rem;
+}
+.right-4 {
+  right: 1rem;
+}
+.top-1\/2 {
+  top: 50%;
+}
+.top-4 {
+  top: 1rem;
+}
+.z-\[999\] {
+  z-index: 999;
+}
+.col-span-2 {
+  grid-column: span 2 / span 2;
+}
+.mx-1 {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+.mb-0\.5 {
+  margin-bottom: 0.125rem;
+}
+.mb-1 {
+  margin-bottom: 0.25rem;
+}
+.mb-1\.5 {
+  margin-bottom: 0.375rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mb-5 {
+  margin-bottom: 1.25rem;
+}
+.ml-0\.5 {
+  margin-left: 0.125rem;
+}
+.ml-1 {
+  margin-left: 0.25rem;
+}
+.ml-auto {
+  margin-left: auto;
+}
+.mr-0\.5 {
+  margin-right: 0.125rem;
+}
+.mr-1 {
+  margin-right: 0.25rem;
+}
+.mr-1\.5 {
+  margin-right: 0.375rem;
+}
+.mr-2 {
+  margin-right: 0.5rem;
+}
+.mt-0\.5 {
+  margin-top: 0.125rem;
+}
+.mt-1 {
+  margin-top: 0.25rem;
+}
+.mt-1\.5 {
+  margin-top: 0.375rem;
+}
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-3 {
+  margin-top: 0.75rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+.mt-5 {
+  margin-top: 1.25rem;
+}
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.block {
+  display: block;
+}
+.inline-block {
+  display: inline-block;
+}
+.flex {
+  display: flex;
+}
+.inline-flex {
+  display: inline-flex;
+}
+.table {
+  display: table;
+}
+.grid {
+  display: grid;
+}
+.hidden {
+  display: none;
+}
+.h-1\.5 {
+  height: 0.375rem;
+}
+.h-10 {
+  height: 2.5rem;
+}
+.h-11 {
+  height: 2.75rem;
+}
+.h-12 {
+  height: 3rem;
+}
+.h-14 {
+  height: 3.5rem;
+}
+.h-16 {
+  height: 4rem;
+}
+.h-2 {
+  height: 0.5rem;
+}
+.h-2\.5 {
+  height: 0.625rem;
+}
+.h-3 {
+  height: 0.75rem;
+}
+.h-4 {
+  height: 1rem;
+}
+.h-7 {
+  height: 1.75rem;
+}
+.h-8 {
+  height: 2rem;
+}
+.h-full {
+  height: 100%;
+}
+.h-screen {
+  height: 100vh;
+}
+.w-10 {
+  width: 2.5rem;
+}
+.w-11 {
+  width: 2.75rem;
+}
+.w-12 {
+  width: 3rem;
+}
+.w-14 {
+  width: 3.5rem;
+}
+.w-16 {
+  width: 4rem;
+}
+.w-2 {
+  width: 0.5rem;
+}
+.w-2\.5 {
+  width: 0.625rem;
+}
+.w-20 {
+  width: 5rem;
+}
+.w-36 {
+  width: 9rem;
+}
+.w-48 {
+  width: 12rem;
+}
+.w-7 {
+  width: 1.75rem;
+}
+.w-8 {
+  width: 2rem;
+}
+.w-fit {
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.w-full {
+  width: 100%;
+}
+.w-px {
+  width: 1px;
+}
+.min-w-0 {
+  min-width: 0px;
+}
+.min-w-\[200px\] {
+  min-width: 200px;
+}
+.max-w-\[1400px\] {
+  max-width: 1400px;
+}
+.flex-1 {
+  flex: 1 1 0%;
+}
+.flex-shrink {
+  flex-shrink: 1;
+}
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+.border-collapse {
+  border-collapse: collapse;
+}
+.-translate-y-1\/2 {
+  --tw-translate-y: -50%;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.transform {
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.resize {
+  resize: both;
+}
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.grid-cols-\[1fr_280px\] {
+  grid-template-columns: 1fr 280px;
+}
+.flex-col {
+  flex-direction: column;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.items-start {
+  align-items: flex-start;
+}
+.items-center {
+  align-items: center;
+}
+.justify-end {
+  justify-content: flex-end;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-1 {
+  gap: 0.25rem;
+}
+.gap-1\.5 {
+  gap: 0.375rem;
+}
+.gap-2 {
+  gap: 0.5rem;
+}
+.gap-2\.5 {
+  gap: 0.625rem;
+}
+.gap-3 {
+  gap: 0.75rem;
+}
+.gap-4 {
+  gap: 1rem;
+}
+.gap-5 {
+  gap: 1.25rem;
+}
+.space-y-1\.5 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.375rem * var(--tw-space-y-reverse));
+}
+.space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
+}
+.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
+}
+.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+}
+.overflow-hidden {
+  overflow: hidden;
+}
+.overflow-x-auto {
+  overflow-x: auto;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rounded {
+  border-radius: 0.25rem;
+}
+.rounded-2xl {
+  border-radius: 1rem;
+}
+.rounded-full {
+  border-radius: 9999px;
+}
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+.border {
+  border-width: 1px;
+}
+.border-2 {
+  border-width: 2px;
+}
+.border-4 {
+  border-width: 4px;
+}
+.border-b {
+  border-bottom-width: 1px;
+}
+.border-l-2 {
+  border-left-width: 2px;
+}
+.border-l-4 {
+  border-left-width: 4px;
+}
+.border-t {
+  border-top-width: 1px;
+}
+.border-dashed {
+  border-style: dashed;
+}
+.border-amber-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(254 243 199 / var(--tw-border-opacity, 1));
+}
+.border-amber-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(252 211 77 / var(--tw-border-opacity, 1));
+}
+.border-amber-500 {
+  --tw-border-opacity: 1;
+  border-color: rgb(245 158 11 / var(--tw-border-opacity, 1));
+}
+.border-blue-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(219 234 254 / var(--tw-border-opacity, 1));
+}
+.border-blue-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(191 219 254 / var(--tw-border-opacity, 1));
+}
+.border-emerald-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(167 243 208 / var(--tw-border-opacity, 1));
+}
+.border-emerald-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(110 231 183 / var(--tw-border-opacity, 1));
+}
+.border-emerald-500 {
+  --tw-border-opacity: 1;
+  border-color: rgb(16 185 129 / var(--tw-border-opacity, 1));
+}
+.border-red-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(254 226 226 / var(--tw-border-opacity, 1));
+}
+.border-red-500 {
+  --tw-border-opacity: 1;
+  border-color: rgb(239 68 68 / var(--tw-border-opacity, 1));
+}
+.border-slate-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(241 245 249 / var(--tw-border-opacity, 1));
+}
+.border-slate-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(226 232 240 / var(--tw-border-opacity, 1));
+}
+.border-slate-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(203 213 225 / var(--tw-border-opacity, 1));
+}
+.border-slate-400 {
+  --tw-border-opacity: 1;
+  border-color: rgb(148 163 184 / var(--tw-border-opacity, 1));
+}
+.border-transparent {
+  border-color: transparent;
+}
+.bg-amber-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 243 199 / var(--tw-bg-opacity, 1));
+}
+.bg-amber-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 251 235 / var(--tw-bg-opacity, 1));
+}
+.bg-amber-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(245 158 11 / var(--tw-bg-opacity, 1));
+}
+.bg-blue-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+}
+.bg-blue-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 246 255 / var(--tw-bg-opacity, 1));
+}
+.bg-blue-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(59 130 246 / var(--tw-bg-opacity, 1));
+}
+.bg-blue-500\/10 {
+  background-color: rgb(59 130 246 / 0.1);
+}
+.bg-blue-600 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(37 99 235 / var(--tw-bg-opacity, 1));
+}
+.bg-cyan-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(236 254 255 / var(--tw-bg-opacity, 1));
+}
+.bg-cyan-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(6 182 212 / var(--tw-bg-opacity, 1));
+}
+.bg-emerald-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(209 250 229 / var(--tw-bg-opacity, 1));
+}
+.bg-emerald-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(52 211 153 / var(--tw-bg-opacity, 1));
+}
+.bg-emerald-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(236 253 245 / var(--tw-bg-opacity, 1));
+}
+.bg-emerald-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(16 185 129 / var(--tw-bg-opacity, 1));
+}
+.bg-indigo-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(238 242 255 / var(--tw-bg-opacity, 1));
+}
+.bg-purple-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(250 245 255 / var(--tw-bg-opacity, 1));
+}
+.bg-red-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+}
+.bg-red-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
+}
+.bg-red-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 68 68 / var(--tw-bg-opacity, 1));
+}
+.bg-slate-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(241 245 249 / var(--tw-bg-opacity, 1));
+}
+.bg-slate-200 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1));
+}
+.bg-slate-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 250 252 / var(--tw-bg-opacity, 1));
+}
+.bg-slate-50\/50 {
+  background-color: rgb(248 250 252 / 0.5);
+}
+.bg-slate-800 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(30 41 59 / var(--tw-bg-opacity, 1));
+}
+.bg-slate-800\/50 {
+  background-color: rgb(30 41 59 / 0.5);
+}
+.bg-white {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
+}
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+.from-blue-500 {
+  --tw-gradient-from: #3b82f6 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(59 130 246 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-emerald-500 {
+  --tw-gradient-from: #10b981 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(16 185 129 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-slate-500 {
+  --tw-gradient-from: #64748b var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(100 116 139 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.to-blue-700 {
+  --tw-gradient-to: #1d4ed8 var(--tw-gradient-to-position);
+}
+.to-emerald-700 {
+  --tw-gradient-to: #047857 var(--tw-gradient-to-position);
+}
+.to-slate-700 {
+  --tw-gradient-to: #334155 var(--tw-gradient-to-position);
+}
+.p-1\.5 {
+  padding: 0.375rem;
+}
+.p-2 {
+  padding: 0.5rem;
+}
+.p-2\.5 {
+  padding: 0.625rem;
+}
+.p-3 {
+  padding: 0.75rem;
+}
+.p-4 {
+  padding: 1rem;
+}
+.p-5 {
+  padding: 1.25rem;
+}
+.p-6 {
+  padding: 1.5rem;
+}
+.px-0\.5 {
+  padding-left: 0.125rem;
+  padding-right: 0.125rem;
+}
+.px-1\.5 {
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
+}
+.px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+.py-1\.5 {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+.py-16 {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+.py-6 {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+.pb-0\.5 {
+  padding-bottom: 0.125rem;
+}
+.pb-3 {
+  padding-bottom: 0.75rem;
+}
+.pl-7 {
+  padding-left: 1.75rem;
+}
+.pl-8 {
+  padding-left: 2rem;
+}
+.pt-2 {
+  padding-top: 0.5rem;
+}
+.pt-3 {
+  padding-top: 0.75rem;
+}
+.pt-4 {
+  padding-top: 1rem;
+}
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+.text-4xl {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+}
+.text-5xl {
+  font-size: 3rem;
+  line-height: 1;
+}
+.text-\[10px\] {
+  font-size: 10px;
+}
+.text-\[11px\] {
+  font-size: 11px;
+}
+.text-\[6px\] {
+  font-size: 6px;
+}
+.text-\[8px\] {
+  font-size: 8px;
+}
+.text-\[9px\] {
+  font-size: 9px;
+}
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-normal {
+  font-weight: 400;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.uppercase {
+  text-transform: uppercase;
+}
+.leading-relaxed {
+  line-height: 1.625;
+}
+.leading-tight {
+  line-height: 1.25;
+}
+.tracking-wide {
+  letter-spacing: 0.025em;
+}
+.text-amber-300 {
+  --tw-text-opacity: 1;
+  color: rgb(252 211 77 / var(--tw-text-opacity, 1));
+}
+.text-amber-400 {
+  --tw-text-opacity: 1;
+  color: rgb(251 191 36 / var(--tw-text-opacity, 1));
+}
+.text-amber-500 {
+  --tw-text-opacity: 1;
+  color: rgb(245 158 11 / var(--tw-text-opacity, 1));
+}
+.text-amber-600 {
+  --tw-text-opacity: 1;
+  color: rgb(217 119 6 / var(--tw-text-opacity, 1));
+}
+.text-amber-700 {
+  --tw-text-opacity: 1;
+  color: rgb(180 83 9 / var(--tw-text-opacity, 1));
+}
+.text-blue-400 {
+  --tw-text-opacity: 1;
+  color: rgb(96 165 250 / var(--tw-text-opacity, 1));
+}
+.text-blue-500 {
+  --tw-text-opacity: 1;
+  color: rgb(59 130 246 / var(--tw-text-opacity, 1));
+}
+.text-blue-600 {
+  --tw-text-opacity: 1;
+  color: rgb(37 99 235 / var(--tw-text-opacity, 1));
+}
+.text-blue-700 {
+  --tw-text-opacity: 1;
+  color: rgb(29 78 216 / var(--tw-text-opacity, 1));
+}
+.text-cyan-600 {
+  --tw-text-opacity: 1;
+  color: rgb(8 145 178 / var(--tw-text-opacity, 1));
+}
+.text-emerald-400 {
+  --tw-text-opacity: 1;
+  color: rgb(52 211 153 / var(--tw-text-opacity, 1));
+}
+.text-emerald-500 {
+  --tw-text-opacity: 1;
+  color: rgb(16 185 129 / var(--tw-text-opacity, 1));
+}
+.text-emerald-600 {
+  --tw-text-opacity: 1;
+  color: rgb(5 150 105 / var(--tw-text-opacity, 1));
+}
+.text-emerald-700 {
+  --tw-text-opacity: 1;
+  color: rgb(4 120 87 / var(--tw-text-opacity, 1));
+}
+.text-indigo-600 {
+  --tw-text-opacity: 1;
+  color: rgb(79 70 229 / var(--tw-text-opacity, 1));
+}
+.text-orange-700 {
+  --tw-text-opacity: 1;
+  color: rgb(194 65 12 / var(--tw-text-opacity, 1));
+}
+.text-purple-600 {
+  --tw-text-opacity: 1;
+  color: rgb(147 51 234 / var(--tw-text-opacity, 1));
+}
+.text-red-400 {
+  --tw-text-opacity: 1;
+  color: rgb(248 113 113 / var(--tw-text-opacity, 1));
+}
+.text-red-500 {
+  --tw-text-opacity: 1;
+  color: rgb(239 68 68 / var(--tw-text-opacity, 1));
+}
+.text-red-600 {
+  --tw-text-opacity: 1;
+  color: rgb(220 38 38 / var(--tw-text-opacity, 1));
+}
+.text-red-700 {
+  --tw-text-opacity: 1;
+  color: rgb(185 28 28 / var(--tw-text-opacity, 1));
+}
+.text-slate-300 {
+  --tw-text-opacity: 1;
+  color: rgb(203 213 225 / var(--tw-text-opacity, 1));
+}
+.text-slate-400 {
+  --tw-text-opacity: 1;
+  color: rgb(148 163 184 / var(--tw-text-opacity, 1));
+}
+.text-slate-500 {
+  --tw-text-opacity: 1;
+  color: rgb(100 116 139 / var(--tw-text-opacity, 1));
+}
+.text-slate-600 {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity, 1));
+}
+.text-slate-700 {
+  --tw-text-opacity: 1;
+  color: rgb(51 65 85 / var(--tw-text-opacity, 1));
+}
+.text-slate-800 {
+  --tw-text-opacity: 1;
+  color: rgb(30 41 59 / var(--tw-text-opacity, 1));
+}
+.text-white {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+.opacity-60 {
+  opacity: 0.6;
+}
+.shadow-lg {
+  --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.shadow-sm {
+  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.shadow-blue-200 {
+  --tw-shadow-color: #bfdbfe;
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.shadow-blue-500\/20 {
+  --tw-shadow-color: rgb(59 130 246 / 0.2);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.shadow-cyan-500\/20 {
+  --tw-shadow-color: rgb(6 182 212 / 0.2);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.shadow-emerald-500\/20 {
+  --tw-shadow-color: rgb(16 185 129 / 0.2);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.outline {
+  outline-style: solid;
+}
+.\!ring {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color) !important;
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color) !important;
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000) !important;
+}
+.ring {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+.blur {
+  --tw-blur: blur(8px);
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+.backdrop-filter {
+  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
+}
+.transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.duration-500 {
+  transition-duration: 500ms;
+}
+
+/* ========== Base ========== */
+body {
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+/* ========== Scrollbar ========== */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ========== Sidebar ========== */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.sidebar-link.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ========== Data Cards ========== */
+.data-card {
+  transition: all 0.2s ease;
+}
+.data-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* ========== Gradient Backgrounds ========== */
+.gradient-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+.gradient-accent {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+}
+.gradient-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* ========== Pulse Dot ========== */
+.pulse-dot {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ========== Table ========== */
+.table-2 {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table-2 thead th {
+  text-align: left;
+  padding: 10px 14px;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+.table-2 tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+}
+.table-2 tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* ========== Badge ========== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ========== Modal Animation ========== */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-enter {
+  animation: modalIn 0.2s ease;
+}
+
+/* ========== Fade In ========== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ========== Slide Panel ========== */
+.slide-panel {
+  position: fixed;
+  top: 0;
+  right: -480px;
+  width: 480px;
+  height: 100%;
+  background: #fff;
+  z-index: 100;
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.12);
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+.slide-panel.open {
+  right: 0;
+}
+
+/* ========== Transitions ========== */
+.page-enter-active { animation: fadeIn 0.25s ease; }
+.page-leave-active { animation: fadeIn 0.15s ease reverse; }
+
+/* ========== Global Buttons (shared across views) ========== */
+.btn-primary {
+  background: #1e40af;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary:hover {
+  background: #1e3a8a;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #1e293b;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-outline:hover {
+  border-color: #1e40af;
+  color: #1e40af;
+}
+
+/* ========== Global Form Elements (shared across views) ========== */
+.input-field {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.2s;
+  outline: none;
+  background: #fff;
+}
+.input-field:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.select-field {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* ========== Global Badge (shared across views) ========== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ========== Tab Button (shared across views) ========== */
+.tab-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+  color: #64748b;
+}
+.tab-btn.active {
+  background: #1e40af;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
+}
+.tab-btn:hover:not(.active) {
+  background: #e2e8f0;
+}
+
+/* ========== Slide Panel (shared: investment detail, etc.) ========== */
+.slide-panel {
+  position: fixed;
+  top: 0;
+  right: -620px;
+  width: 620px;
+  height: 100%;
+  background: #fff;
+  z-index: 100;
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.12);
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+.slide-panel.open {
+  right: 0;
+}
+
+.panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 99;
+  display: none;
+}
+.panel-overlay.show {
+  display: block;
+}
+
+/* ========== Chart Bar (shared) ========== */
+.chart-bar {
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+.hover\:border-amber-200:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(253 230 138 / var(--tw-border-opacity, 1));
+}
+.hover\:border-blue-200:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(191 219 254 / var(--tw-border-opacity, 1));
+}
+.hover\:border-emerald-200:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(167 243 208 / var(--tw-border-opacity, 1));
+}
+.hover\:border-purple-200:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(233 213 255 / var(--tw-border-opacity, 1));
+}
+.hover\:bg-amber-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 243 199 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-amber-50:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 251 235 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-blue-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-blue-50:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 246 255 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-blue-50\/50:hover {
+  background-color: rgb(239 246 255 / 0.5);
+}
+.hover\:bg-blue-700:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(29 78 216 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-emerald-50:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(236 253 245 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-purple-50:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(250 245 255 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-red-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-slate-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(241 245 249 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-slate-50:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 250 252 / var(--tw-bg-opacity, 1));
+}
+.hover\:text-blue-600:hover {
+  --tw-text-opacity: 1;
+  color: rgb(37 99 235 / var(--tw-text-opacity, 1));
+}
+.hover\:text-blue-800:hover {
+  --tw-text-opacity: 1;
+  color: rgb(30 64 175 / var(--tw-text-opacity, 1));
+}
+.hover\:underline:hover {
+  text-decoration-line: underline;
+}
+.hover\:shadow-md:hover {
+  --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+</style><style type="text/css" data-vite-dev-id="D:/work2/industry-brain-web/src/views/DashboardFullView.vue?vue&amp;type=style&amp;index=0&amp;scoped=93c58603&amp;lang.css">
+.dash-full[data-v-93c58603] {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f1e42 0%, #1e3a8a 40%, #1e40af 70%, #0f1e42 100%);
+  color: #e2e8f0;
+  padding: 0;
+  position: relative;
+  overflow: auto;
+}
+
+/* Topbar */
+.dash-topbar[data-v-93c58603] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.dash-topbar-left[data-v-93c58603] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dash-logo[data-v-93c58603] {
+  width: 24px;
+  height: 24px;
+  -o-object-fit: contain;
+     object-fit: contain;
+}
+.dash-title[data-v-93c58603] {
+  font-size: 14px;
+  font-weight: 600;
+  color: #bfdbfe;
+}
+.dash-topbar-right[data-v-93c58603] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.dash-clock[data-v-93c58603] {
+  font-variant-numeric: tabular-nums;
+}
+.dash-status-dot[data-v-93c58603] {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse-93c58603 2s infinite;
+}
+
+/* Grid */
+.dash-grid[data-v-93c58603] {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+}
+.dash-card[data-v-93c58603] {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+}
+.dash-card-wide[data-v-93c58603] {
+  grid-column: span 2;
+}
+.dash-card-title[data-v-93c58603] {
+  font-size: 13px;
+  font-weight: 600;
+  color: #bfdbfe;
+  margin-bottom: 12px;
+}
+
+/* KPI */
+.dash-card-kpi[data-v-93c58603] {
+  text-align: center;
+}
+.dash-kpi-label[data-v-93c58603] {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.dash-kpi-value[data-v-93c58603] {
+  font-size: 36px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+.dash-kpi-sub[data-v-93c58603] {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Chain bars */
+.dash-chain-bars[data-v-93c58603] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dash-chain-bar-row[data-v-93c58603] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.dash-chain-bar-row span[data-v-93c58603]:first-child {
+  width: 40px;
+  color: #94a3b8;
+}
+.dash-chain-bar-row span[data-v-93c58603]:last-child {
+  width: 50px;
+  text-align: right;
+  color: #cbd5e1;
+}
+.dash-bar-track[data-v-93c58603] {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.dash-bar-fill[data-v-93c58603] {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 1s ease;
+}
+
+/* Diagnosis */
+.dash-diag-grid[data-v-93c58603] {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.dash-diag-item[data-v-93c58603] {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 8px;
+}
+
+/* Alert */
+.dash-alert[data-v-93c58603] {
+  border-radius: 6px;
+}
+
+/* Map */
+.dash-map-area[data-v-93c58603] {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: 400px;
+  opacity: 0.85;
+}
+.dash-map-img[data-v-93c58603] {
+  width: 100%;
+  -o-object-fit: contain;
+     object-fit: contain;
+}
+@keyframes pulse-93c58603 {
+0%, 100% { opacity: 1;
+}
+50% { opacity: 0.4;
+}
+}
+</style><style type="text/css" data-vite-dev-id="D:/work2/industry-brain-web/src/views/MainLayout.vue?vue&amp;type=style&amp;index=0&amp;scoped=fa0e4484&amp;lang.css">
+/* ========== Layout ========== */
+.sidebar[data-v-fa0e4484] {
+  width: 224px;
+  background: #1e3a8a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.main-area[data-v-fa0e4484] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ========== Sidebar Logo ========== */
+.sidebar-logo[data-v-fa0e4484] {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.sidebar-logo-icon[data-v-fa0e4484] {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #22d3ee, #2563eb);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.sidebar-logo-img[data-v-fa0e4484] {
+  width: 24px;
+  height: 24px;
+  -o-object-fit: contain;
+     object-fit: contain;
+}
+.sidebar-logo-title[data-v-fa0e4484] {
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.sidebar-logo-ver[data-v-fa0e4484] {
+  color: rgba(147, 197, 253, 0.4);
+  font-size: 0.625rem;
+  line-height: 1.25;
+}
+
+/* ========== Sidebar Nav ========== */
+.sidebar-nav[data-v-fa0e4484] {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+/* ========== Sidebar User ========== */
+.sidebar-user[data-v-fa0e4484] {
+  padding: 12px;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.sidebar-user-row[data-v-fa0e4484] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sidebar-user-row[data-v-fa0e4484]:hover {
+  background: rgba(255,255,255,.05);
+}
+.sidebar-user-avatar[data-v-fa0e4484] {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #60a5fa, #a855f7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.sidebar-user-info[data-v-fa0e4484] {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar-user-name[data-v-fa0e4484] {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-user-role[data-v-fa0e4484] {
+  color: rgba(147, 197, 253, 0.5);
+  font-size: 0.625rem;
+}
+.sidebar-logout-btn[data-v-fa0e4484] {
+  color: rgba(147, 197, 253, 0.4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 4px;
+  transition: color 0.15s;
+}
+.sidebar-logout-btn[data-v-fa0e4484]:hover {
+  color: #f87171;
+}
+
+/* ========== Topbar ========== */
+.topbar[data-v-fa0e4484] {
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+.topbar-left[data-v-fa0e4484] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topbar-title[data-v-fa0e4484] {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+.topbar-dot[data-v-fa0e4484] {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+.topbar-status[data-v-fa0e4484] {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+.topbar-right[data-v-fa0e4484] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+.topbar-divider[data-v-fa0e4484] {
+  width: 1px;
+  height: 16px;
+  background: #e2e8f0;
+}
+
+/* ========== Page Content ========== */
+.page-content[data-v-fa0e4484] {
+  flex: 1;
+  background: #f1f5f9;
+  overflow: auto;
+}
+
+/* ========== Page Transition ========== */
+.page-enter-active[data-v-fa0e4484] {
+  animation: fadeIn-fa0e4484 0.25s ease;
+}
+.page-leave-active[data-v-fa0e4484] {
+  animation: fadeIn-fa0e4484 0.15s ease reverse;
+}
+@keyframes fadeIn-fa0e4484 {
+from { opacity: 0; transform: translateY(8px);
+}
+to   { opacity: 1; transform: translateY(0);
+}
+}
+
+/* ========== Global Modal ========== */
+.modal-overlay[data-v-fa0e4484] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.4);
+}
+.modal-container[data-v-fa0e4484] {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  max-width: 42rem;
+  width: calc(100% - 2rem);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-header[data-v-fa0e4484] {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+}
+.modal-title[data-v-fa0e4484] {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9375rem;
+}
+.modal-close-btn[data-v-fa0e4484] {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 1rem;
+  transition: background 0.15s;
+}
+.modal-close-btn[data-v-fa0e4484]:hover {
+  background: #f1f5f9;
+}
+.modal-body[data-v-fa0e4484] {
+  padding: 1.5rem;
+}
+
+/* ========== Dashboard Overlay ========== */
+.dash-overlay[data-v-fa0e4484] {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #f1f5f9;
+}
+.dash-close-btn[data-v-fa0e4484] {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10000;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.9);
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+.dash-close-btn[data-v-fa0e4484]:hover {
+  background: #fff;
+  color: #1e293b;
+}
+.dash-frame[data-v-fa0e4484] {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+</style></head>
+<body>
+  <div id="app" data-v-app=""><div data-v-fa0e4484="" class="flex h-screen overflow-hidden"><!-- ==================== SIDEBAR ==================== --><aside data-v-fa0e4484="" class="sidebar"><!-- Logo --><div class="sidebar-logo" data-v-fa0e4484=""><div class="sidebar-logo-icon" data-v-fa0e4484=""><img src="/logo_white.png" alt="" class="sidebar-logo-img" data-v-fa0e4484=""></div><div data-v-fa0e4484=""><p class="sidebar-logo-title" data-v-fa0e4484="">产业大脑</p><p class="sidebar-logo-ver" data-v-fa0e4484="">决策引擎 v2.0</p></div></div><!-- Nav --><nav data-v-fa0e4484="" class="sidebar-nav"><a data-v-fa0e4484="" aria-current="page" href="#/home" class="active router-link-exact-active sidebar-link"><i data-v-fa0e4484="" class="fa-solid fa-house"></i>首页看板 </a><a data-v-fa0e4484="" href="#/local-enterprises" class="sidebar-link"><i data-v-fa0e4484="" class="fa-solid fa-building"></i>查看本地企业 </a><a data-v-fa0e4484="" href="#/industry" class="sidebar-link"><i data-v-fa0e4484="" class="fa-solid fa-sitemap"></i>产业链全景 </a><a data-v-fa0e4484="" href="#/diagnosis" class="sidebar-link"><i data-v-fa0e4484="" class="fa-solid fa-chart-bar"></i>强弱诊断 </a><a data-v-fa0e4484="" href="#/investment" class="sidebar-link"><i data-v-fa0e4484="" class="fa-solid fa-bullseye"></i>精准招商 </a><a data-v-fa0e4484="" href="#/reports" class="sidebar-link"><i data-v-fa0e4484="" class="fa-regular fa-file-lines"></i>招商报告 </a></nav><!-- User --><div data-v-fa0e4484="" class="sidebar-user"><div data-v-fa0e4484="" class="sidebar-user-row"><div data-v-fa0e4484="" class="sidebar-user-avatar">管</div><div data-v-fa0e4484="" class="sidebar-user-info"><p data-v-fa0e4484="" class="sidebar-user-name">管理员</p><p data-v-fa0e4484="" class="sidebar-user-role">园区运营</p></div><button data-v-fa0e4484="" class="sidebar-logout-btn" title="退出登录"><i data-v-fa0e4484="" class="fa-solid fa-right-from-bracket"></i></button></div></div></aside><!-- ==================== MAIN AREA ==================== --><div data-v-fa0e4484="" class="main-area"><!-- Top Bar --><header data-v-fa0e4484="" class="topbar"><div data-v-fa0e4484="" class="topbar-left"><h1 data-v-fa0e4484="" class="topbar-title">首页看板</h1><span data-v-fa0e4484="" class="topbar-dot pulse-dot"></span><span data-v-fa0e4484="" class="topbar-status">系统运行中</span></div><div data-v-fa0e4484="" class="topbar-right"><span data-v-fa0e4484=""><i data-v-fa0e4484="" class="fa-regular fa-clock mr-1"></i>2026-07-31 15:50</span><span data-v-fa0e4484="" class="topbar-divider"></span><span data-v-fa0e4484=""><i data-v-fa0e4484="" class="fa-regular fa-bell mr-1"></i>1</span></div></header><!-- Page Content --><div data-v-fa0e4484="" class="page-content"><div data-v-fa0e4484="" class="p-6 max-w-[1400px] mx-auto fade-in"><!-- ==================== PAGE HEADER ==================== --><div class="flex items-center justify-between mb-5"><h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-house mr-2 text-blue-600"></i>首页看板 </h2><div class="flex items-center gap-3 text-xs text-slate-400"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span> 数据更新于 2026-07-31 15:50</span><span class="w-px h-4 bg-slate-200"></span><button class="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"><i class="fa-solid fa-display text-xs"></i><span class="font-medium">全景大屏</span></button></div></div><!-- ==================== KPI CARDS (3 columns) ==================== --><div class="grid grid-cols-3 gap-4 mb-5"><!-- KPI-1: Patent --><div class="data-card bg-white rounded-xl p-5 border border-slate-100 cursor-pointer hover:shadow-md"><div class="flex items-start justify-between"><div><p class="text-slate-400 text-xs font-medium uppercase tracking-wide">专利总量</p><p class="text-3xl font-bold text-slate-800 mt-1">5,767</p><p class="text-emerald-500 text-xs mt-1"><i class="fa-regular fa-circle-check mr-0.5"></i>数据实时更新 </p></div><div class="w-11 h-11 gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20"><i class="fa-regular fa-file-lines text-white text-lg"></i></div></div><div class="mt-3 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-400"><span>发明: 2,760</span><span>实用新型: 2,970</span><span>外观: 37</span></div></div><!-- KPI-2: Enterprise --><div class="data-card bg-white rounded-xl p-5 border border-slate-100 cursor-pointer hover:shadow-md"><div class="flex items-start justify-between"><div><p class="text-slate-400 text-xs font-medium uppercase tracking-wide">企业数量</p><p class="text-3xl font-bold text-slate-800 mt-1">59,999</p><p class="text-emerald-500 text-xs mt-1"><i class="fa-regular fa-circle-check mr-0.5"></i>数据实时更新 </p></div><div class="w-11 h-11 gradient-accent rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20"><i class="fa-regular fa-building text-white text-lg"></i></div></div><div class="mt-3 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-400"><span>规上: 59,999</span><span>高新: 59,999</span><span>专精特新: 0</span></div></div><!-- KPI-3: Diagnosis --><div class="data-card bg-white rounded-xl p-5 border border-slate-100 cursor-pointer hover:shadow-md"><div class="flex items-start justify-between"><div><p class="text-slate-400 text-xs font-medium uppercase tracking-wide">强弱链诊断</p><p class="text-3xl font-bold text-slate-800 mt-1">1/88</p><p class="text-slate-400 text-xs mt-1"><i class="fa-regular fa-circle-check mr-0.5"></i>待运行诊断 </p></div><div class="w-11 h-11 gradient-success rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20"><i class="fa-solid fa-microchip text-white text-lg"></i></div></div><div class="mt-3 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-400"><span class="text-emerald-600">强链 85</span><span class="text-amber-600">补链 2</span><span class="text-red-600">弱链 1</span><span class="text-slate-400">缺链 0</span></div></div></div><!-- ==================== MIDDLE ROW: Chain Dist + Alerts ==================== --><div class="grid grid-cols-3 gap-4 mb-5"><!-- Chain Distribution (2/3) --><div class="col-span-2 bg-white rounded-xl p-5 border border-slate-100 data-card"><div class="flex items-center justify-between mb-4"><h3 class="font-semibold text-slate-800"><i class="fa-solid fa-chart-simple mr-2 text-blue-600"></i>产业链节点分布 </h3><button class="text-blue-600 text-xs hover:underline"> 查看全景 <i class="fa-solid fa-arrow-right ml-1"></i></button></div><div class="space-y-3"><div class="cursor-pointer"><div class="flex justify-between text-sm mb-1.5"><span class="text-slate-700 font-medium">上游</span><span class="text-slate-500">16 家企业</span></div><div class="h-3 bg-blue-100 rounded-full overflow-hidden"><div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 18%;"></div></div></div><div class="cursor-pointer"><div class="flex justify-between text-sm mb-1.5"><span class="text-slate-700 font-medium">中游</span><span class="text-slate-500">17 家企业</span></div><div class="h-3 bg-blue-100 rounded-full overflow-hidden"><div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 19%;"></div></div></div><div class="cursor-pointer"><div class="flex justify-between text-sm mb-1.5"><span class="text-slate-700 font-medium">下游</span><span class="text-slate-500">55 家企业</span></div><div class="h-3 bg-blue-100 rounded-full overflow-hidden"><div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 62%;"></div></div></div></div></div><!-- Alerts (1/3) --><div class="bg-white rounded-xl p-5 border border-slate-100 data-card"><h3 class="font-semibold text-slate-800 mb-4"><i class="fa-solid fa-bell mr-2 text-amber-500"></i>待处理预警 <span class="text-xs font-normal text-slate-400 ml-1">(1条)</span></h3><div class="space-y-2"><div class="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors bg-amber-50 hover:bg-amber-100"><div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100"><i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs"></i></div><div class="flex-1 min-w-0"><p class="text-xs font-medium text-slate-700">弱链预警</p><p class="text-xs text-slate-400 mt-0.5 truncate">基于企业标签聚类与专利映射自动生成</p></div></div><!--v-if--></div></div></div><!-- ==================== PARK STATS TABLE ==================== --><div class="bg-white rounded-xl p-5 border border-slate-100 data-card"><div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-slate-800"><i class="fa-solid fa-building mr-2 text-blue-600"></i>园区载体统计表 </h3><span class="text-xs text-slate-400">共 168 个园区</span></div><table class="table-2"><thead><tr><th>园区名称</th><th>类型</th><th>企业数</th><th>专利数</th><th>主导产业</th></tr></thead><tbody><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山经济技术开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>1,318</td><td>387</td><td class="text-xs text-slate-500">装备制造、绿色食品、能源电子</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山当涂经济开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>412</td><td>357</td><td class="text-xs text-slate-500">智能家电、生命健康、先进金属基材料、汽车零部件</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖国家高新技术产业开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>1,216</td><td>354</td><td class="text-xs text-slate-500">生命健康、新材料、高端装备制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖开发区新材料产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>234</td><td>68</td><td class="text-xs text-slate-500">新材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">含山经济开发区绿色铸造产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>268</td><td>284</td><td class="text-xs text-slate-500">绿色铸造、新能源汽车零部件</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市雨山工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>211</td><td>62</td><td class="text-xs text-slate-500">智能装备制造、功能性材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">红太阳生命科学工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>8</td><td>7</td><td class="text-xs text-slate-500">生命健康、生物医药</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山经开区(示范园区)</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>131</td><td>114</td><td class="text-xs text-slate-500">装备制造、绿色食品、能源电子</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">乌江金博通智造园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>123</td><td>60</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山奥克斯智能制造产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>80</td><td>69</td><td class="text-xs text-slate-500">智能家电、智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">雨山经济开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>416</td><td>122</td><td class="text-xs text-slate-500">智能装备制造、功能性材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽环保科技有限公司生产基地</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>10</td><td>3</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">中南高科马鞍山经开区创智科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>7</td><td>2</td><td class="text-xs text-slate-500">科技研发、智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">江东工业园东区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>44</td><td>13</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望新区新材料产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>288</td><td>176</td><td class="text-xs text-slate-500">新材料、特种合金</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">太白镇新桥工业集中区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>122</td><td>106</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望高新区特钢产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>96</td><td>59</td><td class="text-xs text-slate-500">特钢铸造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望东工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>373</td><td>228</td><td class="text-xs text-slate-500">机床、刃模具</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市绿装环保新材料产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>18</td><td>19</td><td class="text-xs text-slate-500">环保新材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">瑞声科技园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">电子信息</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">仙踪镇农民工业园办公室</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>14</td><td>15</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽博望高新技术产业开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>340,504</td><td>111</td><td class="text-xs text-slate-500">机床及刃模具、特种合金新材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">金家庄工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>66</td><td>19</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市雨山区创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>13</td><td>4</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望镇农民工创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>1</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山综合保税区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>15</td><td>7</td><td class="text-xs text-slate-500">加工制造、物流分拨、跨境电商</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">林海农业科技园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">现代农业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">月兔智能家居产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>30</td><td>26</td><td class="text-xs text-slate-500">智能家居</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市博望镇裕溪工业区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>154</td><td>94</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">高芯科谷-浦和智能智造产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">智能智造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">郑蒲港新区半导体产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>42</td><td>21</td><td class="text-xs text-slate-500">半导体、电子信息</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽当涂经济开发区科技创新园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>25</td><td>22</td><td class="text-xs text-slate-500">科技研发</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽精细化工产业有机合成基地</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>5</td><td>2</td><td class="text-xs text-slate-500">精细化工</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">蒙牛工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>8</td><td>2</td><td class="text-xs text-slate-500">食品加工（乳制品）</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">一商工业园(裕溪河东路)</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>1</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">石桥镇镇东工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>248</td><td>215</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽省新材料产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>4</td><td>2</td><td class="text-xs text-slate-500">新材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">高新技术产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>74</td><td>36</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">平桥开发区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>32</td><td>20</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">新市镇工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>25</td><td>15</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">广美花卉产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>6</td><td>5</td><td class="text-xs text-slate-500">花卉种植</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市农产品电子商务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>27</td><td>23</td><td class="text-xs text-slate-500">农产品电商</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山南部国际高新科技产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>205</td><td>340,522</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望5D智造谷</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>37</td><td>23</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">青岛消防工业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">消防设备</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">惊天液压破拆属具园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>1</td><td>1</td><td class="text-xs text-slate-500">液压破拆属具</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山新技术产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>5</td><td>2</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">含山县粮食产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>2</td><td class="text-xs text-slate-500">粮食加工</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">福达工业园(青山路)</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>71</td><td>21</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">雨山经济开发区智能装备产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>267</td><td>78</td><td class="text-xs text-slate-500">智能装备制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">青年电子商务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>571</td><td>168</td><td class="text-xs text-slate-500">电商和互联网产业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市数字硅谷国际产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>54</td><td>47</td><td class="text-xs text-slate-500">智能终端（笔记本电脑、智能手机等）</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽梓沁食品工业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">食品加工</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富港电子(马鞍山)有限公司正威科技园1期</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>2</td><td class="text-xs text-slate-500">电子信息</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博马机械产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>31</td><td>19</td><td class="text-xs text-slate-500">机械装备</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽佳达科技工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>68</td><td>20</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县产业新城</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市钢晨物流园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>35</td><td>10</td><td class="text-xs text-slate-500">钢铁物流</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">菱瑞高新技术产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>56</td><td>34</td><td class="text-xs text-slate-500">高新技术</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">创源水蛭产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">水蛭养殖</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">顺丰丰泰产业园-马鞍山</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>82</td><td>71</td><td class="text-xs text-slate-500">快递物流</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县绿色食品加工孵化园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>13</td><td>6</td><td class="text-xs text-slate-500">绿色食品加工</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山智能装备及大数据产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">智能装备、大数据</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽慕曼德环保家具产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>1</td><td>1</td><td class="text-xs text-slate-500">环保家具</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">中国南山-第一工园-浦和智造科技园(建设中)</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>7</td><td>3</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">当涂综合经济开发区姑敦工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>12</td><td>10</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">百利威科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>3</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">郑蒲港(成都)机械电子创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>1</td><td class="text-xs text-slate-500">机械电子</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖国家高新区智能制造产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>38</td><td>11</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山创客+文创园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>240</td><td>70</td><td class="text-xs text-slate-500">文化创意</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">嘉善科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>63</td><td>55</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富马智点科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>15</td><td>4</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">万石马鞍山中欧国际智造产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>5</td><td>1</td><td class="text-xs text-slate-500">国际智造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">花山创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>76</td><td>22</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">宁马青年创业谷</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>36</td><td>10</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山承接产业转移示范园区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>40</td><td>35</td><td class="text-xs text-slate-500">装备制造、绿色食品、能源电子</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">陆虎工业创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>4</td><td>3</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">郑蒲港新区现代化产业孵化园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>849</td><td>417</td><td class="text-xs text-slate-500">能源电子、装备制造、绿色食品</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山恒晟智能制造产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>4</td><td>3</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">深马华东工业科技产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>34</td><td>10</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山养颐堂石斛园区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>1</td><td class="text-xs text-slate-500">石斛种植</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山大和机械装备产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>14</td><td>9</td><td class="text-xs text-slate-500">机械装备</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖国家高新区对台创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>12</td><td>3</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博商创造智造产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>2</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">新的工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>3</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">开元新材料科技工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>1</td><td class="text-xs text-slate-500">新材料</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">九博科技创新示范园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>11</td><td>7</td><td class="text-xs text-slate-500">科技创新</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">郑蒲港新区高端电子信息装备制造产业基地</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>62</td><td>30</td><td class="text-xs text-slate-500">电子信息、装备制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">江东控股富马智赢（阳湖路）科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>156</td><td>46</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山经开区轨道交通装备产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">轨道交通装备</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富马智高科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>35</td><td>37</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖国家高新区产业合作园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>6</td><td>2</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">中国智谷·马鞍山园区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>290</td><td>85</td><td class="text-xs text-slate-500">数字经济、人工智能</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖国家高新区宁马科创园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>20</td><td>6</td><td class="text-xs text-slate-500">科技创新</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">国网马鞍山供电公司生产基地</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">电力供应</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市泰鲸包装科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>1</td><td class="text-xs text-slate-500">包装</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">智能产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>27</td><td>8</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">东华金融云计算产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">金融云计算</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">宁马青年创业谷3区</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">佳达创意软件园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>115</td><td>34</td><td class="text-xs text-slate-500">软件与信息服务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">宏宇国际工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>6</td><td>5</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">高端自动化智能装备产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>11</td><td>3</td><td class="text-xs text-slate-500">高端自动化智能装备</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">宁马青年创业谷2区</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县台湾农民创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>56</td><td>28</td><td class="text-xs text-slate-500">现代农业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">运满满智慧园区</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">智慧物流</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">含山经济开发区科技企业孵化器</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>5</td><td>5</td><td class="text-xs text-slate-500">科技孵化</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山软件园(国家级科技企业孵化园)</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>394</td><td>115</td><td class="text-xs text-slate-500">软件和信息服务、云计算、大数据、人工智能、低空经济</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">睿赢科技青年创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>33</td><td>10</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">含山县创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>151</td><td>160</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">慈湖国家高新区科技企业孵化器</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>375</td><td>109</td><td class="text-xs text-slate-500">科技孵化</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">福昌工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>99</td><td>29</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">含山县运漕镇农民工创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>4</td><td>4</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">晶彩文创园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">文化创意</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市粮油产业创业孵化器</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">粮油产业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">格基云谷(马鞍山)电子商务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>216</td><td>63</td><td class="text-xs text-slate-500">电子商务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马钢利民创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>6</td><td>2</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县经济开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>20</td><td>10</td><td class="text-xs text-slate-500">新材料、智能装备制造、新能源</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县国际电子商务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>45</td><td>22</td><td class="text-xs text-slate-500">电子商务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富马智器科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>4</td><td>1</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市人力资源服务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>14</td><td>4</td><td class="text-xs text-slate-500">人力资源服务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">金桥物流</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>1</td><td class="text-xs text-slate-500">物流</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">众一创意街区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>53</td><td>16</td><td class="text-xs text-slate-500">文化创意</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">海特尔科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>3</td><td>1</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">陶庄创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>75</td><td>22</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">天一文化园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>22</td><td>6</td><td class="text-xs text-slate-500">文化</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">众一2011科技创意园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">食宝含山乐淘陶电商创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>1</td><td>1</td><td class="text-xs text-slate-500">电商</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市大学生创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>141</td><td>41</td><td class="text-xs text-slate-500">大学生创业孵化</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽省天顺联合(乌溪)物流园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">物流</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">顺宇科技大厦（邦宁数字经济产业园）</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>83</td><td>24</td><td class="text-xs text-slate-500">数字经济</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望经济开发区</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>1</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽省含山县清溪工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>2</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富马智联科技创业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>232</td><td>68</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山电子商务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>158</td><td>46</td><td class="text-xs text-slate-500">电子商务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">当涂现代农业示范园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>13</td><td>11</td><td class="text-xs text-slate-500">现代农业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽省地理信息(马鞍山)产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>43</td><td>13</td><td class="text-xs text-slate-500">地理信息</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽浙阿跨境电商园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">跨境电商</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽腾亚环控制造产业园(建设中)</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">环保制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山法律服务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>54</td><td>16</td><td class="text-xs text-slate-500">法律服务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山经开区人力资源服务产业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>2</td><td>1</td><td class="text-xs text-slate-500">人力资源服务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽合山经济开发区西区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">轻量化新材料、新能源汽车零部件</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽合山经济开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">轻量化新材料、新能源汽车零部件</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">幸福里和县创客园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>22</td><td>11</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县历阳镇农民工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>16</td><td>8</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和县扶持壮大村集体经济合作园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">江北乌江新区智能制造产业孵化</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">智能制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">当涂青年创业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">浦和产业合作示范园区</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">产业合作</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山国家农业科技园区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">现代农业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">台州(含山)高端装备制造产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">高端装备制造</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">和众创道智汇产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽省和县国家现代农业产业园</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">现代农业</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">永裕云商互联网电商产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">互联网电商</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽和县经济开发区</td><td><span class="badge bg-blue-50 text-blue-600">核心园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">新材料、智能装备制造、新能源</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">马鞍山市博望区特钢产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">特钢</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">当涂青山河高新技术产业园区</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">含山县电子商务产业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">电子商务</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">安徽省精细化工产业基地</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">精细化工</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望高新区丹阳工业区</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">阿里巴巴电商园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">电商</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">留学生创业园（太白大道）</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">留学人员创业孵化</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">江南大健康科技园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>0</td><td>0</td><td class="text-xs text-slate-500">生命健康、大健康</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富马智新科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>6</td><td>5</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">富马智造科技园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>18</td><td>11</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">博望高新区新市工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>9</td><td>6</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">太白镇工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>1</td><td>1</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">历阳工业园</td><td><span class="badge bg-indigo-50 text-indigo-600">孵化园区</span></td><td>1</td><td>0</td><td class="text-xs text-slate-500">-</td></tr><tr><td class="font-medium cursor-pointer hover:text-blue-600 transition-colors">乌江工业园</td><td><span class="badge bg-amber-50 text-amber-600">特色园区</span></td><td>57</td><td>28</td><td class="text-xs text-slate-500">-</td></tr></tbody></table></div></div></div></div><!-- ==================== GLOBAL MODAL ==================== --><!--teleport start--><!--teleport end--></div></div>
+  <script type="module" src="/src/main.js"></script>
+
+
+<!--v-if--><!-- ==================== FULLSCREEN DASHBOARD OVERLAY ==================== --><!--v-if--></body></html>

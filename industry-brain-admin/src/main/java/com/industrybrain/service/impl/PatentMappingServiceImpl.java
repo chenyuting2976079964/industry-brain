@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-
 /**
  * A1: 专利→产业链节点智能映射引擎 (v2.0)
  * 三通道混合架构: 规则匹配 + 语义向量 + 先验映射
@@ -20,11 +19,11 @@ import java.util.*;
 public class PatentMappingServiceImpl implements IPatentMappingService {
 
     private final IpcChainMappingMapper ipcChainMappingMapper;
-    private final PatentNodeMappingMapper patentNodeMappingMapper;
+    private final PatentNodeMapper patentNodeMapper;
     private final ChainNodeMapper chainNodeMapper;
 
     private static final double[] W_HIGH_CONFIDENCE = {0.6, 0.3, 0.1};
-    private static final double[] W_MEDIUM_CONFIDENCE = {0.5, 0.4, 0.1};
+    private static final double[] W_MEDIUM_CONFIDENCE = {0.9, 0.05, 0.05};
     private static final double[] W_LOW_IPC = {0.3, 0.6, 0.1};
     private static final double[] W_NO_IPC = {0.1, 0.8, 0.1};
     private static final double[] W_PRIOR_HIGH = {0.2, 0.1, 0.7};
@@ -119,11 +118,11 @@ public class PatentMappingServiceImpl implements IPatentMappingService {
 
         // Layer 3: 申请人企业→历史映射 (权重 0.1)
         if (patent.getApplicantEnterpriseId() != null) {
-            List<PatentNodeMapping> entMappings = patentNodeMappingMapper.selectByEnterpriseId(patent.getApplicantEnterpriseId());
+            List<PatentNode> entMappings = patentNodeMapper.selectByEnterpriseId(patent.getApplicantEnterpriseId());
             if (entMappings != null && !entMappings.isEmpty()) {
                 Map<Long, Long> freqMap = new LinkedHashMap<>();
                 long total = 0;
-                for (PatentNodeMapping m : entMappings) {
+                for (PatentNode m : entMappings) {
                     freqMap.merge(m.getNodeId(), 1L, Long::sum);
                     total++;
                 }
@@ -138,16 +137,14 @@ public class PatentMappingServiceImpl implements IPatentMappingService {
             }
         }
 
-        // Layer 4: 先验映射 (权重 0.05)
-        List<PatentNodeMapping> priorMappings = patentNodeMappingMapper.selectByPatentId(patent.getId());
+        // Layer 4: 先验映射 (权重 0.05) — patent_node 表无置信度字段，按存在即记 0.9
+        List<PatentNode> priorMappings = patentNodeMapper.selectByPatentId(patent.getId());
         if (priorMappings != null) {
-            for (PatentNodeMapping m : priorMappings) {
-                if (m.getMappingConfidence() == null) continue;
+            for (PatentNode m : priorMappings) {
                 subScores.computeIfAbsent(m.getNodeId(), k -> new double[4]);
                 double[] scores = subScores.get(m.getNodeId());
-                scores[3] = Math.max(scores[3], Math.min(m.getMappingConfidence().doubleValue(), 1.0));
-                evidenceMap.merge(m.getNodeId(), "PRIOR:历史conf=" + String.format("%.2f", m.getMappingConfidence()),
-                    (a, b) -> a + "; " + b);
+                scores[3] = Math.max(scores[3], 0.9);
+                evidenceMap.merge(m.getNodeId(), "PRIOR:历史映射", (a, b) -> a + "; " + b);
             }
         }
 
@@ -183,11 +180,9 @@ public class PatentMappingServiceImpl implements IPatentMappingService {
 
     // ─── Channel 3: 先验映射 ───
     private double getPriorScore(Long patentId) {
-        List<PatentNodeMapping> existing = patentNodeMappingMapper.selectByPatentId(patentId);
+        List<PatentNode> existing = patentNodeMapper.selectByPatentId(patentId);
         if (existing == null || existing.isEmpty()) return 0.0;
-        return existing.stream().filter(m -> "HIGH".equals(m.getConfidenceLevel())).findFirst()
-            .map(m -> Math.min(m.getMappingConfidence() != null ? m.getMappingConfidence().doubleValue() : 0.0, 1.0))
-            .orElse(0.0);
+        return 0.9;
     }
 
     private double[] selectWeights(RuleScoreResult rule, VectorScoreResult vector, double priorScore) {

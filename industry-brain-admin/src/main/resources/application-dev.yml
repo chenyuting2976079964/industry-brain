@@ -32,6 +32,11 @@ spring:
         max-active: 200
         max-idle: 20
         min-idle: 5
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USERNAME:neo4j}
+      password: ${NEO4J_PASSWORD:neo4j123}
 
 redis:
   enabled: true
@@ -48,23 +53,23 @@ jwt:
   expiration: ${JWT_EXPIRATION:604800}
 
 elasticsearch:
-  enabled: false
+  enabled: true
   host: ${ELASTICSEARCH_HOST:localhost}
   port: ${ELASTICSEARCH_PORT:9200}
   scheme: http
 
 neo4j:
-  enabled: false
+  enabled: true
   uri: ${NEO4J_URI:bolt://localhost:7687}
   username: ${NEO4J_USERNAME:neo4j}
   password: ${NEO4J_PASSWORD:neo4j123}
 
 minio:
-  enabled: false
+  enabled: true
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin123}
-  bucket-name: default
+  bucket-name: ${MINIO_BUCKET_NAME:default}
   report-bucket: ${MINIO_REPORT_BUCKET:reports}
   attachment-bucket: ${MINIO_ATTACH_BUCKET:attachments}
   data-import-bucket: ${MINIO_IMPORT_BUCKET:data-import}
