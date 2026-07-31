@@ -18,7 +18,7 @@ public interface IPatentMappingService {
     }
 
     @lombok.Data
-    class MappingResult {
+    static class MappingResult {
         private Long patentId;
         private Long nodeId;
         private Double confidence;
