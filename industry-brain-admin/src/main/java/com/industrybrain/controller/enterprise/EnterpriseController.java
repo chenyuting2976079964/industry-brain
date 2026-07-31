@@ -1,6 +1,7 @@
 package com.industrybrain.controller.enterprise;
 
 import com.industrybrain.common.core.domain.AjaxResult;
+import com.industrybrain.domain.model.Enterprise;
 import com.industrybrain.dto.PageResponse;
 import com.industrybrain.dto.response.*;
 import com.industrybrain.service.IEnterpriseService;
@@ -73,14 +74,14 @@ public class EnterpriseController {
 
     /** 按企业类型查询企业列表 */
     @GetMapping("/listByType")
-    public AjaxResult listByType(@Param("type") String type) {
+    public AjaxResult listByType(@RequestParam("type") String type) {
         List<Enterprise> enterprises = appService.getEnterprisesByType(type);
         return AjaxResult.success(enterprises);
     }
 
     /** 按企业类型统计企业数 */
     @GetMapping("/countByType")
-    public AjaxResult countByType(@Param("type") String type) {
+    public AjaxResult countByType(@RequestParam("type") String type) {
         Long count = appService.getEnterprisesCountByType(type);
         return AjaxResult.success(Map.of("count", count, "type", type));
     }

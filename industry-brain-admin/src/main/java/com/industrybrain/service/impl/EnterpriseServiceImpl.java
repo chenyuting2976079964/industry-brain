@@ -383,21 +383,6 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         return isLocal != null && isLocal == 1 ? "本地园区" : "外地";
     }
 
-    @Override
-    public List<Enterprise> getEnterprisesByType(String type) {
-        return enterpriseMapper.selectByType(type);
-    }
-
-    @Override
-    public Long getEnterprisesCountByType(String type) {
-        return enterpriseMapper.selectCountByType(type);
-    }
-
-    @Override
-    public List<Map<String, Object>> getEnterpriseTypeStats() {
-        return enterpriseMapper.selectTypeStats();
-    }
-
     private EnterpriseDetailResponse toDetailResponse(com.industrybrain.domain.model.Enterprise ent) {
         EnterpriseDetailResponse vo = new EnterpriseDetailResponse();
         vo.setId(ent.getId());

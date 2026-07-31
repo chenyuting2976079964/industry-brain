@@ -1,6 +1,7 @@
 package com.industrybrain.common.typehandler;
 
 import org.apache.ibatis.type.*;
+import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -36,27 +37,9 @@ public class EnterpriseTypeHandler implements TypeHandler<String> {
     }
 
     @Override
-    public String getResult(ResultSet rs) throws SQLException {
-        String value = rs.getString(1);
+    public String getResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String value = cs.getString(columnIndex);
         return value == null ? "" : value.trim();
-    }
-
-    @Override
-    public Object getResult(ResultsMap resultsMap, String columnName) {
-        String value = (String) resultsMap.get(columnName);
-        return value == null ? "" : value.trim();
-    }
-
-    @Override
-    public Object getResult(ResultsMap resultsMap, int columnIndex) {
-        Object value = resultsMap.get(columnIndex);
-        return value == null ? "" : String.valueOf(value).trim();
-    }
-
-    @Override
-    public Object getResult(ResultsMap resultsMap) {
-        Object value = resultsMap.getResult("enterprise_type");
-        return value == null ? "" : String.valueOf(value).trim();
     }
 }
 
