@@ -50,7 +50,7 @@
     <div class="flex items-center justify-between mb-3">
       <p class="text-sm text-slate-500">共 <strong class="text-blue-600">{{ filteredEnterprises.length }}</strong> 条结果</p>
       <div class="flex items-center gap-2 text-xs text-slate-400">
-        <span :class="['cursor-pointer', viewMode === 'grid' ? 'text-blue-600' : 'hover:text-blue-600']" @click="viewMode = 'grid'"><i class="fa-solid fa-grid-2"></i></span>
+        <span :class="['cursor-pointer', viewMode === 'grid' ? 'text-blue-600' : 'hover:text-blue-600']" @click="viewMode = 'grid'"><i class="fa-solid fa-table-cells"></i></span>
         <span :class="['cursor-pointer', viewMode === 'list' ? 'text-blue-600' : 'hover:text-blue-600']" @click="viewMode = 'list'"><i class="fa-solid fa-list"></i></span>
       </div>
     </div>
