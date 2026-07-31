@@ -104,34 +104,32 @@
     <div class="space-y-3">
       <div
         v-for="ent in displayList"
-        :key="ent.id"
+        :key="ent.recommendationId"
         class="enterprise-card bg-white rounded-xl p-5 border border-slate-100"
       >
         <div class="flex items-start justify-between">
           <!-- Left: company info -->
           <div class="flex items-start gap-4 flex-1">
             <div
-              class="w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0"
-              :class="ent.gradient"
+              class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0"
+              :style="{ background: gradientFor(ent.initial) }"
             >
               {{ ent.initial }}
             </div>
             <div class="flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="font-semibold text-slate-800">{{ ent.name }}</h3>
+                <h3 class="font-semibold text-slate-800">{{ ent.enterpriseName }}</h3>
                 <span
                   v-for="(tag, i) in ent.tags"
                   :key="i"
                   class="badge text-xs"
                   :class="ent.tagStyles[i]"
                 >{{ tag }}</span>
-                <span v-if="ent.badge3" class="badge text-xs" :class="ent.badge3Style">{{ ent.badge3 }}</span>
               </div>
-              <p class="text-xs text-slate-400 mt-1">{{ ent.desc }}</p>
+              <p class="text-xs text-slate-400 mt-1">{{ ent.description || ent.location || '' }}</p>
               <div class="flex gap-3 mt-1.5 text-xs text-slate-500">
-                <span><i class="fa-regular fa-file-lines mr-1"></i>{{ ent.patentCount }}项</span>
-                <span><i class="fa-regular fa-building mr-1"></i>{{ ent.year }}年</span>
-                <span><i class="fa-regular fa-user mr-1"></i>{{ ent.employees }}</span>
+                <span><i class="fa-solid fa-sitemap mr-1"></i>{{ ent.nodeName || '未知节点' }}</span>
+                <span><i class="fa-regular fa-circle-dot mr-1"></i>{{ ent.diagnosisTag || '' }}</span>
               </div>
             </div>
           </div>
@@ -145,42 +143,44 @@
         </div>
 
         <!-- Match Reasons -->
-        <div class="mt-3 pt-3 border-t border-slate-100">
+        <div class="mt-3 pt-3 border-t border-slate-100" v-if="ent.matchReasons && ent.matchReasons.length">
           <div class="flex items-center gap-1 text-xs text-slate-400 mb-2 flex-wrap">
             <span class="font-medium text-slate-600">匹配理由：</span>
             <template v-for="(reason, ri) in ent.matchReasons" :key="ri">
-              <span class="px-1.5 py-0.5 rounded" :class="reason.color">{{ reason.text }}</span>
+              <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{{ reason }}</span>
               <span v-if="ri < ent.matchReasons.length - 1" class="text-slate-300">→</span>
             </template>
           </div>
+        </div>
 
-          <!-- Metric Bars -->
+        <!-- Metric Bars -->
+        <div class="mt-3 pt-3 border-t border-slate-100">
           <div class="grid grid-cols-3 gap-3">
             <div class="bg-slate-50 rounded-lg p-2.5">
               <p class="text-xs text-slate-400">技术匹配度</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" :style="{ width: ent.matchScore + '%' }"></div>
+                  <div class="h-full bg-emerald-500 rounded-full" :style="{ width: (ent.matchScore || 0) + '%' }"></div>
                 </div>
-                <span class="text-xs font-medium">{{ ent.matchScore }}%</span>
+                <span class="text-xs font-medium">{{ ent.matchScore || 0 }}%</span>
               </div>
             </div>
             <div class="bg-slate-50 rounded-lg p-2.5">
               <p class="text-xs text-slate-400">专利实力</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-blue-500 rounded-full transition-all duration-500" :style="{ width: ent.patentScore + '%' }"></div>
+                  <div class="h-full bg-blue-500 rounded-full" :style="{ width: (ent.patentStrengthScore || 0) + '%' }"></div>
                 </div>
-                <span class="text-xs font-medium">{{ ent.patentScore }}%</span>
+                <span class="text-xs font-medium">{{ ent.patentStrengthScore || 0 }}%</span>
               </div>
             </div>
             <div class="bg-slate-50 rounded-lg p-2.5">
               <p class="text-xs text-slate-400">产业带动潜力</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-cyan-500 rounded-full transition-all duration-500" :style="{ width: ent.driveScore + '%' }"></div>
+                  <div class="h-full bg-cyan-500 rounded-full" :style="{ width: (ent.drivingPotentialScore || 0) + '%' }"></div>
                 </div>
-                <span class="text-xs font-medium">{{ ent.driveScore }}%</span>
+                <span class="text-xs font-medium">{{ ent.drivingPotentialScore || 0 }}%</span>
               </div>
             </div>
           </div>
@@ -235,14 +235,14 @@
           <!-- Company Header -->
           <div class="flex items-start gap-3 mb-4">
             <div
-              class="w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
-              :class="selectedEnt.gradient"
+              class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
+              :style="{ background: gradientFor(selectedEnt.initial) }"
             >
               {{ selectedEnt.initial }}
             </div>
             <div>
-              <p class="text-base font-bold text-slate-800">{{ selectedEnt.name }}</p>
-              <p class="text-xs text-slate-400">{{ selectedEnt.desc }}</p>
+              <p class="text-base font-bold text-slate-800">{{ selectedEnt.enterpriseName }}</p>
+              <p class="text-xs text-slate-400">{{ selectedEnt.description || selectedEnt.location || '' }}</p>
               <div class="flex flex-wrap gap-2 mt-1">
                 <span
                   v-for="(tag, i) in selectedEnt.tags"
@@ -256,10 +256,9 @@
 
           <!-- Meta Info -->
           <div class="flex flex-wrap gap-4 text-xs text-slate-500 mb-4 pb-3 border-b border-slate-100">
-            <span><i class="fa-regular fa-building mr-1"></i>成立 {{ selectedEnt.year }}年</span>
-            <span><i class="fa-solid fa-location-dot mr-1"></i>{{ selectedEnt.loc }}</span>
-            <span><i class="fa-regular fa-user mr-1"></i>{{ selectedEnt.employees }}</span>
-            <span><i class="fa-regular fa-building mr-1"></i>{{ selectedEnt.capital }}</span>
+            <span><i class="fa-solid fa-location-dot mr-1"></i>{{ selectedEnt.location || '--' }}</span>
+            <span><i class="fa-solid fa-sitemap mr-1"></i>{{ selectedEnt.nodeName || '--' }}</span>
+            <span><i class="fa-solid fa-tag mr-1"></i>{{ selectedEnt.diagnosisTag || '--' }}</span>
           </div>
 
           <!-- Stats Grid -->
@@ -416,6 +415,21 @@ const filters = reactive({
 
 const rankIcons = ['fa-crown', 'fa-2', 'fa-3', 'fa-4', 'fa-5']
 const rankColors = ['text-amber-500', 'text-slate-400', 'text-orange-700', 'text-slate-400', 'text-slate-400']
+
+const GRADIENTS = [
+  'linear-gradient(135deg, #667eea, #764ba2)',
+  'linear-gradient(135deg, #f093fb, #f5576c)',
+  'linear-gradient(135deg, #4facfe, #00f2fe)',
+  'linear-gradient(135deg, #43e97b, #38f9d7)',
+  'linear-gradient(135deg, #fa709a, #fee140)',
+  'linear-gradient(135deg, #a18cd1, #fbc2eb)',
+  'linear-gradient(135deg, #fccb90, #d57eeb)',
+  'linear-gradient(135deg, #e0c3fc, #8ec5fc)',
+]
+function gradientFor(initial) {
+  const code = (initial || '?').charCodeAt(0)
+  return GRADIENTS[code % GRADIENTS.length]
+}
 
 // ---- Init ----
 onMounted(async () => {
