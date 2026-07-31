@@ -86,4 +86,8 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
     /** 获取企业类型统计总数（所有非空类型） */
     @Select("SELECT enterprise_type, COUNT(*) as count FROM enterprise WHERE is_deleted = 0 AND enterprise_type IS NOT NULL GROUP BY enterprise_type")
     List<Map<String, Object>> selectTypeStats();
+
+    /** 按企业类型统计本地企业数（is_local=1） */
+    @Select("SELECT COUNT(*) FROM enterprise WHERE enterprise_type = #{type} AND is_local = 1 AND is_deleted = 0")
+    Long countByTypeLocal(@Param("type") String type);
 }

@@ -43,14 +43,14 @@ public interface PatentMapper extends BaseMapper<Patent> {
                            @Param("patentType") String patentType);
 
     /** 统计某企业的专利总数 */
-    long selectTotalCount(@Param("enterpriseId") Long enterpriseId);
+    long selectTotalCountByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 统计全部专利总数 (无参版本) */
     @Select("SELECT COUNT(*) FROM patent WHERE is_deleted = 0")
     long selectTotalCount();
 
     /** 统计某企业的高价值专利数量 */
-    long selectHighValueCount(@Param("enterpriseId") Long enterpriseId);
+    long selectHighValueCountByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 统计全部高价值专利数量 (无参版本) */
     @Select("SELECT COUNT(*) FROM patent WHERE maintenance_years >= 5 AND is_deleted = 0")
@@ -58,7 +58,7 @@ public interface PatentMapper extends BaseMapper<Patent> {
 
 
     /** 查询某企业的高价值专利 Top 5 (带参版本) */
-    List<Patent> selectTop5HighValue(@Param("enterpriseId") Long enterpriseId);
+    List<Patent> selectTop5HighValueByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 查询全局高价值专利 Top 5 (无参版本) */
     @Select("SELECT id, patent_number, patent_name, applicant, maintenance_years FROM patent " +
@@ -66,7 +66,7 @@ public interface PatentMapper extends BaseMapper<Patent> {
     List<Map<String, Object>> selectTop5HighValue();
 
     /** 按技术领域统计专利分布 (带参版本) */
-    List<Map<String, Object>> selectTechDistribution(@Param("enterpriseId") Long enterpriseId);
+    List<Map<String, Object>> selectTechDistributionByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 按技术领域统计专利分布 (无参版本) */
     @Select("SELECT ipc_main AS techField, COUNT(DISTINCT applicant_enterprise_id) AS enterpriseCount " +

@@ -146,7 +146,7 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
         log.info("Step3a: IPC交集 = {}, 加分 = {}", ipcIntersection.size(), String.format("%.2f", ipcBonus));
 
         // 3b. 高价值专利加分
-        long highValueCount = patentMapper.selectHighValueCount(enterpriseId);
+        long highValueCount = patentMapper.selectHighValueCountByEnterprise(enterpriseId);
         double patentBonus = 0.0;
         if (highValueCount > 50) {
             patentBonus = HIGH_VALUE_50_BONUS;
