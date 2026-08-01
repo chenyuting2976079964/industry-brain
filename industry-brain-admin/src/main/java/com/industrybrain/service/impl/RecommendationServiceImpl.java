@@ -7,6 +7,8 @@ import com.industrybrain.domain.model.IndustryChain;
 import com.industrybrain.domain.model.IndustryChainNode;
 import com.industrybrain.domain.model.InvestmentRecommendation;
 import com.industrybrain.domain.model.MatchScoreResult;
+import com.industrybrain.domain.model.NodeDiagnosis;
+import com.industrybrain.domain.model.Region;
 import com.industrybrain.domain.model.ReportRecord;
 import com.industrybrain.dto.request.*;
 import com.industrybrain.dto.response.*;
@@ -98,6 +100,15 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
     @Resource
     private ReportMapper reportMapper;
+
+    @Resource
+    private NodeDiagnosisMapper nodeDiagnosisMapper;
+
+    @Resource
+    private RegionMapper regionMapper;
+
+    @Resource
+    private ChainNodeMapper chainNodeMapper;
 
     // ==================== 公开方法 ====================
 
@@ -474,15 +485,31 @@ public class RecommendationServiceImpl implements IRecommendationService {
         int size = request.getSize() != null ? request.getSize() : 10;
         int offset = (page - 1) * size;
 
-        List<InvestmentRecommendation> list = recommendationMapper.selectMatchList(
-                null, request.getWeakness(), request.getMatchMin(),
-                request.getScale(), request.getSortBy(), request.getKeyword(),
-                request.getNodeId(), request.getTab(), offset, size);
-
+        // 空表时自动触发全量匹配生成（仅第一页、无筛选条件时）
         int total = recommendationMapper.countMatchList(
                 null, request.getWeakness(), request.getMatchMin(),
                 request.getScale(), request.getSortBy(), request.getKeyword(),
                 request.getNodeId(), request.getTab());
+
+        if (total == 0 && page == 1
+                && (request.getWeakness() == null || "all".equals(request.getWeakness()))
+                && (request.getMatchMin() == null || request.getMatchMin() <= 0)
+                && request.getKeyword() == null
+                && request.getNodeId() == null) {
+            log.info("=== 招商推荐表为空，自动触发生成 ===");
+            int generated = autoGenerateAll();
+            log.info("=== 自动生成完成，共 {} 条 ===", generated);
+            // 重新计数
+            total = recommendationMapper.countMatchList(
+                    null, request.getWeakness(), request.getMatchMin(),
+                    request.getScale(), request.getSortBy(), request.getKeyword(),
+                    request.getNodeId(), request.getTab());
+        }
+
+        List<InvestmentRecommendation> list = recommendationMapper.selectMatchList(
+                null, request.getWeakness(), request.getMatchMin(),
+                request.getScale(), request.getSortBy(), request.getKeyword(),
+                request.getNodeId(), request.getTab(), offset, size);
 
         InvestmentMatchResponse response = new InvestmentMatchResponse();
         response.setTotal(total);
@@ -493,6 +520,73 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 .collect(Collectors.toList()));
 
         return response;
+    }
+
+    /**
+     * 自动生成全量招商推荐数据
+     * 遍历所有弱链/缺链节点，为每个节点匹配企业并计算三维度评分
+     * @return 生成的记录数
+     */
+    private int autoGenerateAll() {
+        int generated = 0;
+
+        // 1. 查询弱链 + 缺链节点
+        List<NodeDiagnosis> weakNodes = nodeDiagnosisMapper.selectByTag("弱链");
+        List<NodeDiagnosis> missingNodes = nodeDiagnosisMapper.selectByTag("缺链");
+
+        Set<Long> processedNodeIds = new HashSet<>();
+        List<NodeDiagnosis> targetNodes = new ArrayList<>();
+        if (weakNodes != null) {
+            for (NodeDiagnosis nd : weakNodes) {
+                if (processedNodeIds.add(nd.getNodeId())) targetNodes.add(nd);
+            }
+        }
+        if (missingNodes != null) {
+            for (NodeDiagnosis nd : missingNodes) {
+                if (processedNodeIds.add(nd.getNodeId())) targetNodes.add(nd);
+            }
+        }
+
+        log.info("待匹配节点: {} 个 (弱链{} + 缺链{})",
+                targetNodes.size(),
+                weakNodes != null ? weakNodes.size() : 0,
+                missingNodes != null ? missingNodes.size() : 0);
+
+        // 2. 获取全部企业
+        List<com.industrybrain.domain.model.Enterprise> allEnterprises = enterpriseMapper.selectList(null);
+        log.info("候选企业: {} 家", allEnterprises != null ? allEnterprises.size() : 0);
+
+        if (allEnterprises == null || allEnterprises.isEmpty() || targetNodes.isEmpty()) {
+            return 0;
+        }
+
+        // 3. 对每个节点-企业对计算匹配度并写入
+        for (NodeDiagnosis nd : targetNodes) {
+            // 获取需求方省份
+            String demandProvince = null;
+            try {
+                if (nd.getRegionId() != null) {
+                    Region region = regionMapper.selectById(nd.getRegionId());
+                    if (region != null && region.getCode() != null && region.getCode().length() >= 2) {
+                        demandProvince = region.getCode().substring(0, 2);
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("查询区域失败: regionId={}", nd.getRegionId());
+            }
+
+            for (com.industrybrain.domain.model.Enterprise ent : allEnterprises) {
+                try {
+                    calculateMatchScore(ent.getId(), nd.getNodeId(), demandProvince);
+                    generated++;
+                } catch (Exception e) {
+                    log.error("生成失败: enterpriseId={}, nodeId={}, error={}",
+                            ent.getId(), nd.getNodeId(), e.getMessage());
+                }
+            }
+        }
+
+        return generated;
     }
 
     @Override
