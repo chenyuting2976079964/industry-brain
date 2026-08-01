@@ -22,6 +22,12 @@ public interface EnterpriseNodeMapper extends BaseMapper<EnterpriseNode> {
     @Select("SELECT COUNT(*) FROM enterprise_node WHERE node_id = #{nodeId}")
     int countByNodeId(@Param("nodeId") Long nodeId);
 
+    /** 统计节点下大规模企业数（员工规模 大型/中大型）— 强弱链诊断判定用 */
+    @Select("SELECT COUNT(DISTINCT e.id) FROM enterprise_node en " +
+            "INNER JOIN enterprise e ON e.id = en.enterprise_id AND e.is_deleted = 0 " +
+            "WHERE en.node_id = #{nodeId} AND e.employee_scale IN ('大型', '中大型')")
+    int countLargeScaleByNodeId(@Param("nodeId") Long nodeId);
+
     /** 批量插入企业-节点关联（图谱构建用） */
     int batchInsert(@Param("list") List<EnterpriseNode> list);
 }

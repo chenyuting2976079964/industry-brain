@@ -192,7 +192,7 @@ CREATE TABLE enterprise (
         ON DELETE SET NULL,
     CONSTRAINT fk_enterprise_park FOREIGN KEY (park_id) REFERENCES industrial_park(id)
         ON DELETE SET NULL,
-    CONSTRAINT chk_enterprise_type CHECK (enterprise_type IS NULL OR enterprise_type IN ('龙头企业', '专精特新', '高新技术企业', '科技型中小企业', '其他'))
+    CONSTRAINT chk_enterprise_type CHECK (enterprise_type IS NULL OR enterprise_type IN ('龙头企业','高新技术企业', '科技型中小企业', '普通企业'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='企业表';
 
 -- 表9：企业别名表（enterprise_alias）

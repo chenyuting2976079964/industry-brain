@@ -10,7 +10,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'port': 3307,
     'user': 'root',
-    'password': 'root',
+    'password': 'root123',
     'database': 'industry_brain',
     'charset': 'utf8mb4',
 }

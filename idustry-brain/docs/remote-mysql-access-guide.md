@@ -1,5 +1,8 @@
 # 其他主机连接 MySQL Docker 容器 - 配置指南
 
+> **实际部署统一使用**：用户名 `root`、密码 `root123`、端口 `3307`。
+> 本指南中的账号均以此为准（`remote_user` 已不再创建，见 `idustry-brain-dB/sql/99-setup-remote-user.sql`）。
+
 ## 一、目标配置
 
 本指南指导您如何配置 Docker 中的 MySQL，使**局域网内其他设备**或**远程主机**能够连接。
@@ -61,7 +64,7 @@ mysql -u root -p
 
 # 在 MySQL 内执行：
 SELECT User, Host FROM mysql.user;
--- 预期输出包含：remote_user | %
+-- 预期输出包含：root | %
 ```
 
 ## 三、连接方式
@@ -73,7 +76,7 @@ SELECT User, Host FROM mysql.user;
 ssh -L 8808:localhost:3307 user@your-server-ip
 
 # 连接 localhost:8808（实际到达的是 MySQL 的 3307）
-mysql -h 127.0.0.1 -P 8808 -u remote_user -p
+mysql -h 127.0.0.1 -P 8808 -u root -proot123
 ```
 
 ### 方案 B：直接 TCP 连接（局域网内可用）
@@ -81,13 +84,13 @@ mysql -h 127.0.0.1 -P 8808 -u remote_user -p
 ```
 主机 IP: <您的宿主机局域网IP>（如 192.168.1.100）
 端口: 3307
-用户名: remote_user
-密码: RemotePass123!
+用户名: root
+密码: root123
 ```
 
 **连接示例：**
 ```bash
-mysql -h 192.168.1.100 -P 3307 -u remote_user -p
+mysql -h 192.168.1.100 -P 3307 -u root -proot123
 ```
 
 ### 方案 C：云端访问（公网 IP + 安全组）
@@ -126,7 +129,7 @@ docker logs industry_brain_mysql # 查看启动日志
 docker exec -it industry_brain_mysql bash
 mysql -u root -p
 
-GRANT ALL PRIVILEGES ON industry_brain.* TO 'remote_user'@'%';
+GRANT ALL PRIVILEGES ON industry_brain.* TO 'root'@'%';
 FLUSH PRIVILEGES;
 ```
 
@@ -134,10 +137,10 @@ FLUSH PRIVILEGES;
 
 ```sql
 # 查看用户权限
-SELECT User, Host FROM mysql.user WHERE User = 'remote_user';
+SELECT User, Host FROM mysql.user WHERE User = 'root';
 
 # 修改 host 为 %（任意主机）
-UPDATE mysql.user SET Host = '%' WHERE User = 'remote_user' AND Host = 'localhost';
+UPDATE mysql.user SET Host = '%' WHERE User = 'root' AND Host = 'localhost';
 FLUSH PRIVILEGES;
 ```
 
@@ -147,8 +150,8 @@ FLUSH PRIVILEGES;
 |--------|---------|---------|
 | 认证协议 | mysql_native_password | 可使用 caching_sha2_password（需客户端兼容） |
 | 远程用户权限 | ALL PRIVILEGES | 按需缩小为 SELECT/INSERT/UPDATE 等最小权限 |
-| Root 远程访问 | 禁用 | 保留禁止，用专用 remote_user |
-| 密码强度 | RemotePass123! | 生产环境使用更长随机密码 |
+| Root 远程访问 | 启用（root@'%'） | 局域网可信环境可用；公网请改用专用低权限账号并设强密码 |
+| 密码强度 | root123 | 生产环境使用更长随机密码 |
 | 连接加密 | 无TLS | 启用 `--ssl-mode` 和 SSL 证书 |
 
 ### 🔒 更安全的替代方案：使用特定 IP 白名单

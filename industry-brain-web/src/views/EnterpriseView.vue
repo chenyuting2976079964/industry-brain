@@ -231,9 +231,9 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
     year: String(apiEnt.establishYear || '-'),
     size: apiEnt.scale || '-',
     capital: apiEnt.registeredCapital || '-',
-    totalPatents: apiEnt.patentCount || 0,
-    highValue: apiEnt.highValueCount || 0,
-    invention: profile?.validPatents || apiEnt.enterpriseCount || 0,
+    totalPatents: profile?.patentStats?.totalPatents || 0,
+    highValue: profile?.patentStats?.highValuePatents || 0,
+    invention: profile?.patentStats?.inventionPatents || 0,
     techMatch: '—',
     advantages: advantages.length > 0 ? advantages : [{ name: '暂无数据', count: '0项', desc: '暂无详细技术优势数据' }],
     weakness: (profile?.weaknesses || []).length > 0 ? profile.weaknesses[0].fieldName : '暂无',
@@ -267,10 +267,10 @@ function buildEvaluate(evaluate) {
     { threshold: 70, level: 'A', label: '推荐' },
     { threshold: 50, level: 'B', label: '关注' },
   ]
-  const levelResult = levels.find(l => evaluate.overallScore >= l.threshold) || { level: 'C', label: '一般' }
+  const levelResult = levels.find(l => evaluate.compositeScore >= l.threshold) || { level: 'C', label: '一般' }
 
   const scores = (evaluate.scores || []).map(s => ({
-    n: s.dimension,
+    n: s.name,
     v: s.score,
     c: scoreColor(s.score)
   }))
@@ -278,7 +278,7 @@ function buildEvaluate(evaluate) {
   return {
     level: levelResult.level,
     label: levelResult.label,
-    match: evaluate.overallScore || 0,
+    match: evaluate.compositeScore || 0,
     scores: scores.length > 0 ? scores : [
       { n: '技术实力', v: evaluate.techStrength || 0, c: scoreColor(evaluate.techStrength) },
       { n: '增长潜力', v: evaluate.growthPotential || 0, c: scoreColor(evaluate.growthPotential) },
@@ -301,6 +301,7 @@ const patentSearch = ref('')
 const patentTypeFilter = ref('all')
 const currentPatentPage = ref(1)
 const loading = ref(false)
+const isFavorited = ref(false)
 const pageSize = 6
 const isFavorited = ref(false)
 

@@ -14,7 +14,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:10.69.156.93}:${MYSQL_PORT:3307}/industry_brain?useUnicode=true&characterEncoding=utf8&zeroDateTimePolicy=convertToNull&useSSL=true&serverTimezone=GMT%2B8
     username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:root}
+    password: ${MYSQL_PASSWORD:root123}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -73,6 +73,22 @@ minio:
   report-bucket: ${MINIO_REPORT_BUCKET:reports}
   attachment-bucket: ${MINIO_ATTACH_BUCKET:attachments}
   data-import-bucket: ${MINIO_IMPORT_BUCKET:data-import}
+
+# 向量嵌入（自动聚类构建产业链用；enabled=false 走纯规则聚类降级）
+embedding:
+  enabled: ${EMBEDDING_ENABLED:true}
+  base-url: ${EMBEDDING_BASE_URL:https://api.siliconflow.cn/v1}
+  api-key: ${EMBEDDING_API_KEY:sk-wsffznbtsdfbulrbjzjnptanrbebykwajglmpfxwrejoboaq}
+  model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+  dimension: ${EMBEDDING_DIMENSION:1024}
+  batch-size: 16
+  timeout-ms: 15000
+  max-retries: 2
+  retry-backoff-ms: 500
+  cluster-threshold: 0.42
+  vector-weight: 0.7
+  rule-weight: 0.3
+  description-limit: 5
 
 logging:
   level:

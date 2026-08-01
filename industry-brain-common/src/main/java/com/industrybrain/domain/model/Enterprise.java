@@ -66,23 +66,28 @@ public class Enterprise {
     @TableField(exist = false)
     private String industry;
 
-    /** 所属城市 */
+    /** 所属城市 (非DB列，业务扩展) */
+    @TableField(exist = false)
     @TableField(exist = false)
     private String city;
 
-    /** 所属区县 */
+    /** 所属区县 (非DB列，业务扩展) */
+    @TableField(exist = false)
     @TableField(exist = false)
     private String district;
 
-    /** 工商注册号 */
+    /** 工商注册号 (非DB列，业务扩展) */
+    @TableField(exist = false)
     @TableField(exist = false)
     private String registrationNo;
 
-    /** 网址 */
+    /** 网址 (非DB列，业务扩展) */
+    @TableField(exist = false)
     @TableField(exist = false)
     private String website;
 
-    /** 经营范围 */
+    /** 经营范围 (非DB列，业务扩展) */
+    @TableField(exist = false)
     @TableField(exist = false)
     private String businessScope;
 
