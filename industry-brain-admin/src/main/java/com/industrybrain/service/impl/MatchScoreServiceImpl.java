@@ -241,13 +241,15 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
         log.debug("业务契合度: node={}, 业务项={}个, 关键词={}个, 命中={}个, 命中率={}",
                 nodeName, businessItems.size(), keywords.size(), hitCount, String.format("%.2f", hitRate));
 
-        // 4. 分段映射到得分
-        if (hitRate >= 0.6) {
+        // 4. 五档分段映射到得分（体现企业差异）
+        if (hitRate >= 0.75) {
             return 100.0;
-        } else if (hitRate >= 0.3) {
+        } else if (hitRate >= 0.5) {
             return 75.0;
+        } else if (hitRate >= 0.25) {
+            return 50.0;
         } else if (hitRate > 0) {
-            return 40.0;
+            return 25.0;
         } else {
             return 0.0;
         }
@@ -288,29 +290,26 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
 
     /**
      * 从节点名称生成关键词集
-     * 包含: 2-gram子串 + 单字 + 全称本身
-     * 例: "电力设备" → ["电力","设备","力设","电","力","设","备","电力设备"]
+     * 只保留2字及以上关键词，去除单字（单字匹配过于宽泛，无法体现企业差异）
+     * 例: "电力设备" → ["电力设备","电力","设备","力设"]
      */
     private Set<String> generateNodeKeywords(String nodeName) {
         Set<String> keywords = new LinkedHashSet<>();
         if (nodeName == null || nodeName.trim().isEmpty()) return keywords;
 
         String name = nodeName.trim();
-        // 全称
-        keywords.add(name);
+        // 全称（2字以上才加入）
+        if (name.length() >= 2) {
+            keywords.add(name);
+        }
 
         // 2-gram
         for (int i = 0; i < name.length() - 1; i++) {
-            keywords.add(name.substring(i, i + 2));
+            String bigram = name.substring(i, i + 2);
+            if (!bigram.matches("[\\s，,、；;。]+")) {
+                keywords.add(bigram);
+            }
         }
-
-        // 单字
-        for (char c : name.toCharArray()) {
-            keywords.add(String.valueOf(c));
-        }
-
-        // 去除纯标点/空白关键词
-        keywords.removeIf(kw -> kw.matches("[\\s，,、；;。]+"));
 
         return keywords;
     }
