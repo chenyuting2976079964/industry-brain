@@ -519,7 +519,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
         StatCards stats = new StatCards();
         stats.setTotalPatents(patentMapper.countByEnterpriseId(enterpriseId));
-        stats.setHighValuePatents((int) patentMapper.selectHighValueCount(enterpriseId));
+        stats.setHighValuePatents((int) patentMapper.selectHighValueCountByEnterprise(enterpriseId));
         stats.setInventionCount(patentMapper.selectInventionCount(enterpriseId));
         response.setStats(stats);
 
