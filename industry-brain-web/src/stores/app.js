@@ -17,12 +17,34 @@ export const useAppStore = defineStore('app', () => {
     currentPage.value = page
   }
 
-  function enterDashboard() {
+  async function enterDashboard() {
     showDashOverlay.value = true
+    await new Promise(r => setTimeout(r, 200))
+    try {
+      const el = document.documentElement
+      if (el.requestFullscreen) {
+        await el.requestFullscreen()
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen()
+      }
+    } catch (e) {
+      // 全屏失败也没关系，overlay 仍然可见
+    }
   }
 
   function exitDashboard() {
+    try { if (document.fullscreenElement) document.exitFullscreen() } catch (e) {}
     showDashOverlay.value = false
+  }
+
+  if (typeof document !== 'undefined') {
+    const onFs = () => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        showDashOverlay.value = false
+      }
+    }
+    document.addEventListener('fullscreenchange', onFs)
+    document.addEventListener('webkitfullscreenchange', onFs)
   }
 
   return { pageTitle, currentPage, alertCount, lastUpdateTime, showDashOverlay, setPage, enterDashboard, exitDashboard }

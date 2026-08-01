@@ -183,6 +183,12 @@ public class IndustryController {
         return AjaxResult.success(dashboardService.getMapMarkers(regionCode));
     }
 
+    /** F07: 本地企业总体分布（按类型统计） */
+    @GetMapping("/api/v1/dashboard/local-enterprise-stats")
+    public AjaxResult dashboardLocalEnterpriseStats(@RequestParam(required = false, defaultValue = "340500") String regionCode) {
+        return AjaxResult.success(dashboardService.getLocalEnterpriseStats(regionCode));
+    }
+
     // ==================== H01~H11: 首页看板 ====================
 
     /** H01: KPI 三卡片数据 */
