@@ -50,7 +50,7 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
      *
      * 显示条件（三个条件同时满足）：
      *   1. 节点非空（有诊断记录）
-     *   2. 上中下游三层中至少有两层有节点（覆盖层数 ≥ 2）
+     *   2. 上中下游中，强链/补链节点覆盖至少两层（缺链/弱链节点不计入有效层）
      *   3. 节点中有强链或补链（strong + supplement > 0）
      */
     private ChainResponse buildChainResponse(IndustryChain c) {
@@ -65,19 +65,29 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
             return null;  // 条件1：节点为空 → 隐藏
         }
 
-        // 统计该链覆盖的层数（up/mid/down 至少两层有节点）
+        // 统计强链/补链节点覆盖的层数（up/mid/down 至少两层有强补链节点）
+        // 缺链/弱链节点不算有效节点，不参与层覆盖统计
+        Set<Long> strongSuppNodeIds = latestResults.stream()
+            .filter(r -> {
+                String tag = r.getDiagnosisTag();
+                return "强链".equals(tag) || "补链".equals(tag);
+            })
+            .map(NodeDiagnosis::getNodeId)
+            .collect(Collectors.toSet());
+
         Set<String> coveredLayers = new HashSet<>();
         List<ChainNode> nodes = chainNodeMapper.selectByChainId(c.getId());
         if (nodes != null) {
             for (ChainNode n : nodes) {
-                if (n.getLayer() != null && !n.getLayer().isBlank()) {
+                if (strongSuppNodeIds.contains(n.getId())
+                        && n.getLayer() != null && !n.getLayer().isBlank()) {
                     coveredLayers.add(n.getLayer());
                 }
             }
         }
         if (coveredLayers.size() < 2) {
-            log.debug("产业链「{}」覆盖层数 {} < 2，隐藏", c.getName(), coveredLayers.size());
-            return null;  // 条件2：覆盖层数不足两层 → 隐藏
+            log.debug("产业链「{}」强补链覆盖层数 {} < 2，隐藏", c.getName(), coveredLayers.size());
+            return null;  // 条件2：强补链覆盖层数不足两层 → 隐藏
         }
 
         int strong = 0, supplement = 0, weak = 0, missing = 0;
