@@ -35,10 +35,19 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
             "WHERE r.code = #{regionCode} AND e.is_deleted = 0 ORDER BY e.name ASC")
     List<Enterprise> selectByRegionCode(@Param("regionCode") String regionCode);
 
-    /** 按企业ID查询IPC分布 */
-    @Select("SELECT p.ipc_main, COUNT(*) AS cnt FROM patent p " +
+    /** 按企业ID查询IPC分布（带中文领域名，优先精确匹配后降级前缀匹配） */
+    @Select("SELECT p.ipc_main, COUNT(*) AS cnt, " +
+            "COALESCE(m1.label, m2.label, p.ipc_main) AS field_name " +
+            "FROM patent p " +
+            "LEFT JOIN (SELECT icm.ipc_code, cn.name AS label FROM ipc_chain_mapping icm " +
+            "  INNER JOIN chain_node cn ON cn.id = icm.node_id AND cn.is_deleted = 0) m1 " +
+            "  ON m1.ipc_code = p.ipc_main " +
+            "LEFT JOIN (SELECT icm.ipc_code, cn.name AS label FROM ipc_chain_mapping icm " +
+            "  INNER JOIN chain_node cn ON cn.id = icm.node_id AND cn.is_deleted = 0) m2 " +
+            "  ON m2.ipc_code = SUBSTRING(p.ipc_main, 1, 4) " +
             "WHERE p.applicant_enterprise_id = #{enterpriseId} AND p.is_deleted = 0 " +
-            "GROUP BY p.ipc_main ORDER BY cnt DESC")
+            "GROUP BY p.ipc_main, field_name " +
+            "ORDER BY cnt DESC")
     List<Map<String, Object>> selectIpcDistribution(@Param("enterpriseId") Long enterpriseId);
 
     /** 按区域ID统计企业数 */
