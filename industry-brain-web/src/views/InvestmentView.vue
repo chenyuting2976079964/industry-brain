@@ -64,11 +64,11 @@
         </div>
         <div>
           <label class="text-xs text-slate-400 block mb-1">搜索企业</label>
-          <div class="relative">
-            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs pointer-events-none"></i>
+          <div class="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden focus-within:border-blue-400 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all">
+            <span class="pl-3 pr-1.5 text-slate-300 text-xs"><i class="fa-solid fa-search"></i></span>
             <input
               v-model="filters.keyword"
-              class="input-field text-xs pl-8 pr-3"
+              class="flex-1 py-2 pr-3 text-xs border-none outline-none bg-transparent"
               placeholder="企业名称..."
               @input="applyFilters"
             />
@@ -115,7 +115,12 @@
                   :class="ent.tagStyles[i]"
                 >{{ tag }}</span>
               </div>
-              <p class="text-xs text-slate-400 mt-1">{{ ent.description }}</p>
+              <p class="text-xs text-slate-400 mt-1" :class="{ 'line-clamp-2': !ent.descExpanded }">{{ ent.description || '暂无描述' }}</p>
+              <button
+                v-if="ent.description && ent.description.length > 60"
+                class="text-xs text-blue-500 hover:text-blue-600 mt-0.5"
+                @click="ent.descExpanded = !ent.descExpanded"
+              >{{ ent.descExpanded ? '收起' : '展开' }}</button>
               <div class="flex gap-3 mt-1.5 text-xs text-slate-500">
                 <span v-if="ent.location"><i class="fa-solid fa-location-dot mr-1"></i>{{ ent.location }}</span>
                 <span v-if="ent.scale"><i class="fa-regular fa-user mr-1"></i>{{ ent.scale }}</span>
@@ -222,149 +227,65 @@
 
           <!-- Company Header -->
           <div class="flex items-start gap-3 mb-4">
-            <div
-              class="w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
-              :class="selectedEnt.gradient"
-            >
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
               {{ selectedEnt.initial }}
             </div>
             <div>
-              <p class="text-base font-bold text-slate-800">{{ selectedEnt.name }}</p>
-              <p class="text-xs text-slate-400">{{ selectedEnt.desc }}</p>
+              <p class="text-base font-bold text-slate-800">{{ selectedEnt.enterpriseName }}</p>
+              <p class="text-xs text-slate-400 mt-1">{{ selectedEnt.nodeName }} · {{ selectedEnt.diagnosisTag }}</p>
               <div class="flex flex-wrap gap-2 mt-1">
-                <span
-                  v-for="(tag, i) in selectedEnt.tags"
-                  :key="i"
-                  class="badge"
-                  :class="selectedEnt.tagStyles[i]"
-                >{{ tag }}</span>
+                <span v-for="(tag, i) in selectedEnt.tags" :key="i" class="badge" :class="selectedEnt.tagStyles[i]">{{ tag }}</span>
               </div>
             </div>
           </div>
 
           <!-- Meta Info -->
           <div class="flex flex-wrap gap-4 text-xs text-slate-500 mb-4 pb-3 border-b border-slate-100">
-            <span><i class="fa-regular fa-building mr-1"></i>成立 {{ selectedEnt.year }}年</span>
-            <span><i class="fa-solid fa-location-dot mr-1"></i>{{ selectedEnt.loc }}</span>
-            <span><i class="fa-regular fa-user mr-1"></i>{{ selectedEnt.employees }}</span>
-            <span><i class="fa-regular fa-building mr-1"></i>{{ selectedEnt.capital }}</span>
+            <span v-if="selectedEnt.location"><i class="fa-solid fa-location-dot mr-1"></i>{{ selectedEnt.location }}</span>
+            <span v-if="selectedEnt.scale"><i class="fa-regular fa-user mr-1"></i>{{ selectedEnt.scale }}</span>
+            <span v-if="selectedEnt.registeredCapital"><i class="fa-regular fa-building mr-1"></i>{{ selectedEnt.registeredCapital }}</span>
+            <span><i class="fa-solid fa-hashtag mr-1"></i>{{ selectedEnt.rating }} 级</span>
           </div>
 
-          <!-- Stats Grid -->
-          <div class="grid grid-cols-4 gap-2 mb-4">
-            <div class="bg-slate-50 rounded-lg p-2.5 text-center">
-              <p class="text-xl font-bold text-slate-800">{{ selectedEnt.patentCount }}</p>
-              <p class="text-xs text-slate-400">专利总数</p>
+          <!-- Three-dimension scores -->
+          <h4 class="text-sm font-semibold text-slate-700 mb-3">三维度招商评分</h4>
+          <div class="space-y-3 mb-4">
+            <div>
+              <div class="flex justify-between text-xs mb-1"><span>业务契合度</span><span class="font-medium">{{ selectedEnt.businessFitScore }}%</span></div>
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" :style="{ width: (selectedEnt.businessFitScore || 0) + '%' }"></div></div>
             </div>
-            <div class="bg-slate-50 rounded-lg p-2.5 text-center">
-              <p class="text-xl font-bold text-emerald-600">{{ selectedEnt.highValueCount }}</p>
-              <p class="text-xs text-slate-400">高价值</p>
+            <div>
+              <div class="flex justify-between text-xs mb-1"><span>规模实力</span><span class="font-medium">{{ selectedEnt.scaleStrengthScore }}%</span></div>
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" :style="{ width: (selectedEnt.scaleStrengthScore || 0) + '%' }"></div></div>
             </div>
-            <div class="bg-slate-50 rounded-lg p-2.5 text-center">
-              <p class="text-xl font-bold text-blue-600">{{ selectedEnt.inventionCount }}</p>
-              <p class="text-xs text-slate-400">发明专利</p>
-            </div>
-            <div class="bg-slate-50 rounded-lg p-2.5 text-center">
-              <p class="text-xl font-bold text-cyan-600">{{ selectedEnt.techMatchRate }}</p>
-              <p class="text-xs text-slate-400">匹配度</p>
+            <div>
+              <div class="flex justify-between text-xs mb-1"><span>地域协同度</span><span class="font-medium">{{ selectedEnt.regionalSynergyScore }}%</span></div>
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-cyan-500 rounded-full" :style="{ width: (selectedEnt.regionalSynergyScore || 0) + '%' }"></div></div>
             </div>
           </div>
 
-          <!-- Tech Advantages -->
-          <h4 class="text-sm font-semibold text-slate-700 mb-2">技术优势</h4>
-          <div class="space-y-1.5 mb-3">
-            <div v-for="(adv, i) in selectedEnt.advantages" :key="i">
-              <div class="flex justify-between text-xs">
-                <span>{{ adv.name }}</span>
-                <span class="text-slate-400">{{ adv.count }}</span>
-              </div>
-              <div class="h-2 bg-blue-100 rounded-full overflow-hidden">
-                <div
-                  class="h-full bg-blue-600 rounded-full transition-all duration-500"
-                  :style="{ width: [92, 82, 58][i] + '%' }"
-                ></div>
-              </div>
+          <!-- Overall Score -->
+          <div class="bg-slate-50 rounded-xl p-4 mb-4 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4" :class="selectedEnt.rating === 'A' ? 'bg-emerald-50 border-emerald-300' : selectedEnt.rating === 'B' ? 'bg-blue-50 border-blue-300' : 'bg-slate-100 border-slate-300'">
+              <span class="font-bold text-2xl" :class="selectedEnt.rating === 'A' ? 'text-emerald-600' : selectedEnt.rating === 'B' ? 'text-blue-600' : 'text-slate-500'">{{ selectedEnt.totalScore }}</span>
+            </div>
+            <p class="text-sm font-semibold mt-2 text-slate-700">综合得分 {{ selectedEnt.rating }} 级</p>
+            <p class="text-xs text-slate-400 mt-1">{{ selectedEnt.matchLevelText }}</p>
+          </div>
+
+          <!-- Match Reasons -->
+          <div v-if="selectedEnt.matchReasons && selectedEnt.matchReasons.length" class="mb-4">
+            <h4 class="text-sm font-semibold text-slate-700 mb-2">匹配理由</h4>
+            <div class="space-y-1">
+              <p v-for="(r, i) in selectedEnt.matchReasons" :key="i" class="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-1.5">{{ r }}</p>
             </div>
           </div>
 
-          <!-- R&D Tags -->
-          <h4 class="text-sm font-semibold text-slate-700 mb-2">研发方向</h4>
-          <div class="flex flex-wrap gap-1.5 mb-3">
-            <span
-              v-for="tag in selectedEnt.techTags"
-              :key="tag"
-              class="badge bg-blue-50 text-blue-600 text-xs"
-            >{{ tag }}</span>
-          </div>
-
-          <!-- Weakness -->
-          <div class="bg-red-50 rounded-lg p-3 border border-red-100">
-            <div class="flex items-start gap-2">
-              <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5 text-xs"></i>
-              <div>
-                <p class="text-xs font-medium text-slate-700">{{ selectedEnt.weaknessTitle }}</p>
-                <p class="text-xs text-slate-400 mt-0.5">{{ selectedEnt.weaknessDetail }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Investment Score -->
-          <div class="mt-4 pt-3 border-t border-slate-100">
-            <h4 class="text-sm font-semibold text-slate-700 mb-2">招商价值评分</h4>
-            <div class="text-center mb-3">
-              <div
-                class="inline-flex items-center justify-center w-16 h-16 rounded-full border-4"
-                :class="selectedEnt.evalLevel === 'A' ? 'bg-emerald-50 border-emerald-300' : 'bg-amber-50 border-amber-300'"
-              >
-                <span
-                  class="font-bold text-2xl"
-                  :class="selectedEnt.evalLevel === 'A' ? 'text-emerald-600' : 'text-amber-600'"
-                >{{ selectedEnt.evalLevel }}</span>
-              </div>
-              <p
-                class="text-xs font-medium mt-1"
-                :class="selectedEnt.evalLevel === 'A' ? 'text-emerald-600' : 'text-amber-600'"
-              >{{ selectedEnt.evalLabel }}</p>
-            </div>
-            <div class="space-y-1.5">
-              <div v-for="score in selectedEnt.scores" :key="score.name">
-                <div class="flex justify-between text-xs mb-0.5">
-                  <span>{{ score.name }}</span>
-                  <span>{{ score.value }}%</span>
-                </div>
-                <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    class="h-full rounded-full transition-all duration-500"
-                    :class="'bg-' + score.color + '-500'"
-                    :style="{ width: score.value + '%' }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Patent List (if available) -->
-          <div v-if="selectedEnt.patentList && selectedEnt.patentList.length > 0" class="mt-4 pt-3 border-t border-slate-100">
-            <h4 class="text-sm font-semibold text-slate-700 mb-2">代表性专利</h4>
-            <div class="space-y-2">
-              <div
-                v-for="(pt, i) in selectedEnt.patentList"
-                :key="i"
-                class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
-              >
-                <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs bg-blue-100">
-                  <i :class="['fa-solid', rankIcons[i] || 'fa-file', rankColors[i] || 'text-slate-400'].join(' ') + ' text-xs'"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-medium text-slate-700">{{ pt.name }}</p>
-                  <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-[10px] text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">{{ pt.type }}</span>
-                    <span class="text-[10px] text-slate-400">{{ pt.date }}</span>
-                    <span class="text-[10px] text-emerald-500">{{ pt.status }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <!-- Description -->
+          <div class="mb-4">
+            <h4 class="text-sm font-semibold text-slate-700 mb-2">经营范围</h4>
+            <p class="text-xs text-slate-500 leading-relaxed bg-slate-50 rounded-lg p-3" :class="{ 'line-clamp-6': !selectedEnt.descExpanded }">{{ selectedEnt.description || '暂无' }}</p>
+            <button v-if="selectedEnt.description && selectedEnt.description.length > 200" class="text-xs text-blue-500 hover:text-blue-600 mt-1" @click="selectedEnt.descExpanded = !selectedEnt.descExpanded">{{ selectedEnt.descExpanded ? '收起' : '展开全文' }}</button>
           </div>
         </div>
       </div>
@@ -397,8 +318,6 @@ const filters = reactive({
   keyword: ''
 })
 
-const rankIcons = ['fa-crown', 'fa-2', 'fa-3', 'fa-4', 'fa-5']
-const rankColors = ['text-amber-500', 'text-slate-400', 'text-orange-700', 'text-slate-400', 'text-slate-400']
 
 // ---- Init ----
 onMounted(async () => {
