@@ -55,9 +55,9 @@
     <!-- 按企业名称模糊搜索 -->
     <select id="searchByName" resultType="com.industrybrain.domain.model.Enterprise">
         SELECT id, name, unified_code, legal_representative, registered_capital,
-               establishment_date, business_status, registered_address,
-               contact_phone, industry, city, district, registration_no,
-               website, business_scope, region_id, is_local, external_id,
+               establishment_date, business_status, registered_address, description,
+               contact_phone,
+               region_id, park_id, enterprise_type, employee_scale, is_local, external_id,
                data_version, created_at, updated_at
         FROM enterprise
         WHERE is_deleted = 0

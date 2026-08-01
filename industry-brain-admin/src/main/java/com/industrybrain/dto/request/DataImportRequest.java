@@ -19,4 +19,8 @@ public class DataImportRequest {
 
     /** 数据文件路径（可选，为空则使用默认目录） */
     private String filePath;
+
+    public String getFilePath() {
+        return filePath;
+    }
 }

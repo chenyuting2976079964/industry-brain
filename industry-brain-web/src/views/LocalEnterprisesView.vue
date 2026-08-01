@@ -12,14 +12,14 @@
     <div class="bg-white rounded-xl border border-slate-100 p-5 mb-4 data-card">
       <div class="flex items-center gap-3 mb-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <span class="text-xs font-medium text-slate-600 w-10">区县</span>
+          <span class="text-xs font-medium text-slate-600 whitespace-nowrap">区县</span>
           <select v-model="filters.district" class="select-field text-xs w-36" @change="applyFilters">
             <option value="">全部区县</option>
             <option v-for="d in districtOptions" :key="d" :value="d">{{ d }}</option>
           </select>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs font-medium text-slate-600 w-16">企业类型</span>
+          <span class="text-xs font-medium text-slate-600 whitespace-nowrap">企业类型</span>
           <select v-model="filters.type" class="select-field text-xs w-36" @change="applyFilters">
             <option value="">全部类型</option>
             <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
@@ -27,8 +27,8 @@
         </div>
         <div class="flex-1 min-w-[200px]">
           <div class="relative">
-            <input v-model="filters.search" type="text" placeholder="搜索企业名称..." class="input-field text-xs pl-8" @input="applyFilters" />
-            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+            <input v-model="filters.search" type="text" placeholder="搜索企业名称..." class="input-field text-xs" style="padding-left:30px" @input="applyFilters" />
+            <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
           </div>
         </div>
         <button class="btn-outline text-xs" @click="resetFilters"><i class="fa-solid fa-rotate-left mr-1"></i>重置</button>
@@ -74,8 +74,8 @@
             <span :class="['text-' + colors[i % colors.length] + '-600 font-bold text-sm']">{{ e.name.charAt(0) }}</span>
           </div>
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-sm font-semibold text-slate-800">{{ e.name }}</span>
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-sm font-semibold text-slate-800 truncate">{{ e.name }}</span>
               <span :class="['badge text-[10px]', typeClass(e.type)]">{{ e.type }}</span>
             </div>
             <p class="text-xs text-slate-400 mt-0.5">

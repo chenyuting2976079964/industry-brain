@@ -68,9 +68,9 @@ public class EnterpriseInvestmentDetailResponse {
     public static class ScoreBreakdown {
         private BigDecimal matchScore;
         private String matchLevel;
-        private BigDecimal patentStrength;
-        private BigDecimal industryFit;
-        private BigDecimal drivingPotential;
+        private BigDecimal businessFitScore;
+        private BigDecimal scaleStrengthScore;
+        private BigDecimal regionalSynergyScore;
         private BigDecimal totalScore;
         private String rating;
     }
