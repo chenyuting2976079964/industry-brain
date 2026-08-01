@@ -35,7 +35,4 @@ public class InvestmentMatchRequest {
 
     /** 子Tab: all/high/weakchain */
     private String tab = "all";
-
-    /** 需求方省份编码（2位，用于地域协同度计算） */
-    private String demandProvince;
 }

@@ -29,7 +29,6 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
 
     private final com.industrybrain.mapper.mysql.EnterpriseMapper enterpriseMapper;
     private final PatentMapper patentMapper;
-    private final com.industrybrain.mapper.mysql.EnterpriseTagMapper tagMapper;
     @Resource
     private RegionMapper regionMapper;
     @Resource
@@ -58,18 +57,10 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         vo.setDistrict(ent.getDistrict() != null ? ent.getDistrict() : "");
         vo.setScale(ent.getIsLocal() != null && ent.getIsLocal() == 1 ? "本地企业" : "外地企业");
 
-        // 标签：优先从 enterprise_tag 表读取，字段推导作为后备
+        // 标签从数据库字段推导
         List<String> tags = new ArrayList<>();
-        List<EnterpriseTag> dbTags = tagMapper.selectByEnterpriseId(id);
-        if (dbTags != null && !dbTags.isEmpty()) {
-            for (EnterpriseTag t : dbTags) {
-                if (t.getTagName() != null && !t.getTagName().isEmpty()) {
-                    tags.add(t.getTagName());
-                }
-            }
-        }
-        // 后备：尚未打标签的企业用类型标注
-        if (tags.isEmpty() && ent.getEnterpriseType() != null && !ent.getEnterpriseType().isEmpty()) {
+        if (ent.getIsLocal() != null && ent.getIsLocal() == 1) tags.add("本地企业");
+        if (ent.getEnterpriseType() != null && !ent.getEnterpriseType().isEmpty()) {
             tags.add(ent.getEnterpriseType());
         }
         vo.setTags(tags);
@@ -92,7 +83,7 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         if (ipcDist != null && !ipcDist.isEmpty()) {
             vo.setAdvantages(ipcDist.stream().limit(3).map(m -> {
                 EnterpriseProfileResponse.AdvantageItem adv = new EnterpriseProfileResponse.AdvantageItem();
-                adv.setName((String) m.getOrDefault("field_name", "未知领域"));
+                adv.setName((String) m.getOrDefault("ipcMain", "未知领域"));
                 adv.setPatentCount(toInt(m.get("cnt")));
                 adv.setPercentage(toInt(m.get("cnt")) * 100.0 / Math.max(stats.getTotalPatents(), 1));
                 adv.setDescription(String.format("在该领域拥有%d件专利", adv.getPatentCount()));

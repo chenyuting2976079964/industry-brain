@@ -19,6 +19,7 @@ public class EnterpriseTypeHandler implements TypeHandler<String> {
         if (parameter == null || parameter.trim().isEmpty()) {
             ps.setString(i, null);
         } else {
+            // 不在此处做严格校验，允许业务层自由设置
             ps.setString(i, parameter.trim());
         }
     }
@@ -41,3 +42,4 @@ public class EnterpriseTypeHandler implements TypeHandler<String> {
         return value == null ? "" : value.trim();
     }
 }
+

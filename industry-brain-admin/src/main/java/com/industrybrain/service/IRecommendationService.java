@@ -19,7 +19,7 @@ public interface IRecommendationService {
     RecommendationResponse getRecommendations(RecommendationRequest request);
 
     /** 计算匹配度得分 */
-    MatchScoreResult calculateMatchScore(Long enterpriseId, Long chainId, String demandProvince);
+    MatchScoreResult calculateMatchScore(Long enterpriseId, Long chainId);
 
     /** 导出推荐结果 */
     String exportRecommendations(RecommendationRequest request);

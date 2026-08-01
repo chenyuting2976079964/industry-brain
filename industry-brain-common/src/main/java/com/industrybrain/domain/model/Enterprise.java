@@ -67,23 +67,18 @@ public class Enterprise {
     private String industry;
 
     /** 所属城市 */
-    @TableField(exist = false)
     private String city;
 
     /** 所属区县 */
-    @TableField(exist = false)
     private String district;
 
     /** 工商注册号 */
-    @TableField(exist = false)
     private String registrationNo;
 
     /** 网址 */
-    @TableField(exist = false)
     private String website;
 
     /** 经营范围 */
-    @TableField(exist = false)
     private String businessScope;
 
     /** 所属区域ID */

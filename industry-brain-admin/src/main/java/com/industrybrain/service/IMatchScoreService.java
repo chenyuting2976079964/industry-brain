@@ -10,18 +10,12 @@ import com.industrybrain.domain.model.MatchScoreResult;
 public interface IMatchScoreService {
 
     /**
-     * 计算企业与产业链的综合匹配度（三维度算法）
-     * @param enterpriseId 企业ID
-     * @param chainId 产业链节点ID
-     * @param demandProvince 需求方省份编码（2位，用于地域协同度计算）
+     * 计算企业与产业链的技术匹配度
      */
-    MatchScoreResult calculateMatch(Long enterpriseId, Long chainId, String demandProvince);
+    MatchScoreResult calculateMatch(Long enterpriseId, Long chainId);
 
     /**
      * 批量计算匹配度
-     * @param enterpriseIds 企业ID列表
-     * @param chainId 产业链节点ID
-     * @param demandProvince 需求方省份编码
      */
-    java.util.List<MatchScoreResult> batchCalculate(java.util.List<Long> enterpriseIds, Long chainId, String demandProvince);
+    java.util.List<MatchScoreResult> batchCalculate(java.util.List<Long> enterpriseIds, Long chainId);
 }

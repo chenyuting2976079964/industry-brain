@@ -6,8 +6,7 @@ import com.industrybrain.domain.model.ChainNode;
 import com.industrybrain.mapper.mysql.*;
 import com.industrybrain.service.IHomeDashboardService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -18,11 +17,10 @@ import java.util.stream.Collectors;
  * 所有数据均从数据库查询，不再使用硬编码或随机生成数据。
  * @author 何锦鹏
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HomeDashboardServiceImpl implements IHomeDashboardService {
-
-    private static final Logger log = LoggerFactory.getLogger(HomeDashboardServiceImpl.class);
 
     private final PatentMapper patentMapper;
     private final EnterpriseMapper enterpriseMapper;

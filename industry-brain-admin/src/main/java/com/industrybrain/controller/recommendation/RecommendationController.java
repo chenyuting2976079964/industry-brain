@@ -40,9 +40,8 @@ public class RecommendationController {
     @GetMapping("/match/{enterpriseId}/{chainId}")
     public AjaxResult calculateMatch(
             @PathVariable("enterpriseId") Long enterpriseId,
-            @PathVariable("chainId") Long chainId,
-            @RequestParam(value = "demandProvince", required = false) String demandProvince) {
-        return AjaxResult.success(recommendationService.calculateMatchScore(enterpriseId, chainId, demandProvince));
+            @PathVariable("chainId") Long chainId) {
+        return AjaxResult.success(recommendationService.calculateMatchScore(enterpriseId, chainId));
     }
 
     /** 生成企业技术画像 */

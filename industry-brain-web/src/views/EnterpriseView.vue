@@ -20,15 +20,17 @@
               <h2 class="text-xl font-bold text-slate-800">{{ ent.name }}</h2>
               <span v-for="(tag, i) in ent.tags" :key="i" :class="['badge', ent.tagStyles[i % ent.tagStyles.length]]">{{ tag }}</span>
             </div>
+            <p class="text-sm text-slate-400 mt-1">{{ ent.desc }}</p>
             <div class="flex items-center gap-5 mt-2 text-xs text-slate-500 flex-wrap">
               <span><i class="fa-regular fa-building mr-1"></i>成立 {{ ent.year }}年</span>
               <span><i class="fa-solid fa-location-dot mr-1"></i>{{ ent.loc }}</span>
+              <span><i class="fa-regular fa-user mr-1"></i>{{ ent.size }}</span>
               <span><i class="fa-regular fa-building mr-1"></i>注册资本 {{ ent.capital }}</span>
             </div>
           </div>
         </div>
         <div class="flex gap-2 flex-shrink-0">
-          <button :class="isFavorited ? 'btn-primary text-xs' : 'btn-outline text-xs'" @click="toggleFavorite"><i :class="isFavorited ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'"></i> {{ isFavorited ? '已收藏' : '收藏' }}</button>
+          <button class="btn-outline text-xs" @click="showToast('已收藏')"><i class="fa-regular fa-bookmark"></i> 收藏</button>
           <button class="btn-primary text-xs" @click="showReportModal"><i class="fa-regular fa-file-lines"></i> 下载报告</button>
         </div>
       </div>
@@ -42,6 +44,9 @@
       <button :class="['tab-btn', { active: activeTab === 'patents' }]" @click="activeTab = 'patents'">
         <i class="fa-regular fa-file-lines mr-1.5"></i>专利列表
         <span class="ml-1 text-[10px] opacity-60">{{ ent.totalPatents }}</span>
+      </button>
+      <button :class="['tab-btn', { active: activeTab === 'evaluate' }]" @click="activeTab = 'evaluate'">
+        <i class="fa-solid fa-star mr-1.5"></i>综合评估
       </button>
     </div>
 
@@ -128,6 +133,50 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab: 综合评估 -->
+    <div v-show="activeTab === 'evaluate'">
+      <div class="bg-white rounded-xl p-5 border border-slate-100 data-card">
+        <h3 class="font-semibold text-slate-800 mb-4"><i class="fa-solid fa-star mr-2 text-amber-500"></i>综合评估报告</h3>
+        <div class="flex items-center gap-4 mb-5 p-4 bg-slate-50 rounded-xl">
+          <div :class="['w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg', evaluateLevelBg]">{{ ent.evaluate.level }}</div>
+          <div>
+            <div class="flex items-center gap-2"><span class="text-lg font-bold text-slate-800">{{ ent.evaluate.label }}</span><span class="text-sm text-slate-400">匹配度 {{ ent.evaluate.match }}%</span></div>
+            <p class="text-xs text-slate-500 mt-1">{{ ent.evaluate.suggestion }}</p>
+          </div>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-700 mb-3">三维度评分</h4>
+        <div class="space-y-3 mb-5">
+          <div v-for="(score, i) in ent.evaluate.scores" :key="i">
+            <div class="flex justify-between text-xs mb-1"><span class="text-slate-600">{{ score.n }}</span><span :class="['font-semibold', 'text-' + score.c + '-600']">{{ score.v }}分</span></div>
+            <div class="h-2 bg-slate-100 rounded-full"><div :class="['h-full rounded-full', 'bg-' + score.c + '-500']" :style="{ width: score.v + '%' }"></div></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3">招商建议</h4>
+            <div class="space-y-2">
+              <div class="flex justify-between p-2.5 bg-slate-50 rounded-lg"><span class="text-xs text-slate-500">招商类型</span><span class="text-xs font-medium text-slate-700">{{ ent.evaluate.investType }}</span></div>
+              <div class="flex justify-between p-2.5 bg-slate-50 rounded-lg"><span class="text-xs text-slate-500">紧迫度</span><span :class="['text-xs font-medium', urgencyColor]">{{ ent.evaluate.urgent }}</span></div>
+              <div class="flex justify-between p-2.5 bg-slate-50 rounded-lg"><span class="text-xs text-slate-500">风险等级</span><span class="text-xs font-medium text-slate-700">{{ ent.evaluate.risk }}</span></div>
+              <div class="flex justify-between p-2.5 bg-slate-50 rounded-lg"><span class="text-xs text-slate-500">产业政策</span><span class="text-xs font-medium text-slate-700">{{ ent.evaluate.policy }}</span></div>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3">落地建议</h4>
+            <div class="bg-blue-50 rounded-lg p-3 border border-blue-100"><p class="text-xs text-slate-600 leading-relaxed">{{ ent.evaluate.suggestion }}</p></div>
+            <div class="mt-3 text-xs text-slate-500"><span class="font-medium">建议用地：</span>{{ ent.evaluate.landSuggest }}</div>
+          </div>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-700 mb-3">政策匹配</h4>
+        <div class="space-y-2">
+          <div v-for="(pm, i) in ent.evaluate.policyMatch" :key="i" class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
+            <span class="text-xs text-slate-600">{{ pm.n }}</span>
+            <span :class="['badge text-[10px]', pm.m === '完全匹配' ? 'bg-emerald-50 text-emerald-600' : pm.m === '符合条件' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500']">{{ pm.m }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -162,13 +211,13 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
   const tags = (profile?.technologyFields?.map(t => t.fieldName) || apiEnt.tags || []).slice(0, 6)
 
   const advantages = (profile?.advantages || []).map(a => ({
-    name: a.name,
-    count: `${a.patentCount || 0}项`,
-    desc: a.description || (a.name + '领域')
+    name: a.fieldName,
+    count: `${a.enterprisePatentCount || 0}项`,
+    desc: a.fieldName + '领域' + (a.industryAvg != null ? '，行业均值' + a.industryAvg : '')
   }))
 
   const scores = (evaluate?.scores || []).map(s => ({
-    n: s.name,
+    n: s.dimension,
     v: s.score,
     c: scoreColor(s.score)
   }))
@@ -187,9 +236,9 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
     year: String(apiEnt.establishYear || '-'),
     size: apiEnt.scale || '-',
     capital: apiEnt.registeredCapital || '-',
-    totalPatents: profile?.patentStats?.totalPatents || 0,
-    highValue: profile?.patentStats?.highValuePatents || 0,
-    invention: profile?.patentStats?.inventionPatents || 0,
+    totalPatents: apiEnt.patentCount || 0,
+    highValue: apiEnt.highValueCount || 0,
+    invention: profile?.validPatents || apiEnt.enterpriseCount || 0,
     techMatch: '—',
     advantages: advantages.length > 0 ? advantages : [{ name: '暂无数据', count: '0项', desc: '暂无详细技术优势数据' }],
     weakness: (profile?.weaknesses || []).length > 0 ? profile.weaknesses[0].fieldName : '暂无',
@@ -223,10 +272,10 @@ function buildEvaluate(evaluate) {
     { threshold: 70, level: 'A', label: '推荐' },
     { threshold: 50, level: 'B', label: '关注' },
   ]
-  const levelResult = levels.find(l => evaluate.compositeScore >= l.threshold) || { level: 'C', label: '一般' }
+  const levelResult = levels.find(l => evaluate.overallScore >= l.threshold) || { level: 'C', label: '一般' }
 
   const scores = (evaluate.scores || []).map(s => ({
-    n: s.name,
+    n: s.dimension,
     v: s.score,
     c: scoreColor(s.score)
   }))
@@ -234,7 +283,7 @@ function buildEvaluate(evaluate) {
   return {
     level: levelResult.level,
     label: levelResult.label,
-    match: evaluate.compositeScore || 0,
+    match: evaluate.overallScore || 0,
     scores: scores.length > 0 ? scores : [
       { n: '技术实力', v: evaluate.techStrength || 0, c: scoreColor(evaluate.techStrength) },
       { n: '增长潜力', v: evaluate.growthPotential || 0, c: scoreColor(evaluate.growthPotential) },
@@ -257,7 +306,6 @@ const patentSearch = ref('')
 const patentTypeFilter = ref('all')
 const currentPatentPage = ref(1)
 const loading = ref(false)
-const isFavorited = ref(false)
 const pageSize = 6
 
 const ent = computed(() => currentEnt.value || {
@@ -378,11 +426,6 @@ function showReportModal() {
         <button class="btn-outline text-xs"><i class="fa-solid fa-download"></i> 下载 Excel</button>
       </div>
     </div>`)
-}
-
-function toggleFavorite() {
-  isFavorited.value = !isFavorited.value
-  showToast(isFavorited.value ? '已收藏' : '已取消收藏')
 }
 
 function showToast(msg) {

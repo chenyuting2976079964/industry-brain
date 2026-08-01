@@ -43,15 +43,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 招商推荐业务实现类 + 企业匹配度综合评分算法（三维度）
+ * 招商推荐业务实现类 + 招商价值综合评分算法（算法A5）
  *
- * 算法流程：
- *   Dimension 1: 业务契合度得分 (权重50%) — 经营范围文本 × 节点需求文本 → 余弦相似度 → 分段映射
- *   Dimension 2: 规模实力得分     (权重35%) — 团队规模得分×20 + 资本实力得分×15 ÷ 35
- *   Dimension 3: 地域协同度得分   (权重15%) — 企业省份 vs 需求方省份 → 省内100/省外60
- *
- * 综合得分 = 业务契合度×0.5 + 规模实力×0.35 + 地域协同度×0.15
- * 评级 — ≥85→A(强烈推荐) / 70-84→B(推荐/关注) / <70→C(观察)
+ * 算法A5流程：
+ *   Step1: 专利实力分(0-100) — 总量归一化(30%) + 高价值归一化(40%) + 发明占比归一化(30%)
+ *   Step2: 产业带动潜力(0-100) — 规模分 + 年限分 + 技术外溢系数
+ *   Step3: 综合分 = 匹配度×0.4 + 专利实力×0.3 + 潜力×0.3
+ *   Step4: 评级 — ≥85→A(强烈推荐) / 70-84→B(推荐/关注) / <70→C(观察)
  */
 @Service
 @ConditionalOnProperty(name = "mysql.enabled", havingValue = "true", matchIfMissing = true)
@@ -59,9 +57,41 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
     private static final Logger log = LoggerFactory.getLogger(RecommendationServiceImpl.class);
 
+    // ==================== A5 权重常量 ====================
+    /** 匹配度权重 */
+    private static final double MATCH_WEIGHT = 0.4;
+    /** 专利实力权重 */
+    private static final double PATENT_STRENGTH_WEIGHT = 0.3;
+    /** 产业带动潜力权重 */
+    private static final double POTENTIAL_WEIGHT = 0.3;
+
+    // ==================== 专利实力子权重 ====================
+    /** 总量归一化权重 */
+    private static final double PATENT_TOTAL_WEIGHT = 0.30;
+    /** 高价值归一化权重 */
+    private static final double HIGH_VALUE_WEIGHT = 0.40;
+    /** 发明占比归一化权重 */
+    private static final double INVENTION_RATIO_WEIGHT = 0.30;
+
     // ==================== 评级阈值 ====================
     private static final double RATING_A_THRESHOLD = 85.0;
     private static final double RATING_B_THRESHOLD = 70.0;
+
+    // ==================== 规模分 ====================
+    private static final int LARGE_SCALE_SCORE = 90;
+    private static final int MEDIUM_SCALE_SCORE = 70;
+    private static final int SMALL_SCALE_SCORE = 50;
+
+    // ==================== 年限分 ====================
+    private static final int OLD_ENTERPRISE_SCORE = 90;   // >15年
+    private static final int MID_ENTERPRISE_SCORE = 70;   // 5-15年
+    private static final int NEW_ENTERPRISE_SCORE = 50;   // <5年
+    private static final int OLD_YEARS = 15;
+    private static final int MID_YEARS = 5;
+
+    // ==================== 技术外溢 ====================
+    private static final double SPILLOVER_MIN_BONUS = 5.0;
+    private static final double SPILLOVER_MAX_BONUS = 15.0;
 
     @Resource
     private EnterpriseSearchMapper enterpriseSearchMapper;
@@ -99,21 +129,18 @@ public class RecommendationServiceImpl implements IRecommendationService {
     @Resource
     private ReportMapper reportMapper;
 
-    // ==================== 公开方法 ====================
+    // ==================== A5 公开方法 ====================
 
     @Override
     public RecommendationResponse getRecommendations(RecommendationRequest request) {
-        log.info("=== 三维度招商推荐开始: chainId={}, threshold={}, limit={} ===",
+        log.info("=== A5 招商推荐开始: chainId={}, threshold={}, limit={} ===",
                 request.getChainId(), request.getMinThreshold(), request.getLimit());
-
-        // 从 regionCode 提取需求方省份（前2位）
-        String demandProvince = extractDemandProvince(request.getRegionCode());
 
         RecommendationResponse response = new RecommendationResponse();
         List<RecommendedEnterprise> recommendedList = new ArrayList<>();
 
         try {
-            // 1. 从数据库检索候选企业（不按经营状态过滤）
+            // 1. 从数据库检索候选企业（按行业/区域过滤）
             String industry = getIndustryByChainId(request.getChainId());
             List<com.industrybrain.domain.model.Enterprise> entList;
             if (industry != null && !industry.isEmpty()) {
@@ -121,6 +148,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
             } else {
                 entList = enterpriseMapper.selectList(null);
             }
+            // Convert to Map format for downstream processing
             List<Map<String, Object>> candidateEnterprises = entList.stream().map(e -> {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", e.getId());
@@ -137,13 +165,14 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
             log.info("Step1: 检索到 {} 家候选企业", candidateEnterprises.size());
 
-            // 2. 对每个候选企业运行三维度评分
+            // 2. 对每个候选企业运行 A3 + A5 评分
             for (Map<String, Object> candidate : candidateEnterprises) {
                 Long enterpriseId = toLong(candidate.get("id"));
                 if (enterpriseId == null) continue;
 
                 try {
-                    MatchScoreResult scoredResult = calculateMatchScore(enterpriseId, request.getChainId(), demandProvince);
+                    // 调用A3匹配度计算 + A5综合评分
+                    MatchScoreResult scoredResult = calculateMatchScore(enterpriseId, request.getChainId());
 
                     // 过滤低于阈值的
                     double finalScore = scoredResult.getOverallScore() != null
@@ -187,25 +216,33 @@ public class RecommendationServiceImpl implements IRecommendationService {
     }
 
     @Override
-    public MatchScoreResult calculateMatchScore(Long enterpriseId, Long chainId, String demandProvince) {
-        log.info("=== 三维度综合评分计算: enterpriseId={}, chainId={}, demandProvince={} ===",
-                enterpriseId, chainId, demandProvince);
+    public MatchScoreResult calculateMatchScore(Long enterpriseId, Long chainId) {
+        log.info("=== A5 综合评分计算: enterpriseId={}, chainId={} ===", enterpriseId, chainId);
 
-        // 调用三维度匹配度计算
-        MatchScoreResult matchResult = matchScoreService.calculateMatch(enterpriseId, chainId, demandProvince);
-
-        // techMatchScore=业务契合度, scaleStrengthScore=规模实力, industryFitScore=地域协同度
-        double businessFit = matchResult.getTechMatchScore() != null
+        // ---- 调用 A3 获取匹配度 ----
+        MatchScoreResult matchResult = matchScoreService.calculateMatch(enterpriseId, chainId);
+        double matchScore = matchResult.getTechMatchScore() != null
                 ? matchResult.getTechMatchScore().doubleValue() : 0.0;
-        double scaleStrength = matchResult.getScaleStrengthScore() != null
-                ? matchResult.getScaleStrengthScore().doubleValue() : 0.0;
-        double regionalSynergy = matchResult.getIndustryFitScore() != null
-                ? matchResult.getIndustryFitScore().doubleValue() : 0.0;
 
-        double compositeScore = matchResult.getOverallScore() != null
-                ? matchResult.getOverallScore().doubleValue() : 0.0;
+        // ---- A5 Step1: 专利实力分(0-100) ----
+        double patentStrengthScore = calculatePatentStrength(enterpriseId);
+        log.info("A5-Step1: 专利实力分 = {}", String.format("%.2f", patentStrengthScore));
 
-        // 评级
+        // ---- A5 Step2: 产业带动潜力(0-100) ----
+        double potentialScore = calculateDrivingPotential(enterpriseId);
+        log.info("A5-Step2: 产业带动潜力 = {}", String.format("%.2f", potentialScore));
+
+        // ---- A5 Step3: 综合分 ----
+        double compositeScore = matchScore * MATCH_WEIGHT
+                              + patentStrengthScore * PATENT_STRENGTH_WEIGHT
+                              + potentialScore * POTENTIAL_WEIGHT;
+        compositeScore = Math.min(compositeScore, 100.0);
+        compositeScore = Math.max(compositeScore, 0.0);
+        log.info("A5-Step3: 综合分 = {} (匹配度={}×0.4 + 专利实力={}×0.3 + 潜力={}×0.3)",
+                String.format("%.2f", compositeScore), String.format("%.2f", matchScore),
+                String.format("%.2f", patentStrengthScore), String.format("%.2f", potentialScore));
+
+        // ---- A5 Step4: 评级 ----
         String rating;
         if (compositeScore >= RATING_A_THRESHOLD) {
             rating = "A";
@@ -214,18 +251,25 @@ public class RecommendationServiceImpl implements IRecommendationService {
         } else {
             rating = "C";
         }
+        log.info("A5-Step4: 评级 = {}", rating);
 
-        // 更新匹配详情
+        // 更新结果
+        matchResult.setOverallScore(BigDecimal.valueOf(compositeScore).setScale(2, RoundingMode.HALF_UP));
         matchResult.setMatchLevel(rating);
 
-        // 持久化到investment_recommendation表
-        // tech_match_score ← 业务契合度, tech_strength_score ← 规模实力, industry_fit_score ← 地域协同度
+        // 更新匹配详情
+        String existingDetail = matchResult.getMatchDetail() != null ? matchResult.getMatchDetail() : "";
+        String a5Detail = String.format("专利实力=%.1f, 产业带动=%.1f, 综合=%.1f, 评级=%s",
+                patentStrengthScore, potentialScore, compositeScore, rating);
+        matchResult.setMatchDetail(existingDetail + (existingDetail.isEmpty() ? "" : " | ") + a5Detail);
+
+        // 持久化更新
         try {
             InvestmentRecommendation rec = recommendationMapper.selectByEnterpriseAndNode(enterpriseId, chainId);
             if (rec != null) {
                 rec.setTechMatchScore(matchResult.getTechMatchScore());
-                rec.setTechStrengthScore(BigDecimal.valueOf(scaleStrength).setScale(2, RoundingMode.HALF_UP));
-                rec.setIndustryFitScore(matchResult.getIndustryFitScore());
+                rec.setTechStrengthScore(BigDecimal.valueOf(patentStrengthScore).setScale(2, RoundingMode.HALF_UP));
+                rec.setDrivingPotentialScore(BigDecimal.valueOf(potentialScore).setScale(2, RoundingMode.HALF_UP));
                 rec.setTotalScore(BigDecimal.valueOf(compositeScore).setScale(2, RoundingMode.HALF_UP));
                 rec.setRating(rating);
                 rec.setMatchReasons(matchResult.getMatchDetail());
@@ -237,8 +281,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 newRec.setEnterpriseId(enterpriseId);
                 newRec.setTargetNodeId(chainId);
                 newRec.setTechMatchScore(matchResult.getTechMatchScore());
-                newRec.setTechStrengthScore(BigDecimal.valueOf(scaleStrength).setScale(2, RoundingMode.HALF_UP));
-                newRec.setIndustryFitScore(matchResult.getIndustryFitScore());
+                newRec.setTechStrengthScore(BigDecimal.valueOf(patentStrengthScore).setScale(2, RoundingMode.HALF_UP));
+                newRec.setDrivingPotentialScore(BigDecimal.valueOf(potentialScore).setScale(2, RoundingMode.HALF_UP));
+                newRec.setIndustryFitScore(matchResult.getTechMatchScore());
                 newRec.setTotalScore(BigDecimal.valueOf(compositeScore).setScale(2, RoundingMode.HALF_UP));
                 newRec.setRating(rating);
                 newRec.setMatchReasons(matchResult.getMatchDetail());
@@ -247,10 +292,10 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 recommendationMapper.insert(newRec);
             }
         } catch (Exception e) {
-            log.warn("三维度评分持久化失败: {}", e.getMessage());
+            log.warn("A5评分持久化失败: {}", e.getMessage());
         }
 
-        log.info("=== 三维度综合评分完成: enterpriseId={}, composite={}, rating={} ===",
+        log.info("=== A5 综合评分完成: enterpriseId={}, composite={}, rating={} ===",
                 enterpriseId, String.format("%.2f", compositeScore), rating);
 
         return matchResult;
@@ -293,17 +338,141 @@ public class RecommendationServiceImpl implements IRecommendationService {
         }
     }
 
-    // ==================== 私有辅助方法 ====================
+    // ==================== A5 私有算法方法 ====================
 
     /**
-     * 从区域编码提取需求方省份（前2位）
+     * A5 Step1: 计算专利实力分(0-100)
+     *
+     * 总量归一化(30%) + 高价值归一化(40%) + 发明占比归一化(30%)
      */
-    private String extractDemandProvince(String regionCode) {
-        if (regionCode != null && regionCode.length() >= 2) {
-            return regionCode.substring(0, 2);
-        }
-        return null;
+    private double calculatePatentStrength(Long enterpriseId) {
+        // 企业专利数据
+        int totalPatents = patentMapper.countByEnterpriseId(enterpriseId);
+        long highValuePatents = patentMapper.selectHighValueCountByEnterprise(enterpriseId);
+        int inventionPatents = patentMapper.selectInventionCount(enterpriseId);
+
+        // 全局最大专利数（用于归一化）
+        int maxPatentCount = patentMapper.selectMaxPatentCount();
+        maxPatentCount = Math.max(maxPatentCount, 1); // 避免除零
+
+        // ---- 总量归一化 (0-100) ----
+        double totalNorm = Math.min((double) totalPatents / maxPatentCount, 1.0) * 100.0;
+
+        // ---- 高价值归一化 (0-100) ----
+        double highValueNorm = Math.min((double) highValuePatents / maxPatentCount, 1.0) * 100.0;
+
+        // ---- 发明占比归一化 (0-100) ----
+        double inventionRatio = totalPatents > 0 ? (double) inventionPatents / totalPatents : 0.0;
+        double inventionNorm = inventionRatio * 100.0;
+
+        // 加权融合
+        double patentStrength = totalNorm * PATENT_TOTAL_WEIGHT
+                              + highValueNorm * HIGH_VALUE_WEIGHT
+                              + inventionNorm * INVENTION_RATIO_WEIGHT;
+
+        log.debug("专利实力: 总量={}→{}, 高价值={}→{}, 发明占比={}→{}, 综合={}",
+                totalPatents, String.format("%.1f", totalNorm), highValuePatents, String.format("%.1f", highValueNorm),
+                String.format("%.2f", inventionRatio), String.format("%.1f", inventionNorm), String.format("%.1f", patentStrength));
+
+        return Math.min(patentStrength, 100.0);
     }
+
+    /**
+     * A5 Step2: 计算产业带动潜力(0-100)
+     *
+     * 规模分(大型90/中型70/小型50) + 年限分(>15年90/5-15年70/<5年50) + 技术外溢系数(+5~15)
+     */
+    private double calculateDrivingPotential(Long enterpriseId) {
+        com.industrybrain.domain.model.Enterprise modelEnt = enterpriseMapper.selectById(enterpriseId);
+        if (modelEnt == null) {
+            return 0.0;
+        }
+
+        // ---- 规模分 ----
+        double scaleScore = SMALL_SCALE_SCORE; // 默认小型
+
+        // 用注册资本辅助判断规模 (model uses String like "10000万元")
+        String capitalStr = modelEnt.getRegisteredCapital();
+        if (capitalStr != null) {
+            double capital = parseCapitalToWan(capitalStr);
+            if (capital >= 100000) { // >= 10亿(10亿=100000万)
+                scaleScore = LARGE_SCALE_SCORE;
+            } else if (capital >= 10000) { // >= 1亿
+                scaleScore = LARGE_SCALE_SCORE;
+            } else if (capital >= 1000) { // >= 1千万
+                scaleScore = MEDIUM_SCALE_SCORE;
+            }
+        }
+
+        // ---- 年限分 ----
+        double yearsScore = NEW_ENTERPRISE_SCORE;
+        LocalDate estDate = modelEnt.getEstablishmentDate();
+        if (estDate != null) {
+            int currentYear = LocalDate.now().getYear();
+            int age = currentYear - estDate.getYear();
+
+            if (age > OLD_YEARS) {
+                yearsScore = OLD_ENTERPRISE_SCORE;
+            } else if (age >= MID_YEARS) {
+                yearsScore = MID_ENTERPRISE_SCORE;
+            }
+            log.debug("企业成立年限: {}年 → 年限分={}", age, yearsScore);
+        }
+
+        // ---- 技术外溢系数（Neo4j关联企业数 → +5~15分） ----
+        double spilloverBonus = SPILLOVER_MIN_BONUS;
+        try {
+            long relatedCount = getRelatedEnterpriseCount(enterpriseId);
+            // 关联企业数映射到5~15分
+            // relatedCount = 0 → 5分, relatedCount >= 10 → 15分
+            spilloverBonus = SPILLOVER_MIN_BONUS
+                    + Math.min(relatedCount / 10.0, 1.0) * (SPILLOVER_MAX_BONUS - SPILLOVER_MIN_BONUS);
+            log.debug("技术外溢: Neo4j关联企业数={}, 加分={}", relatedCount, String.format("%.1f", spilloverBonus));
+        } catch (Exception e) {
+            // Neo4j可能不可用，使用默认值
+            log.debug("Neo4j查询失败，使用默认外溢系数={}", spilloverBonus);
+        }
+
+        // 综合潜力分（规模30% + 年限30% + 外溢40%）
+        double potential = scaleScore * 0.30 + yearsScore * 0.30 + spilloverBonus / SPILLOVER_MAX_BONUS * 100.0 * 0.40;
+
+        log.debug("产业带动潜力: 规模={}×0.3 + 年限={}×0.3 + 外溢={}×0.4 = {}",
+                String.format("%.1f", scaleScore), String.format("%.1f", yearsScore),
+                String.format("%.1f", spilloverBonus / SPILLOVER_MAX_BONUS * 100.0), String.format("%.1f", potential));
+
+        return Math.min(potential, 100.0);
+    }
+
+    /**
+     * 解析注册资本字符串为万元数值
+     * 支持格式: "10000万元", "5000万", "1亿", "1000.5万"
+     */
+    private double parseCapitalToWan(String capitalStr) {
+        try {
+            String cleaned = capitalStr.replace("万元", "").replace("万", "");
+            if (cleaned.contains("亿")) {
+                return Double.parseDouble(cleaned.replace("亿", "")) * 10000.0;
+            }
+            return Double.parseDouble(cleaned);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 获取关联企业数（优先查Neo4j，失败则回退）
+     */
+    private long getRelatedEnterpriseCount(Long enterpriseId) {
+        // 尝试通过Neo4j查询
+        try {
+            return enterpriseRelationMapper.findUpstreamDownstream(enterpriseId, 2).size();
+        } catch (Exception e) {
+            // Neo4j不可用时返回默认值
+            return 1;
+        }
+    }
+
+    // ==================== 私有辅助方法 ====================
 
     /**
      * 构建推荐企业DTO
@@ -524,10 +693,10 @@ public class RecommendationServiceImpl implements IRecommendationService {
         response.setStats(stats);
 
         ScoreBreakdown scores = new ScoreBreakdown();
-        scores.setMatchScore(rec.getTotalScore());
-        scores.setBusinessFitScore(rec.getTechMatchScore());
-        scores.setScaleStrengthScore(rec.getTechStrengthScore());
-        scores.setRegionalSynergyScore(rec.getIndustryFitScore());
+        scores.setMatchScore(rec.getTechMatchScore());
+        scores.setPatentStrength(rec.getTechStrengthScore());
+        scores.setIndustryFit(rec.getIndustryFitScore());
+        scores.setDrivingPotential(rec.getDrivingPotentialScore());
         scores.setTotalScore(rec.getTotalScore());
         scores.setRating(rec.getRating());
         scores.setMatchLevel(getMatchLevelText(rec.getTotalScore()));
@@ -589,28 +758,19 @@ public class RecommendationServiceImpl implements IRecommendationService {
             if (nodeId != null) {
                 List<InvestmentRecommendation> existingRecs = recommendationMapper.selectByNodeId(nodeId);
                 if (!existingRecs.isEmpty()) {
-                    // 从第一条记录获取需求方省份（regionCode前2位）
-                    String demandProvince = null;
-                    InvestmentRecommendation first = existingRecs.get(0);
-                    if (first.getRegionCode() != null && first.getRegionCode().length() >= 2) {
-                        demandProvince = first.getRegionCode().substring(0, 2);
-                    }
-
                     List<Long> enterpriseIds = existingRecs.stream()
                             .map(InvestmentRecommendation::getEnterpriseId)
                             .distinct()
                             .collect(Collectors.toList());
 
-                    log.info("重新计算 {} 家企业的匹配度, demandProvince={}", enterpriseIds.size(), demandProvince);
-                    matchScoreService.batchCalculate(enterpriseIds, nodeId, demandProvince);
+                    log.info("重新计算 {} 家企业的匹配度", enterpriseIds.size());
+                    matchScoreService.batchCalculate(enterpriseIds, nodeId);
 
                     for (InvestmentRecommendation rec : existingRecs) {
                         try {
-                            MatchScoreResult scored = matchScoreService.calculateMatch(rec.getEnterpriseId(), nodeId, demandProvince);
+                            MatchScoreResult scored = matchScoreService.calculateMatch(rec.getEnterpriseId(), nodeId);
                             double composite = scored.getOverallScore() != null ? scored.getOverallScore().doubleValue() : 0;
                             rec.setTechMatchScore(scored.getTechMatchScore());
-                            rec.setTechStrengthScore(scored.getScaleStrengthScore());
-                            rec.setIndustryFitScore(scored.getIndustryFitScore());
                             rec.setTotalScore(scored.getOverallScore());
                             rec.setMatchReasons(scored.getMatchDetail());
                             rec.setRating(mapScoreToRating(composite));
@@ -1106,9 +1266,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 ? rec.getTotalScore().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO);
         ent.setMatchLevel(getMatchLevelKey(rec.getTotalScore()));
         ent.setMatchLevelText(getMatchLevelText(rec.getTotalScore()));
-        ent.setBusinessFitScore(rec.getTechMatchScore());
-        ent.setScaleStrengthScore(rec.getTechStrengthScore());
-        ent.setRegionalSynergyScore(rec.getIndustryFitScore());
+        ent.setPatentStrengthScore(rec.getTechStrengthScore());
+        ent.setIndustryFitScore(rec.getIndustryFitScore());
+        ent.setDrivingPotentialScore(rec.getDrivingPotentialScore());
         ent.setTotalScore(rec.getTotalScore());
         ent.setRating(rec.getRating());
         ent.setNodeName(rec.getNodeName());
