@@ -31,11 +31,14 @@ public class RecommendationResponse {
         /** 区域编码 */
         private String regionCode;
 
-        /** 技术匹配度得分 */
-        private BigDecimal techMatchScore;
+        /** 业务契合度得分（维度1） */
+        private BigDecimal businessFitScore;
 
-        /** 产业契合度得分 */
-        private BigDecimal industryFitScore;
+        /** 规模实力得分（维度2） */
+        private BigDecimal scaleStrengthScore;
+
+        /** 地域协同度得分（维度3） */
+        private BigDecimal regionalSynergyScore;
 
         /** 综合招商价值得分 */
         private BigDecimal overallScore;

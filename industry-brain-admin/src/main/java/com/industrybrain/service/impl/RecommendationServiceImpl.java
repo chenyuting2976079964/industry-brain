@@ -194,13 +194,13 @@ public class RecommendationServiceImpl implements IRecommendationService {
         // 调用三维度匹配度计算
         MatchScoreResult matchResult = matchScoreService.calculateMatch(enterpriseId, chainId, demandProvince);
 
-        // techMatchScore=业务契合度, scaleStrengthScore=规模实力, industryFitScore=地域协同度
-        double businessFit = matchResult.getTechMatchScore() != null
-                ? matchResult.getTechMatchScore().doubleValue() : 0.0;
+        // 从三维度结果中提取得分
+        double businessFit = matchResult.getBusinessFitScore() != null
+                ? matchResult.getBusinessFitScore().doubleValue() : 0.0;
         double scaleStrength = matchResult.getScaleStrengthScore() != null
                 ? matchResult.getScaleStrengthScore().doubleValue() : 0.0;
-        double regionalSynergy = matchResult.getIndustryFitScore() != null
-                ? matchResult.getIndustryFitScore().doubleValue() : 0.0;
+        double regionalSynergy = matchResult.getRegionalSynergyScore() != null
+                ? matchResult.getRegionalSynergyScore().doubleValue() : 0.0;
 
         double compositeScore = matchResult.getOverallScore() != null
                 ? matchResult.getOverallScore().doubleValue() : 0.0;
@@ -218,17 +218,17 @@ public class RecommendationServiceImpl implements IRecommendationService {
         // 更新匹配详情
         matchResult.setMatchLevel(rating);
 
-        // 持久化到investment_recommendation表
-        // tech_match_score ← 业务契合度, tech_strength_score ← 规模实力, industry_fit_score ← 地域协同度
+        // 持久化到investment_recommendation表（三维度 v2）
         try {
             InvestmentRecommendation rec = recommendationMapper.selectByEnterpriseAndNode(enterpriseId, chainId);
             if (rec != null) {
-                rec.setTechMatchScore(matchResult.getTechMatchScore());
-                rec.setTechStrengthScore(BigDecimal.valueOf(scaleStrength).setScale(2, RoundingMode.HALF_UP));
-                rec.setIndustryFitScore(matchResult.getIndustryFitScore());
+                rec.setBusinessFitScore(matchResult.getBusinessFitScore());
+                rec.setScaleStrengthScore(BigDecimal.valueOf(scaleStrength).setScale(2, RoundingMode.HALF_UP));
+                rec.setRegionalSynergyScore(matchResult.getRegionalSynergyScore());
                 rec.setTotalScore(BigDecimal.valueOf(compositeScore).setScale(2, RoundingMode.HALF_UP));
                 rec.setRating(rating);
                 rec.setMatchReasons(matchResult.getMatchDetail());
+                rec.setDemandProvince(demandProvince);
                 rec.setStatus("pending");
                 rec.setRecommendationDate(LocalDate.now());
                 recommendationMapper.update(rec);
@@ -236,12 +236,13 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 InvestmentRecommendation newRec = new InvestmentRecommendation();
                 newRec.setEnterpriseId(enterpriseId);
                 newRec.setTargetNodeId(chainId);
-                newRec.setTechMatchScore(matchResult.getTechMatchScore());
-                newRec.setTechStrengthScore(BigDecimal.valueOf(scaleStrength).setScale(2, RoundingMode.HALF_UP));
-                newRec.setIndustryFitScore(matchResult.getIndustryFitScore());
+                newRec.setBusinessFitScore(matchResult.getBusinessFitScore());
+                newRec.setScaleStrengthScore(BigDecimal.valueOf(scaleStrength).setScale(2, RoundingMode.HALF_UP));
+                newRec.setRegionalSynergyScore(matchResult.getRegionalSynergyScore());
                 newRec.setTotalScore(BigDecimal.valueOf(compositeScore).setScale(2, RoundingMode.HALF_UP));
                 newRec.setRating(rating);
                 newRec.setMatchReasons(matchResult.getMatchDetail());
+                newRec.setDemandProvince(demandProvince);
                 newRec.setStatus("pending");
                 newRec.setRecommendationDate(LocalDate.now());
                 recommendationMapper.insert(newRec);
@@ -320,7 +321,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
             rec.setRegionCode(String.valueOf(modelEnt.getRegionId()));
         }
 
-        rec.setTechMatchScore(scored.getTechMatchScore());
+        rec.setBusinessFitScore(scored.getBusinessFitScore());
         rec.setOverallScore(scored.getOverallScore());
         rec.setMatchLevel(scored.getMatchLevel());
         rec.setReason(scored.getMatchDetail());
@@ -382,7 +383,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
                     r.createCell(1).setCellValue(ent.getEnterpriseName() != null ? ent.getEnterpriseName() : "");
                     r.createCell(2).setCellValue(ent.getIndustry() != null ? ent.getIndustry() : "");
                     r.createCell(3).setCellValue(ent.getRegionCode() != null ? ent.getRegionCode() : "");
-                    r.createCell(4).setCellValue(ent.getTechMatchScore() != null ? ent.getTechMatchScore().doubleValue() : 0);
+                    r.createCell(4).setCellValue(ent.getBusinessFitScore() != null ? ent.getBusinessFitScore().doubleValue() : 0);
                     r.createCell(5).setCellValue(ent.getOverallScore() != null ? ent.getOverallScore().doubleValue() : 0);
                     r.createCell(6).setCellValue(getMatchLevelLabel(ent.getMatchLevel()));
                     r.createCell(7).setCellValue(ent.getMatchLevel() != null ? ent.getMatchLevel() : "");
@@ -525,9 +526,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
         ScoreBreakdown scores = new ScoreBreakdown();
         scores.setMatchScore(rec.getTotalScore());
-        scores.setBusinessFitScore(rec.getTechMatchScore());
-        scores.setScaleStrengthScore(rec.getTechStrengthScore());
-        scores.setRegionalSynergyScore(rec.getIndustryFitScore());
+        scores.setBusinessFitScore(rec.getBusinessFitScore());
+        scores.setScaleStrengthScore(rec.getScaleStrengthScore());
+        scores.setRegionalSynergyScore(rec.getRegionalSynergyScore());
         scores.setTotalScore(rec.getTotalScore());
         scores.setRating(rec.getRating());
         scores.setMatchLevel(getMatchLevelText(rec.getTotalScore()));
@@ -608,9 +609,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
                         try {
                             MatchScoreResult scored = matchScoreService.calculateMatch(rec.getEnterpriseId(), nodeId, demandProvince);
                             double composite = scored.getOverallScore() != null ? scored.getOverallScore().doubleValue() : 0;
-                            rec.setTechMatchScore(scored.getTechMatchScore());
-                            rec.setTechStrengthScore(scored.getScaleStrengthScore());
-                            rec.setIndustryFitScore(scored.getIndustryFitScore());
+                            rec.setBusinessFitScore(scored.getBusinessFitScore());
+                            rec.setScaleStrengthScore(scored.getScaleStrengthScore());
+                            rec.setRegionalSynergyScore(scored.getRegionalSynergyScore());
                             rec.setTotalScore(scored.getOverallScore());
                             rec.setMatchReasons(scored.getMatchDetail());
                             rec.setRating(mapScoreToRating(composite));
@@ -939,11 +940,10 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 r.createCell(3).setCellValue(ent.getRegionCode() != null ? ent.getRegionCode() : "");
                 r.createCell(4).setCellValue(ent.getNodeName() != null ? ent.getNodeName() : "");
                 r.createCell(5).setCellValue(ent.getDiagnosisTag() != null ? ent.getDiagnosisTag() : "");
-                r.createCell(6).setCellValue(ent.getTechMatchScore() != null ? ent.getTechMatchScore().doubleValue() : 0);
-                r.createCell(7).setCellValue(ent.getTechStrengthScore() != null ? ent.getTechStrengthScore().doubleValue() : 0);
-                r.createCell(8).setCellValue(ent.getIndustryFitScore() != null ? ent.getIndustryFitScore().doubleValue() : 0);
-                r.createCell(9).setCellValue(ent.getDrivingPotentialScore() != null ? ent.getDrivingPotentialScore().doubleValue() : 0);
-                r.createCell(10).setCellValue(ent.getTotalScore() != null ? ent.getTotalScore().doubleValue() : 0);
+                r.createCell(6).setCellValue(ent.getBusinessFitScore() != null ? ent.getBusinessFitScore().doubleValue() : 0);
+                r.createCell(7).setCellValue(ent.getScaleStrengthScore() != null ? ent.getScaleStrengthScore().doubleValue() : 0);
+                r.createCell(8).setCellValue(ent.getRegionalSynergyScore() != null ? ent.getRegionalSynergyScore().doubleValue() : 0);
+                r.createCell(9).setCellValue(ent.getTotalScore() != null ? ent.getTotalScore().doubleValue() : 0);
 
                 String rating = ent.getRating();
                 r.createCell(11).setCellValue(rating != null ? rating : "");
@@ -1106,9 +1106,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 ? rec.getTotalScore().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO);
         ent.setMatchLevel(getMatchLevelKey(rec.getTotalScore()));
         ent.setMatchLevelText(getMatchLevelText(rec.getTotalScore()));
-        ent.setBusinessFitScore(rec.getTechMatchScore());
-        ent.setScaleStrengthScore(rec.getTechStrengthScore());
-        ent.setRegionalSynergyScore(rec.getIndustryFitScore());
+        ent.setBusinessFitScore(rec.getBusinessFitScore());
+        ent.setScaleStrengthScore(rec.getScaleStrengthScore());
+        ent.setRegionalSynergyScore(rec.getRegionalSynergyScore());
         ent.setTotalScore(rec.getTotalScore());
         ent.setRating(rec.getRating());
         ent.setNodeName(rec.getNodeName());

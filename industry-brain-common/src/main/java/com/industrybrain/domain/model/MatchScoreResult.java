@@ -26,13 +26,13 @@ public class MatchScoreResult extends BaseEntity {
 
     private String chainName;
 
-    /** 业务契合度得分（维度1） */
-    private BigDecimal techMatchScore;
+    /** 业务契合度得分（维度1，权重50%） */
+    private BigDecimal businessFitScore;
 
-    /** 地域协同度得分（维度3） — 数据库字段复用 */
-    private BigDecimal industryFitScore;
+    /** 地域协同度得分（维度3，权重15%） */
+    private BigDecimal regionalSynergyScore;
 
-    /** 规模实力得分（维度2） — 仅内存传递，不写入此表 */
+    /** 规模实力得分（维度2，权重35%） — 仅内存传递，不写入此表 */
     @TableField(exist = false)
     private BigDecimal scaleStrengthScore;
 

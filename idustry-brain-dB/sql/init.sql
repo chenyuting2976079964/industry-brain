@@ -358,38 +358,50 @@ CREATE TABLE node_diagnosis (
     CONSTRAINT chk_diag_tag CHECK (diagnosis_tag IN ('强链', '补链', '弱链', '缺链'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点诊断结果表';
 
--- 表14：招商推荐记录表（investment_recommendation）
+-- 表14：招商推荐匹配记录表（三维度算法 v2）
+DROP TABLE IF EXISTS investment_recommendation;
 CREATE TABLE investment_recommendation (
-    id                       BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐ID',
-    region_id                BIGINT NOT NULL COMMENT '区域ID',
-    target_node_id           BIGINT NOT NULL COMMENT '目标节点ID（弱链/缺链）',
-    enterprise_id            BIGINT DEFAULT NULL COMMENT '推荐目标企业ID',
-    tech_match_score         DECIMAL(5,2) DEFAULT NULL COMMENT '技术匹配度',
-    tech_strength_score      DECIMAL(5,2) DEFAULT NULL COMMENT '技术实力',
-    active_score             DECIMAL(5,2) DEFAULT NULL COMMENT '活跃度',
-    industry_fit_score       DECIMAL(5,2) DEFAULT NULL COMMENT '产业链适配性',
-    driving_potential_score  DECIMAL(5,2) DEFAULT NULL COMMENT '产业带动潜力',
-    chain_coverage           DECIMAL(5,2) DEFAULT NULL COMMENT '链条覆盖广度',
-    total_score              DECIMAL(5,2) DEFAULT NULL COMMENT '综合匹配度总分',
-    distance_level           VARCHAR(10) DEFAULT NULL COMMENT '区域距离',
-    status                   VARCHAR(20) DEFAULT 'pending' COMMENT '状态',
-    recommendation_date      DATE NOT NULL COMMENT '推荐日期',
-    is_deleted               TINYINT DEFAULT 0 COMMENT '软删除',
-    deleted_at               DATETIME DEFAULT NULL COMMENT '删除时间',
-    created_at               DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at               DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_region_node (region_id, target_node_id),
-    INDEX idx_total_score (total_score DESC),
+    id                      BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
+
+    -- 核心关联
+    enterprise_id           BIGINT NOT NULL COMMENT '目标企业ID',
+    target_node_id          BIGINT NOT NULL COMMENT '产业链节点ID（弱链/缺链/补链）',
+    region_id               BIGINT DEFAULT NULL COMMENT '区域ID（可选）',
+
+    -- 三维度得分（与算法维度一一对应，语义明确）
+    business_fit_score      DECIMAL(5,2) DEFAULT NULL COMMENT '业务契合度（维度1，权重50%）— 经营文本余弦相似度',
+    scale_strength_score    DECIMAL(5,2) DEFAULT NULL COMMENT '规模实力（维度2，权重35%）— 团队规模×20+资本×15÷35',
+    regional_synergy_score  DECIMAL(5,2) DEFAULT NULL COMMENT '地域协同度（维度3，权重15%）— 省内100/省外60',
+
+    -- 综合评分
+    total_score             DECIMAL(5,2) DEFAULT NULL COMMENT '综合得分 0-100',
+    rating                  VARCHAR(2) DEFAULT NULL COMMENT '评级 A/B/C',
+    match_reasons           VARCHAR(500) DEFAULT NULL COMMENT '匹配理由/详情文本',
+
+    -- 辅助计算字段
+    demand_province         VARCHAR(10) DEFAULT NULL COMMENT '需求方省份编码（regionCode前2位）',
+
+    -- 状态管理
+    status                  VARCHAR(20) DEFAULT 'pending' COMMENT '状态: pending/contacted/signed/wishlist',
+    recommendation_date     DATE DEFAULT NULL COMMENT '推荐日期',
+
+    -- 审计字段
+    is_deleted              TINYINT DEFAULT 0 COMMENT '软删除 0=正常 1=已删',
+    created_at              DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at              DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+
+    -- 索引
+    INDEX idx_ent_node (enterprise_id, target_node_id),
+    INDEX idx_total (total_score DESC),
     INDEX idx_status (status),
-    CONSTRAINT fk_rec_region FOREIGN KEY (region_id) REFERENCES region(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_rec_node FOREIGN KEY (target_node_id) REFERENCES chain_node(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_rec_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id)
-        ON DELETE SET NULL,
-    CONSTRAINT chk_distance CHECK (distance_level IS NULL OR distance_level IN ('本市', '本省', '邻省', '其他')),
-    CONSTRAINT chk_rec_status CHECK (status IN ('pending', 'contacted', 'signed'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招商推荐记录表';
+    INDEX idx_province (demand_province),
+
+    -- 外键约束
+    CONSTRAINT fk_rec_ent FOREIGN KEY (enterprise_id) REFERENCES enterprise(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rec_node FOREIGN KEY (target_node_id) REFERENCES chain_node(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rec_region FOREIGN KEY (region_id) REFERENCES region(id) ON DELETE SET NULL,
+    CONSTRAINT chk_rec_status CHECK (status IN ('pending', 'contacted', 'signed', 'wishlist'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招商推荐匹配记录表（v2 三维度算法）';
 
 -- 表22：预警表（alert）
 CREATE TABLE alert (

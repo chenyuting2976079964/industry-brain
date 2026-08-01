@@ -7,23 +7,24 @@
         <result property="regionId" column="region_id"/>
         <result property="targetNodeId" column="target_node_id"/>
         <result property="enterpriseId" column="enterprise_id"/>
-        <result property="techMatchScore" column="tech_match_score"/>
-        <result property="techStrengthScore" column="tech_strength_score"/>
-        <result property="activeScore" column="active_score"/>
-        <result property="industryFitScore" column="industry_fit_score"/>
-        <result property="drivingPotentialScore" column="driving_potential_score"/>
-        <result property="chainCoverage" column="chain_coverage"/>
+        <result property="businessFitScore" column="business_fit_score"/>
+        <result property="scaleStrengthScore" column="scale_strength_score"/>
+        <result property="regionalSynergyScore" column="regional_synergy_score"/>
         <result property="totalScore" column="total_score"/>
-        <result property="distanceLevel" column="distance_level"/>
+        <result property="rating" column="rating"/>
+        <result property="matchReasons" column="match_reasons"/>
+        <result property="demandProvince" column="demand_province"/>
         <result property="status" column="status"/>
         <result property="recommendationDate" column="recommendation_date"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 关联查询填充 -->
         <result property="enterpriseName" column="enterprise_name"/>
         <result property="industry" column="industry"/>
         <result property="regionCode" column="region_code"/>
         <result property="nodeName" column="node_name"/>
         <result property="diagnosisTag" column="diagnosis_tag"/>
-        <result property="matchReasons" column="match_reasons"/>
-        <result property="rating" column="rating"/>
     </resultMap>
 
     <select id="selectById" resultMap="InvestmentRecommendationMap">
@@ -53,8 +54,8 @@
             <if test="tab == 'weakchain'">and nd.diagnosis_tag in ('弱链', '缺链')</if>
         </where>
         <choose>
-            <when test="sortBy == 'patent'">order by ir.tech_strength_score desc</when>
-            <when test="sortBy == 'scale'">order by ir.driving_potential_score desc</when>
+            <when test="sortBy == 'patent'">order by ir.business_fit_score desc</when>
+            <when test="sortBy == 'scale'">order by ir.scale_strength_score desc</when>
             <otherwise>order by ir.total_score desc</otherwise>
         </choose>
         <if test="limit != null">limit #{offset}, #{limit}</if>
@@ -91,7 +92,7 @@
     </select>
 
     <select id="selectWishlist" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, e.industry,
+        select ir.*, e.name as enterprise_name, e.description as industry,
                cn.name as node_name, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
@@ -129,14 +130,13 @@
             <if test="regionId != null">region_id,</if>
             <if test="targetNodeId != null">target_node_id,</if>
             <if test="enterpriseId != null">enterprise_id,</if>
-            <if test="techMatchScore != null">tech_match_score,</if>
-            <if test="techStrengthScore != null">tech_strength_score,</if>
-            <if test="activeScore != null">active_score,</if>
-            <if test="industryFitScore != null">industry_fit_score,</if>
-            <if test="drivingPotentialScore != null">driving_potential_score,</if>
-            <if test="chainCoverage != null">chain_coverage,</if>
+            <if test="businessFitScore != null">business_fit_score,</if>
+            <if test="scaleStrengthScore != null">scale_strength_score,</if>
+            <if test="regionalSynergyScore != null">regional_synergy_score,</if>
             <if test="totalScore != null">total_score,</if>
-            <if test="distanceLevel != null">distance_level,</if>
+            <if test="rating != null">rating,</if>
+            <if test="matchReasons != null">match_reasons,</if>
+            <if test="demandProvince != null">demand_province,</if>
             <if test="status != null">status,</if>
             <if test="recommendationDate != null">recommendation_date,</if>
         </trim>
@@ -144,14 +144,13 @@
             <if test="regionId != null">#{regionId},</if>
             <if test="targetNodeId != null">#{targetNodeId},</if>
             <if test="enterpriseId != null">#{enterpriseId},</if>
-            <if test="techMatchScore != null">#{techMatchScore},</if>
-            <if test="techStrengthScore != null">#{techStrengthScore},</if>
-            <if test="activeScore != null">#{activeScore},</if>
-            <if test="industryFitScore != null">#{industryFitScore},</if>
-            <if test="drivingPotentialScore != null">#{drivingPotentialScore},</if>
-            <if test="chainCoverage != null">#{chainCoverage},</if>
+            <if test="businessFitScore != null">#{businessFitScore},</if>
+            <if test="scaleStrengthScore != null">#{scaleStrengthScore},</if>
+            <if test="regionalSynergyScore != null">#{regionalSynergyScore},</if>
             <if test="totalScore != null">#{totalScore},</if>
-            <if test="distanceLevel != null">#{distanceLevel},</if>
+            <if test="rating != null">#{rating},</if>
+            <if test="matchReasons != null">#{matchReasons},</if>
+            <if test="demandProvince != null">#{demandProvince},</if>
             <if test="status != null">#{status},</if>
             <if test="recommendationDate != null">#{recommendationDate},</if>
         </trim>
@@ -159,38 +158,34 @@
 
     <insert id="batchInsert">
         insert into investment_recommendation (region_id, target_node_id, enterprise_id,
-            tech_match_score, tech_strength_score, active_score,
-            industry_fit_score, driving_potential_score, chain_coverage,
-            total_score, distance_level, status, recommendation_date)
+            business_fit_score, scale_strength_score, regional_synergy_score,
+            total_score, rating, match_reasons, demand_province, status, recommendation_date)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.regionId}, #{item.targetNodeId}, #{item.enterpriseId},
-             #{item.techMatchScore}, #{item.techStrengthScore}, #{item.activeScore},
-             #{item.industryFitScore}, #{item.drivingPotentialScore}, #{item.chainCoverage},
-             #{item.totalScore}, #{item.distanceLevel}, #{item.status}, #{item.recommendationDate})
+             #{item.businessFitScore}, #{item.scaleStrengthScore}, #{item.regionalSynergyScore},
+             #{item.totalScore}, #{item.rating}, #{item.matchReasons}, #{item.demandProvince},
+             #{item.status}, #{item.recommendationDate})
         </foreach>
     </insert>
 
     <update id="update" parameterType="com.industrybrain.domain.model.InvestmentRecommendation">
         update investment_recommendation
         <trim prefix="SET" suffixOverrides=",">
-            <if test="techMatchScore != null">tech_match_score = #{techMatchScore},</if>
-            <if test="techStrengthScore != null">tech_strength_score = #{techStrengthScore},</if>
-            <if test="activeScore != null">active_score = #{activeScore},</if>
-            <if test="industryFitScore != null">industry_fit_score = #{industryFitScore},</if>
-            <if test="drivingPotentialScore != null">driving_potential_score = #{drivingPotentialScore},</if>
-            <if test="chainCoverage != null">chain_coverage = #{chainCoverage},</if>
+            <if test="businessFitScore != null">business_fit_score = #{businessFitScore},</if>
+            <if test="scaleStrengthScore != null">scale_strength_score = #{scaleStrengthScore},</if>
+            <if test="regionalSynergyScore != null">regional_synergy_score = #{regionalSynergyScore},</if>
             <if test="totalScore != null">total_score = #{totalScore},</if>
-            <if test="distanceLevel != null">distance_level = #{distanceLevel},</if>
-            <if test="status != null">status = #{status},</if>
-            <if test="matchReasons != null">match_reasons = #{matchReasons},</if>
             <if test="rating != null">rating = #{rating},</if>
+            <if test="matchReasons != null">match_reasons = #{matchReasons},</if>
+            <if test="demandProvince != null">demand_province = #{demandProvince},</if>
+            <if test="status != null">status = #{status},</if>
         </trim>
         where id = #{id}
     </update>
 
     <delete id="deleteById">
-        update investment_recommendation set is_deleted = 1, deleted_at = now() where id = #{id}
+        update investment_recommendation set is_deleted = 1, updated_at = now() where id = #{id}
     </delete>
 
     <select id="selectByEnterpriseAndNode" resultMap="InvestmentRecommendationMap">

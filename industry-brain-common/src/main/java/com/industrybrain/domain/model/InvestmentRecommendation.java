@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
- * 投资推荐实体 (investment_recommendation表)
+ * 招商推荐匹配记录实体 (investment_recommendation表 v2)
+ * 三维度算法: 业务契合度(50%) + 规模实力(35%) + 地域协同度(15%)
  * @author 何锦鹏
  */
 @Data
@@ -23,83 +24,82 @@ public class InvestmentRecommendation {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 区域ID */
+    /** 区域ID（可选） */
     private Long regionId;
 
-    /** 目标节点ID */
+    /** 目标产业链节点ID */
     private Long targetNodeId;
 
-    /** 推荐企业ID */
+    /** 推荐目标企业ID */
     private Long enterpriseId;
 
-    /** 企业名称 (关联查询填充) */
-    @TableField(exist = false)
-    private String enterpriseName;
+    // ==================== 三维度得分（与算法维度一一对应） ====================
 
-    /** 行业 (关联查询填充) */
-    @TableField(exist = false)
-    private String industry;
+    /** 业务契合度得分（维度1，权重50%） */
+    private BigDecimal businessFitScore;
 
-    /** 区域编码 (关联查询填充) */
-    @TableField(exist = false)
-    private String regionCode;
+    /** 规模实力得分（维度2，权重35%） */
+    private BigDecimal scaleStrengthScore;
 
-    /** 评分等级 A/B/C */
-    @TableField(exist = false)
-    private String rating;
+    /** 地域协同度得分（维度3，权重15%） */
+    private BigDecimal regionalSynergyScore;
 
-    /** 节点名称 (关联查询填充) */
-    @TableField(exist = false)
-    private String nodeName;
+    // ==================== 综合评分 ====================
 
-    /** 诊断标签 (关联查询填充) */
-    @TableField(exist = false)
-    private String diagnosisTag;
-
-    /** 匹配理由 */
-    @TableField(exist = false)
-    private String matchReasons;
-
-    /** 技术匹配度得分 (0-100) */
-    private BigDecimal techMatchScore;
-
-    /** 技术实力得分 (0-100) */
-    private BigDecimal techStrengthScore;
-
-    /** 活跃度得分 (0-100) */
-    private BigDecimal activeScore;
-
-    /** 产业契合度得分 (0-100) */
-    private BigDecimal industryFitScore;
-
-    /** 带动潜力得分 (0-100) */
-    private BigDecimal drivingPotentialScore;
-
-    /** 产业链覆盖率 (0-100) */
-    private BigDecimal chainCoverage;
-
-    /** 综合得分 (0-100) */
+    /** 综合得分 0-100 */
     private BigDecimal totalScore;
 
-    /** 距离层级 (本市/本省/邻省/其他) */
-    private String distanceLevel;
+    /** 评级 A/B/C */
+    private String rating;
 
-    /** 状态 (pending/contacted/signed/wishlist) */
+    /** 匹配理由/详情文本 */
+    private String matchReasons;
+
+    // ==================== 辅助计算字段 ====================
+
+    /** 需求方省份编码（regionCode前2位） */
+    private String demandProvince;
+
+    // ==================== 状态管理 ====================
+
+    /** 状态: pending/contacted/signed/wishlist */
     private String status;
 
     /** 推荐日期 */
     private LocalDate recommendationDate;
 
-    /** 更新时间 (关联查询填充) */
-    @TableField(exist = false)
-    private Date updateTime;
+    // ==================== 审计字段 ====================
 
     @TableLogic(value = "0", delval = "1")
     private Integer isDeleted;
 
-    private LocalDateTime deletedAt;
-
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    // ==================== 关联查询填充字段（非DB列） ====================
+
+    /** 企业名称 */
+    @TableField(exist = false)
+    private String enterpriseName;
+
+    /** 行业 */
+    @TableField(exist = false)
+    private String industry;
+
+    /** 区域编码 */
+    @TableField(exist = false)
+    private String regionCode;
+
+    /** 节点名称 */
+    @TableField(exist = false)
+    private String nodeName;
+
+    /** 诊断标签（强链/补链/弱链/缺链） */
+    @TableField(exist = false)
+    private String diagnosisTag;
+
+    /** 更新时间 */
+    @TableField(exist = false)
+    private Date updateTime;
 }

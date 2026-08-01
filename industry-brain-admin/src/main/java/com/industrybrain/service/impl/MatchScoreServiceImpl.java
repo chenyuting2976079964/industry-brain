@@ -130,9 +130,9 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
         result.setEnterpriseName(enterprise.getName());
         result.setChainId(chainId);
         result.setChainName(node != null ? node.getNodeName() : null);
-        result.setTechMatchScore(BigDecimal.valueOf(businessFitScore).setScale(2, RoundingMode.HALF_UP));
+        result.setBusinessFitScore(BigDecimal.valueOf(businessFitScore).setScale(2, RoundingMode.HALF_UP));
         result.setScaleStrengthScore(BigDecimal.valueOf(scaleStrengthScore).setScale(2, RoundingMode.HALF_UP));
-        result.setIndustryFitScore(BigDecimal.valueOf(regionalSynergyScore).setScale(2, RoundingMode.HALF_UP));
+        result.setRegionalSynergyScore(BigDecimal.valueOf(regionalSynergyScore).setScale(2, RoundingMode.HALF_UP));
         result.setOverallScore(BigDecimal.valueOf(comprehensiveScore).setScale(2, RoundingMode.HALF_UP));
         result.setMatchLevel(matchLevel);
         result.setMatchDetail(String.join("; ", reasons));
@@ -476,8 +476,8 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
         MatchScoreResult result = new MatchScoreResult();
         result.setEnterpriseId(enterpriseId);
         result.setChainId(chainId);
-        result.setTechMatchScore(BigDecimal.ZERO);
-        result.setIndustryFitScore(BigDecimal.ZERO);
+        result.setBusinessFitScore(BigDecimal.ZERO);
+        result.setRegionalSynergyScore(BigDecimal.ZERO);
         result.setOverallScore(BigDecimal.ZERO);
         result.setMatchLevel("低");
         result.setMatchDetail(detail);
