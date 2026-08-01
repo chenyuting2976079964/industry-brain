@@ -157,30 +157,30 @@
           <!-- Metric Bars -->
           <div class="grid grid-cols-3 gap-3">
             <div class="bg-slate-50 rounded-lg p-2.5">
-              <p class="text-xs text-slate-400">技术匹配度</p>
+              <p class="text-xs text-slate-400">业务契合度</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" :style="{ width: ent.matchScore + '%' }"></div>
+                  <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" :style="{ width: ent.businessFitScore + '%' }"></div>
                 </div>
-                <span class="text-xs font-medium">{{ ent.matchScore }}%</span>
+                <span class="text-xs font-medium">{{ ent.businessFitScore }}%</span>
               </div>
             </div>
             <div class="bg-slate-50 rounded-lg p-2.5">
-              <p class="text-xs text-slate-400">专利实力</p>
+              <p class="text-xs text-slate-400">规模实力</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-blue-500 rounded-full transition-all duration-500" :style="{ width: ent.patentScore + '%' }"></div>
+                  <div class="h-full bg-blue-500 rounded-full transition-all duration-500" :style="{ width: ent.scaleStrengthScore + '%' }"></div>
                 </div>
-                <span class="text-xs font-medium">{{ ent.patentScore }}%</span>
+                <span class="text-xs font-medium">{{ ent.scaleStrengthScore }}%</span>
               </div>
             </div>
             <div class="bg-slate-50 rounded-lg p-2.5">
-              <p class="text-xs text-slate-400">产业带动潜力</p>
+              <p class="text-xs text-slate-400">地域协同度</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-cyan-500 rounded-full transition-all duration-500" :style="{ width: ent.driveScore + '%' }"></div>
+                  <div class="h-full bg-cyan-500 rounded-full transition-all duration-500" :style="{ width: ent.regionalSynergyScore + '%' }"></div>
                 </div>
-                <span class="text-xs font-medium">{{ ent.driveScore }}%</span>
+                <span class="text-xs font-medium">{{ ent.regionalSynergyScore }}%</span>
               </div>
             </div>
           </div>
@@ -480,9 +480,9 @@ async function applyFilters() {
 function applySort() {
   const list = [...displayList.value]
   if (filters.sortBy === 'patent') {
-    list.sort((a, b) => b.patentScore - a.patentScore)
+    list.sort((a, b) => b.scaleStrengthScore - a.scaleStrengthScore)
   } else if (filters.sortBy === 'scale') {
-    list.sort((a, b) => b.driveScore - a.driveScore)
+    list.sort((a, b) => b.regionalSynergyScore - a.regionalSynergyScore)
   } else {
     list.sort((a, b) => b.matchScore - a.matchScore)
   }

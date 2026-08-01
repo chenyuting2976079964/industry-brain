@@ -1,22 +1,17 @@
 package com.industrybrain.service.impl;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import com.industrybrain.domain.model.IndustryChainNode;
 import com.industrybrain.domain.model.MatchScoreResult;
-import com.industrybrain.domain.model.Patent;
 import com.industrybrain.domain.model.Enterprise;
 import com.industrybrain.domain.model.Region;
-import com.industrybrain.domain.model.IpcChainMapping;
-import com.industrybrain.mapper.elasticsearch.EnterpriseSearchMapper;
 import com.industrybrain.mapper.mysql.EnterpriseMapper;
 import com.industrybrain.mapper.mysql.IndustryChainNodeMapper;
 import com.industrybrain.mapper.mysql.MatchScoreResultMapper;
-import com.industrybrain.mapper.mysql.PatentMapper;
 import com.industrybrain.mapper.mysql.RegionMapper;
-import com.industrybrain.mapper.mysql.IpcChainMappingMapper;
 import com.industrybrain.service.IMatchScoreService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -26,14 +21,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 技术匹配度算法实现类（算法A3）
+ * 企业匹配度算法实现（三维度评分）
  *
  * 算法流程：
- *   Step1: 标签向量化 — 企业技术标签 + 节点需求标签 → 合并去重 → TF-IDF词袋向量
- *   Step2: 余弦相似度 → 基础分(0~100)
- *   Step3: 附加项 — IPC交集加分(上限15%) + 高价值专利加分 + 同省加分
- *   Step4: 加权融合 — 标签相似60% + IPC加分 + 专利加分 + 地理加分 → 上限100%
- *   Step5: 分级 — ≥85%高度匹配 / 70-84%中度 / <70%低度
+ *   Dimension 1: 业务契合度得分 (权重50%) — 经营范围文本 × 节点需求文本 → 余弦相似度 → 分段映射
+ *   Dimension 2: 规模实力得分     (权重35%) — 团队规模得分×20 + 资本实力得分×15 ÷ 35
+ *   Dimension 3: 地域协同度得分   (权重15%) — 企业省份 vs 需求方省份 → 省内100/省外60
+ *
+ * 综合得分 = 业务契合度×0.5 + 规模实力×0.35 + 地域协同度×0.15
+ * 取值范围：0~100，保留2位小数
  */
 @Service
 @ConditionalOnProperty(name = "mysql.enabled", havingValue = "true", matchIfMissing = true)
@@ -41,11 +37,28 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
 
     private static final Logger log = LoggerFactory.getLogger(MatchScoreServiceImpl.class);
 
-    @Resource
-    private EnterpriseMapper enterpriseMapper;
+    // ==================== 权重常量 ====================
+    /** 业务契合度权重 */
+    private static final double BUSINESS_FIT_WEIGHT = 0.50;
+    /** 规模实力权重 */
+    private static final double SCALE_STRENGTH_WEIGHT = 0.35;
+    /** 地域协同度权重 */
+    private static final double REGIONAL_SYNERGY_WEIGHT = 0.15;
+
+    // ==================== 规模实力子权重 ====================
+    /** 团队规模子权重 */
+    private static final double TEAM_SCALE_SUB_WEIGHT = 20.0;
+    /** 资本实力子权重 */
+    private static final double CAPITAL_SUB_WEIGHT = 15.0;
+    /** 规模实力总分母 */
+    private static final double SCALE_STRENGTH_DENOMINATOR = 35.0;
+
+    // ==================== 分级阈值 ====================
+    private static final double HIGH_MATCH_THRESHOLD = 85.0;
+    private static final double MEDIUM_MATCH_THRESHOLD = 70.0;
 
     @Resource
-    private PatentMapper patentMapper;
+    private EnterpriseMapper enterpriseMapper;
 
     @Resource(name = "industryChainNodeMapper")
     private IndustryChainNodeMapper chainNodeMapper;
@@ -54,141 +67,62 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
     private MatchScoreResultMapper matchScoreResultMapper;
 
     @Resource
-    private EnterpriseSearchMapper enterpriseSearchMapper;
-
-    @Resource
     private RegionMapper regionMapper;
 
-    @Resource
-    private IpcChainMappingMapper ipcChainMappingMapper;  // IPC->产业链映射规则表
-
-    // ==================== 权重常量 ====================
-    /** 标签余弦相似度权重 */
-    private static final double TAG_SIMILARITY_WEIGHT = 0.60;
-    /** IPC 附加分每重叠1个的加分 */
-    private static final double IPC_OVERLAP_BONUS_PER = 0.05;
-    /** IPC 附加分上限 */
-    private static final double IPC_BONUS_CAP = 0.15;
-    /** 高价值专利>20 加分 */
-    private static final double HIGH_VALUE_20_BONUS = 0.05;
-    /** 高价值专利>50 加分 */
-    private static final double HIGH_VALUE_50_BONUS = 0.10;
-    /** 同省加分 */
-    private static final double SAME_PROVINCE_BONUS = 0.05;
-
-    // ==================== 分级阈值 ====================
-    private static final double HIGH_MATCH_THRESHOLD = 85.0;
-    private static final double MEDIUM_MATCH_THRESHOLD = 70.0;
-
     @Override
-    public MatchScoreResult calculateMatch(Long enterpriseId, Long chainId) {
-        log.info("=== A3 技术匹配度计算开始: enterpriseId={}, chainId={} ===", enterpriseId, chainId);
+    public MatchScoreResult calculateMatch(Long enterpriseId, Long chainId, String demandProvince) {
+        log.info("=== 三维度匹配度计算开始: enterpriseId={}, chainId={}, demandProvince={} ===",
+                enterpriseId, chainId, demandProvince);
 
-        // -------------------- Step1: 标签向量化 --------------------
-        // 1a. 获取企业技术标签
+        // 获取企业信息
         Enterprise enterprise = enterpriseMapper.selectById(enterpriseId);
         if (enterprise == null) {
             log.warn("企业不存在: enterpriseId={}", enterpriseId);
             return buildZeroResult(enterpriseId, chainId, "企业不存在");
         }
 
-        List<String> enterpriseTags = extractEnterpriseTags(enterprise);
-        log.info("Step1a: 企业技术标签 = {}", enterpriseTags);
-
-        // 1b. 获取节点需求标签
+        // 获取节点信息
         IndustryChainNode node = chainNodeMapper.selectById(chainId);
-        List<String> nodeDemandTags = extractNodeDemandTags(node);
-        log.info("Step1b: 节点需求标签 = {}", nodeDemandTags);
 
-        // 1c. 获取企业IPC分类
-        List<Patent> patents = patentMapper.selectByEnterpriseId(enterpriseId);
-        Set<String> enterpriseIpcSet = patents.stream()
-                .map(Patent::getIpcCode)
-                .filter(Objects::nonNull)
-                .map(ipc -> ipc.length() >= 4 ? ipc.substring(0, 4) : ipc)
-                .collect(Collectors.toSet());
-        log.info("Step1c: 企业IPC大类 = {}", enterpriseIpcSet);
+        // ---- 维度1: 业务契合度得分 ----
+        double businessFitScore = calculateBusinessFit(enterprise, node);
+        log.info("维度1: 业务契合度 = {}", String.format("%.2f", businessFitScore));
 
-        // 1d. 获取节点关键IPC（从节点描述/标签推断或从专利映射获取）
-        Set<String> nodeIpcSet = extractNodeKeyIpc(node);
-        log.info("Step1d: 节点关键IPC = {}", nodeIpcSet);
+        // ---- 维度2: 规模实力得分 ----
+        double scaleStrengthScore = calculateScaleStrength(enterprise);
+        log.info("维度2: 规模实力 = {}", String.format("%.2f", scaleStrengthScore));
 
-        // 1e. 合并标签去重，构建词袋
-        Set<String> vocabulary = new LinkedHashSet<>();
-        vocabulary.addAll(enterpriseTags);
-        vocabulary.addAll(nodeDemandTags);
-        // 将IPC也加入词袋
-        vocabulary.addAll(enterpriseIpcSet);
-        vocabulary.addAll(nodeIpcSet);
-        log.info("Step1e: 合并词袋大小 = {}", vocabulary.size());
+        // ---- 维度3: 地域协同度得分 ----
+        double regionalSynergyScore = calculateRegionalSynergy(enterprise, demandProvince);
+        log.info("维度3: 地域协同度 = {}", String.format("%.2f", regionalSynergyScore));
 
-        // 1f. 计算 TF 向量
-        Map<String, Double> enterpriseTf = computeTf(enterpriseTags, enterpriseIpcSet, vocabulary);
-        Map<String, Double> nodeTf = computeTf(nodeDemandTags, nodeIpcSet, vocabulary);
+        // ---- 综合得分 ----
+        double comprehensiveScore = businessFitScore * BUSINESS_FIT_WEIGHT
+                                  + scaleStrengthScore * SCALE_STRENGTH_WEIGHT
+                                  + regionalSynergyScore * REGIONAL_SYNERGY_WEIGHT;
+        comprehensiveScore = Math.min(comprehensiveScore, 100.0);
+        comprehensiveScore = Math.max(comprehensiveScore, 0.0);
+        log.info("综合得分 = {}×0.5 + {}×0.35 + {}×0.15 = {}",
+                String.format("%.2f", businessFitScore),
+                String.format("%.2f", scaleStrengthScore),
+                String.format("%.2f", regionalSynergyScore),
+                String.format("%.2f", comprehensiveScore));
 
-        // -------------------- Step2: 余弦相似度 --------------------
-        double cosineSimilarity = cosineSimilarity(enterpriseTf, nodeTf, vocabulary);
-        double baseScore = cosineSimilarity * 100.0; // 转换到0~100
-        log.info("Step2: 余弦相似度 = {}, 基础分 = {}", String.format("%.4f", cosineSimilarity), String.format("%.2f", baseScore));
-
-        // -------------------- Step3: 附加项 --------------------
-        double bonusTotal = 0.0;
-        List<String> matchReasons = new ArrayList<>();
-
-        // 3a. IPC 交集加分：每重叠1个 +5%，上限15%
-        Set<String> ipcIntersection = new HashSet<>(enterpriseIpcSet);
-        ipcIntersection.retainAll(nodeIpcSet);
-        double ipcBonus = Math.min(ipcIntersection.size() * IPC_OVERLAP_BONUS_PER, IPC_BONUS_CAP);
-        bonusTotal += ipcBonus;
-        if (ipcBonus > 0) {
-            matchReasons.add("IPC技术领域重叠" + ipcIntersection.size() + "项(+" + String.format("%.0f%%", ipcBonus * 100) + ")");
-        }
-        log.info("Step3a: IPC交集 = {}, 加分 = {}", ipcIntersection.size(), String.format("%.2f", ipcBonus));
-
-        // 3b. 高价值专利加分
-        long highValueCount = patentMapper.selectHighValueCount(enterpriseId);
-        double patentBonus = 0.0;
-        if (highValueCount > 50) {
-            patentBonus = HIGH_VALUE_50_BONUS;
-            matchReasons.add("高价值专利超50项(+" + String.format("%.0f%%", patentBonus * 100) + ")");
-        } else if (highValueCount > 20) {
-            patentBonus = HIGH_VALUE_20_BONUS;
-            matchReasons.add("高价值专利超20项(+" + String.format("%.0f%%", patentBonus * 100) + ")");
-        }
-        bonusTotal += patentBonus;
-        log.info("Step3b: 高价值专利数 = {}, 加分 = {}", highValueCount, String.format("%.2f", patentBonus));
-
-        // 3c. 同省加分
-        double geoBonus = 0.0;
-        String enterpriseProvince = null;
-        String nodeProvince = null;
-        if (enterprise.getRegionId() != null) {
-            Region region = regionMapper.selectById(enterprise.getRegionId());
-            if (region != null && region.getCode() != null && region.getCode().length() >= 2) {
-                enterpriseProvince = region.getCode().substring(0, 2);
-            }
-        }
-        // 节点的省份获取逻辑待完善（需要通过产业链-区域关联查询）
-        // 此处暂时获取企业省份用于日志记录
-        log.info("Step3c: 企业省份={}, 地理加分={}", enterpriseProvince, String.format("%.2f", geoBonus));
-
-        // -------------------- Step4: 加权融合 --------------------
-        // 标签相似度60% + IPC加分 + 专利加分 + 地理加分
-        double finalScore = baseScore * TAG_SIMILARITY_WEIGHT + bonusTotal * 100.0;
-        finalScore = Math.min(finalScore, 100.0);
-        finalScore = Math.max(finalScore, 0.0);
-        log.info("Step4: 加权融合得分 = {}", String.format("%.2f", finalScore));
-
-        // -------------------- Step5: 分级 --------------------
+        // ---- 分级 ----
         String matchLevel;
-        if (finalScore >= HIGH_MATCH_THRESHOLD) {
+        if (comprehensiveScore >= HIGH_MATCH_THRESHOLD) {
             matchLevel = "高";
-        } else if (finalScore >= MEDIUM_MATCH_THRESHOLD) {
+        } else if (comprehensiveScore >= MEDIUM_MATCH_THRESHOLD) {
             matchLevel = "中";
         } else {
             matchLevel = "低";
         }
-        log.info("Step5: 匹配等级 = {}", matchLevel);
+
+        // ---- 构建匹配理由 ----
+        List<String> reasons = new ArrayList<>();
+        reasons.add("业务契合度=" + String.format("%.0f", businessFitScore));
+        reasons.add("规模实力=" + String.format("%.0f", scaleStrengthScore));
+        reasons.add("地域协同度=" + String.format("%.0f", regionalSynergyScore));
 
         // 构建结果
         MatchScoreResult result = new MatchScoreResult();
@@ -196,12 +130,14 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
         result.setEnterpriseName(enterprise.getName());
         result.setChainId(chainId);
         result.setChainName(node != null ? node.getNodeName() : null);
-        result.setTechMatchScore(BigDecimal.valueOf(finalScore).setScale(2, RoundingMode.HALF_UP));
-        result.setOverallScore(BigDecimal.valueOf(finalScore).setScale(2, RoundingMode.HALF_UP));
+        result.setTechMatchScore(BigDecimal.valueOf(businessFitScore).setScale(2, RoundingMode.HALF_UP));
+        result.setScaleStrengthScore(BigDecimal.valueOf(scaleStrengthScore).setScale(2, RoundingMode.HALF_UP));
+        result.setIndustryFitScore(BigDecimal.valueOf(regionalSynergyScore).setScale(2, RoundingMode.HALF_UP));
+        result.setOverallScore(BigDecimal.valueOf(comprehensiveScore).setScale(2, RoundingMode.HALF_UP));
         result.setMatchLevel(matchLevel);
-        result.setMatchDetail(String.join("; ", matchReasons));
+        result.setMatchDetail(String.join("; ", reasons));
 
-        // 持久化结果
+        // 持久化
         try {
             MatchScoreResult existing = matchScoreResultMapper.selectByEnterpriseAndChain(enterpriseId, chainId);
             if (existing != null) {
@@ -214,18 +150,19 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
             log.warn("匹配度结果持久化失败: {}", e.getMessage());
         }
 
-        log.info("=== A3 技术匹配度计算完成: 得分={}, 等级={} ===", finalScore, matchLevel);
+        log.info("=== 三维度匹配度计算完成: 综合={}, 等级={} ===",
+                String.format("%.2f", comprehensiveScore), matchLevel);
         return result;
     }
 
     @Override
-    public List<MatchScoreResult> batchCalculate(List<Long> enterpriseIds, Long chainId) {
-        log.info("=== A3 批量匹配度计算: count={}, chainId={} ===", enterpriseIds.size(), chainId);
+    public List<MatchScoreResult> batchCalculate(List<Long> enterpriseIds, Long chainId, String demandProvince) {
+        log.info("=== 三维度批量匹配度计算: count={}, chainId={} ===", enterpriseIds.size(), chainId);
 
         List<MatchScoreResult> results = new ArrayList<>();
         for (Long enterpriseId : enterpriseIds) {
             try {
-                MatchScoreResult result = calculateMatch(enterpriseId, chainId);
+                MatchScoreResult result = calculateMatch(enterpriseId, chainId, demandProvince);
                 results.add(result);
             } catch (Exception e) {
                 log.error("批量匹配度计算失败: enterpriseId={}, error={}", enterpriseId, e.getMessage());
@@ -245,170 +182,141 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
             log.warn("批量持久化匹配度结果失败: {}", e.getMessage());
         }
 
-        log.info("=== A3 批量匹配度计算完成: {} 条结果 ===", results.size());
+        log.info("=== 三维度批量匹配度计算完成: {} 条结果 ===", results.size());
         return results;
     }
 
-    // ==================== 私有辅助方法 ====================
+    // ==================== 维度1: 业务契合度 ====================
 
     /**
-     * 从企业对象中提取技术标签
+     * 计算业务契合度得分
+     * 输入：企业经营范围文本、补链节点需求文本
+     * 通过文本相似度计算 Sim 值 → 分段映射到得分
      */
-    private List<String> extractEnterpriseTags(Enterprise enterprise) {
-        List<String> tags = new ArrayList<>();
+    private double calculateBusinessFit(Enterprise enterprise, IndustryChainNode node) {
+        // 获取企业经营范围文本
+        String businessScope = enterprise.getBusinessScope();
 
-        // 从经营范围提取关键词（如果有 businessScope 字段）
-        String businessScope = null;
+        // 兜底：经营范围为空
+        if (businessScope == null || businessScope.trim().isEmpty()) {
+            log.debug("企业经营范围为空，Sim=0");
+            return 0.0;
+        }
+
+        // 获取节点需求文本
+        String nodeDemandText = buildNodeDemandText(node);
+        if (nodeDemandText.isEmpty()) {
+            log.debug("节点需求文本为空，Sim=0");
+            return 0.0;
+        }
+
+        // 计算文本相似度
+        double sim;
         try {
-            // 尝试获取 businessScope 字段（通过反射或直接使用）
-            java.lang.reflect.Field field = enterprise.getClass().getDeclaredField("businessScope");
-            if (field != null) {
-                field.setAccessible(true);
-                businessScope = (String) field.get(enterprise);
-            }
+            sim = computeTextSimilarity(businessScope, nodeDemandText);
         } catch (Exception e) {
-            // 字段不存在，忽略
+            log.warn("文本相似度计算异常: {}", e.getMessage());
+            sim = 0.0; // 兜底
         }
 
-        if (businessScope != null && !businessScope.isEmpty()) {
-            // 按常见分隔符分词
-            String[] words = businessScope.split("[，,、\\s]+");
-            for (String word : words) {
-                String trimmed = word.trim();
-                if (trimmed.length() >= 2 && trimmed.length() <= 10) {
-                    tags.add(trimmed);
-                }
-            }
-        }
+        log.debug("业务契合度 Sim = {}", String.format("%.4f", sim));
 
-        // 补充：行业名作为标签
-        String industry = null;
-        try {
-            java.lang.reflect.Field field = enterprise.getClass().getDeclaredField("industry");
-            if (field != null) {
-                field.setAccessible(true);
-                industry = (String) field.get(enterprise);
-            }
-        } catch (Exception e) {
-            // 字段不存在，忽略
+        // 分段映射
+        if (sim >= 0.8) {
+            return 100.0;
+        } else if (sim >= 0.5) {
+            return 75.0;
+        } else if (sim >= 0.2) {
+            return 40.0;
+        } else {
+            return 0.0;
         }
-        if (industry != null && !industry.isEmpty()) {
-            tags.add(industry);
-        }
-
-        // 补充：企业名称作为关键词
-        String name = enterprise.getName();
-        if (name != null && !name.isEmpty()) {
-            // 从企业名称中提取关键词（简单处理）
-            String[] nameWords = name.split("[\\s-]");
-            for (String word : nameWords) {
-                if (word.length() >= 2) {
-                    tags.add(word);
-                }
-            }
-        }
-
-        return tags;
     }
 
     /**
-     * 从产业链节点中提取需求标签
+     * 构建节点需求文本（节点名称 + 描述）
      */
-    private List<String> extractNodeDemandTags(IndustryChainNode node) {
-        List<String> tags = new ArrayList<>();
-        if (node == null) return tags;
-
-        // 节点名称作为标签
+    private String buildNodeDemandText(IndustryChainNode node) {
+        if (node == null) return "";
+        StringBuilder sb = new StringBuilder();
         if (node.getNodeName() != null) {
-            tags.add(node.getNodeName());
+            sb.append(node.getNodeName());
         }
-        // 节点层级
-        if (node.getLevel() != null) {
-            tags.add(node.getLevel());
+        if (node.getDescription() != null) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(node.getDescription());
         }
-        // 从描述中提取关键词（简单分词）
-        if (node.getDescription() != null && !node.getDescription().isEmpty()) {
-            // 按常见分隔符分词
-            String[] words = node.getDescription().split("[，,、\\s]+");
-            for (String word : words) {
-                String trimmed = word.trim();
-                if (trimmed.length() >= 2 && trimmed.length() <= 10) {
-                    tags.add(trimmed);
-                }
-            }
-        }
-        return tags;
+        return sb.toString();
     }
 
     /**
-     * 从产业链节点推断关键IPC分类
-     * 优先从 ipc_chain_mapping 表查询，无法匹配时返回空集合。
+     * 计算两段文本的词级TF余弦相似度
      */
-    private Set<String> extractNodeKeyIpc(IndustryChainNode node) {
-        Set<String> ipcSet = new LinkedHashSet<>();
-        if (node == null) return ipcSet;
+    private double computeTextSimilarity(String text1, String text2) {
+        // 分词
+        List<String> words1 = tokenize(text1);
+        List<String> words2 = tokenize(text2);
 
-        try {
-            // 优先通过 IpcChainMapping 表查找该节点关联的IPC
-            List<IpcChainMapping> mappings = ipcChainMappingMapper.selectList(null);
-            if (mappings != null && node.getId() != null) {
-                for (IpcChainMapping mapping : mappings) {
-                    if (node.getId().equals(mapping.getNodeId()) && mapping.getIpcCode() != null) {
-                        ipcSet.add(mapping.getIpcCode());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("从ipc_chain_mapping表查询IPC失败: {}", e.getMessage());
+        if (words1.isEmpty() || words2.isEmpty()) {
+            return 0.0;
         }
 
-        // 后备：从节点名/描述中提取技术关键词做模糊匹配
-        if (ipcSet.isEmpty() && node.getNodeName() != null) {
-            try {
-                List<IpcChainMapping> allMappings = ipcChainMappingMapper.selectList(null);
-                if (allMappings != null) {
-                    String nodeText = (node.getNodeName() != null ? node.getNodeName() : "")
-                        + (node.getDescription() != null ? node.getDescription() : "");
-                    for (IpcChainMapping mapping : allMappings) {
-                        if (mapping.getDescription() != null && nodeText.contains(mapping.getDescription())) {
-                            ipcSet.add(mapping.getIpcCode());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.debug("IPC模糊匹配失败: {}", e.getMessage());
-            }
-        }
+        // 构建词袋
+        Set<String> vocabulary = new LinkedHashSet<>();
+        vocabulary.addAll(words1);
+        vocabulary.addAll(words2);
 
-        return ipcSet;
+        // 计算TF向量
+        Map<String, Double> tf1 = computeTf(words1, vocabulary);
+        Map<String, Double> tf2 = computeTf(words2, vocabulary);
+
+        // 余弦相似度
+        return cosineSimilarity(tf1, tf2, vocabulary);
     }
 
     /**
-     * 计算TF（词频）向量
+     * 中文文本分词（按分隔符切分）
      */
-    private Map<String, Double> computeTf(List<String> tags, Set<String> ipcSet, Set<String> vocabulary) {
+    private List<String> tokenize(String text) {
+        List<String> tokens = new ArrayList<>();
+        if (text == null || text.trim().isEmpty()) return tokens;
+
+        // 按中文和常见分隔符切分
+        String[] words = text.split("[，,、；;。\\s]+");
+        for (String word : words) {
+            String trimmed = word.trim();
+            if (trimmed.length() >= 2 && trimmed.length() <= 15) {
+                tokens.add(trimmed);
+            }
+        }
+
+        // 对于长文本，补充2-gram子串提升匹配
+        if (text.length() > 2) {
+            for (int i = 0; i < text.length() - 1; i++) {
+                String bigram = text.substring(i, Math.min(i + 2, text.length()));
+                if (bigram.length() == 2 && !bigram.matches("[，,、；;。\\s]+")) {
+                    tokens.add(bigram);
+                }
+            }
+        }
+
+        return tokens;
+    }
+
+    /**
+     * 计算词频（TF）向量
+     */
+    private Map<String, Double> computeTf(List<String> words, Set<String> vocabulary) {
         Map<String, Double> tf = new LinkedHashMap<>();
-
-        // 统计标签词频
-        Map<String, Integer> tagFreq = new HashMap<>();
-        for (String tag : tags) {
-            tagFreq.merge(tag, 1, Integer::sum);
+        Map<String, Integer> freq = new HashMap<>();
+        for (String word : words) {
+            freq.merge(word, 1, Integer::sum);
         }
 
-        int totalTerms = tags.size() + ipcSet.size();
-        if (totalTerms == 0) {
-            // 全零向量
-            for (String term : vocabulary) {
-                tf.put(term, 0.0);
-            }
-            return tf;
-        }
-
+        int total = words.size();
         for (String term : vocabulary) {
-            double freq = tagFreq.getOrDefault(term, 0) + (ipcSet.contains(term) ? 1 : 0);
-            tf.put(term, freq / totalTerms);
+            tf.put(term, total > 0 ? (double) freq.getOrDefault(term, 0) / total : 0.0);
         }
-
         return tf;
     }
 
@@ -416,9 +324,7 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
      * 计算两个TF向量的余弦相似度
      */
     private double cosineSimilarity(Map<String, Double> vec1, Map<String, Double> vec2, Set<String> vocabulary) {
-        double dotProduct = 0.0;
-        double norm1 = 0.0;
-        double norm2 = 0.0;
+        double dotProduct = 0.0, norm1 = 0.0, norm2 = 0.0;
 
         for (String term : vocabulary) {
             double v1 = vec1.getOrDefault(term, 0.0);
@@ -428,20 +334,140 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
             norm2 += v2 * v2;
         }
 
-        if (norm1 == 0.0 || norm2 == 0.0) {
-            return 0.0;
-        }
-
+        if (norm1 == 0.0 || norm2 == 0.0) return 0.0;
         return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
     }
 
+    // ==================== 维度2: 规模实力 ====================
+
     /**
-     * 从区域编码提取省份（前2位）
+     * 计算规模实力得分
+     * 公式：(团队规模得分 × 20 + 资本实力得分 × 15) ÷ 35
      */
-    private String extractProvince(String regionCode) {
-        if (regionCode == null || regionCode.length() < 2) return null;
-        return regionCode.substring(0, 2);
+    private double calculateScaleStrength(Enterprise enterprise) {
+        double teamScore = calculateTeamScaleScore(enterprise.getEmployeeScale());
+        double capitalScore = calculateCapitalScore(enterprise.getRegisteredCapital());
+
+        double scaleStrength = (teamScore * TEAM_SCALE_SUB_WEIGHT + capitalScore * CAPITAL_SUB_WEIGHT)
+                / SCALE_STRENGTH_DENOMINATOR;
+
+        log.debug("规模实力: 团队规模={}×20 + 资本实力={}×15 → {}",
+                String.format("%.0f", teamScore), String.format("%.0f", capitalScore),
+                String.format("%.2f", scaleStrength));
+
+        return Math.min(scaleStrength, 100.0);
     }
+
+    /**
+     * 团队规模得分
+     */
+    private double calculateTeamScaleScore(String employeeScale) {
+        if (employeeScale == null || employeeScale.trim().isEmpty()) {
+            return 50.0; // 兜底：小型
+        }
+
+        String scale = employeeScale.trim();
+        switch (scale) {
+            case "大型": return 100.0;
+            case "中大型": return 90.0;
+            case "中型": return 80.0;
+            case "中小型": return 65.0;
+            case "小型": return 50.0;
+            default: return 50.0; // 未知统一按小型
+        }
+    }
+
+    /**
+     * 资本实力得分（基于注册资本，单位：元）
+     */
+    private double calculateCapitalScore(String registeredCapitalStr) {
+        double capitalYuan = parseCapitalToYuan(registeredCapitalStr);
+
+        if (capitalYuan >= 10_000_000) { // ≥1000万
+            return 100.0;
+        } else if (capitalYuan >= 1_000_000) { // 100万~1000万
+            return 80.0;
+        } else {
+            return 60.0; // <100万 或 null
+        }
+    }
+
+    /**
+     * 解析注册资本字符串为元数值
+     * 支持: "10000万元", "5000万", "1亿", "1000.5万", "10000000", null
+     */
+    private double parseCapitalToYuan(String capitalStr) {
+        if (capitalStr == null || capitalStr.trim().isEmpty()) {
+            return 0.0;
+        }
+        try {
+            String cleaned = capitalStr.trim();
+            if (cleaned.contains("亿")) {
+                return Double.parseDouble(cleaned.replace("亿", "").replace("元", "").trim()) * 100_000_000;
+            }
+            // "万元"
+            if (cleaned.contains("万元")) {
+                return Double.parseDouble(cleaned.replace("万元", "").trim()) * 10_000;
+            }
+            // "万"
+            if (cleaned.contains("万")) {
+                return Double.parseDouble(cleaned.replace("万", "").replace("元", "").trim()) * 10_000;
+            }
+            // "元" 或纯数字
+            cleaned = cleaned.replace("元", "").trim();
+            return Double.parseDouble(cleaned);
+        } catch (NumberFormatException e) {
+            log.debug("注册资本解析失败: {}, 按0处理", capitalStr);
+            return 0.0;
+        }
+    }
+
+    // ==================== 维度3: 地域协同度 ====================
+
+    /**
+     * 计算地域协同度得分
+     * 企业省份 vs 需求方省份 → 省内100 / 省外60
+     */
+    private double calculateRegionalSynergy(Enterprise enterprise, String demandProvince) {
+        // 获取企业省份编码（region.code前2位）
+        String enterpriseProvince = getEnterpriseProvince(enterprise);
+
+        // 兜底：企业省份为空 → 按省外60
+        if (enterpriseProvince == null || enterpriseProvince.isEmpty()) {
+            log.debug("企业省份为空，按省外处理");
+            return 60.0;
+        }
+
+        // 需求方省份为空 → 按省外60
+        if (demandProvince == null || demandProvince.trim().isEmpty()) {
+            log.debug("需求方省份为空，按省外处理");
+            return 60.0;
+        }
+
+        if (enterpriseProvince.equals(demandProvince.trim())) {
+            return 100.0;
+        } else {
+            return 60.0;
+        }
+    }
+
+    /**
+     * 从企业 regionId 提取省份编码（前2位）
+     */
+    private String getEnterpriseProvince(Enterprise enterprise) {
+        if (enterprise.getRegionId() == null) return null;
+        try {
+            Region region = regionMapper.selectById(enterprise.getRegionId());
+            if (region != null && region.getCode() != null && region.getCode().length() >= 2) {
+                return region.getCode().substring(0, 2);
+            }
+        } catch (Exception e) {
+            log.debug("查询企业区域失败: regionId={}, error={}", enterprise.getRegionId(), e.getMessage());
+        }
+        return null;
+    }
+
+    // ==================== 辅助方法 ====================
 
     /**
      * 构建零分结果
