@@ -15,11 +15,11 @@
         >
           <i class="fa-regular fa-bookmark mr-1 text-blue-500"></i>已选 <b>{{ wishList.length }}</b> 家
         </span>
-        <button class="btn-outline text-xs" @click="handleExport">
-          <i class="fa-regular fa-file-excel"></i>导出清单
+        <button class="btn-outline text-xs" @click="handleExport" :disabled="exporting">
+          <i :class="exporting ? 'fa-solid fa-spinner fa-spin' : 'fa-regular fa-file-excel'"></i>{{ exporting ? '导出中...' : '导出清单' }}
         </button>
-        <button class="btn-primary text-xs" @click="handleRematch">
-          <i class="fa-solid fa-arrows-rotate"></i>重新匹配
+        <button class="btn-primary text-xs" @click="handleRematch" :disabled="rematching">
+          <i :class="rematching ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrows-rotate'"></i>{{ rematching ? '匹配中...' : '重新匹配' }}
         </button>
       </div>
     </div>
@@ -31,6 +31,7 @@
           <label class="text-xs text-slate-400 block mb-1">薄弱环节</label>
           <select v-model="filters.weakness" class="select-field text-xs" @change="applyFilters">
             <option value="all">全部薄弱环节</option>
+            <option v-for="w in weaknessOptions" :key="w.nodeName" :value="w.diagnosisTag">{{ w.nodeName }}（{{ w.diagnosisTag }}）</option>
           </select>
         </div>
         <div>
@@ -210,6 +211,46 @@
       </div>
     </div>
 
+    <!-- ==================== REPORT SECTION ==================== -->
+    <div class="bg-white rounded-xl p-5 border border-slate-100 data-card mt-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-slate-700">
+          <i class="fa-regular fa-file-lines mr-2 text-blue-500"></i>招商报告
+        </h3>
+        <button class="btn-primary text-xs" @click="handleGenerateReport" :disabled="reportGenerating">
+          <i :class="reportGenerating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-plus'"></i>{{ reportGenerating ? '生成中...' : '生成报告' }}
+        </button>
+      </div>
+      <div v-if="reports.length === 0" class="text-center py-6 text-xs text-slate-400">
+        <i class="fa-regular fa-folder-open text-3xl block mb-2"></i>暂无报告，点击"生成报告"创建
+      </div>
+      <div v-else class="space-y-2">
+        <div
+          v-for="r in reports"
+          :key="r.id"
+          class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <i :class="['fa-regular text-blue-500', r.status === 'completed' ? 'fa-file-excel' : r.status === 'processing' ? 'fa-clock fa-spin' : 'fa-circle-exclamation text-red-400'].join(' ')"></i>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium text-slate-700 truncate">{{ r.title || '招商推荐报告' }}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">
+                {{ r.status === 'completed' ? '生成时间: ' + (r.reportDate || r.createdAt || r.created_at || '—') : r.status === 'processing' ? '正在生成...' : '生成失败' }}
+                <span v-if="r.enterpriseCount"> · {{ r.enterpriseCount }} 家企业</span>
+              </p>
+            </div>
+          </div>
+          <button
+            v-if="r.status === 'completed'"
+            class="btn-outline text-xs flex-shrink-0 ml-3"
+            @click="handleDownloadReport(r.id)"
+          >
+            <i class="fa-solid fa-download"></i>下载
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ==================== SLIDE PANEL: Enterprise Detail ==================== -->
     <Teleport to="body">
       <div v-if="panelVisible" class="panel-overlay show" @click="closeDetail"></div>
@@ -294,11 +335,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useEventBus } from '@/stores/eventBus'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { investmentService } from '@/services/investment.service'
-
-const eventBus = useEventBus()
 
 // ---- State ----
 const pageSubtitle = ref('基于弱链/缺链节点自动匹配 · 综合评估招商价值')
@@ -309,6 +347,9 @@ const displayList = ref([])
 const totalCount = ref(0)
 const wishList = ref([])
 const rematching = ref(false)
+const exporting = ref(false)
+const reportGenerating = ref(false)
+const reports = ref([])
 
 const filters = reactive({
   weakness: 'all',
@@ -318,25 +359,23 @@ const filters = reactive({
   keyword: ''
 })
 
+// 薄弱环节选项（从数据中动态提取）
+const weaknessOptions = ref([])
 
 // ---- Init ----
 onMounted(async () => {
-  // Read context from navigation (e.g. from diagnosis alert)
   try {
     const ctx = JSON.parse(sessionStorage.getItem('navContext') || '{}')
     if (ctx.fromNode || ctx.weakNode) {
-      const node = ctx.fromNode || ctx.weakNode
-      contextNode.value = node
-      pageSubtitle.value = `来自 ${node} 环节的招商匹配`
-      if (ctx.weaknessKey) {
-        filters.weakness = ctx.weaknessKey
-      }
+      contextNode.value = ctx.fromNode || ctx.weakNode
+      pageSubtitle.value = `来自 ${contextNode.value} 环节的招商匹配`
+      if (ctx.weaknessKey) filters.weakness = ctx.weaknessKey
     }
-    // Clear context after reading
     sessionStorage.removeItem('navContext')
   } catch (e) { console.error('[Investment] Failed to parse nav context:', e) }
 
   await loadData()
+  await loadReports()
 })
 
 // ---- Data loading ----
@@ -351,32 +390,43 @@ async function loadData() {
     })
     totalCount.value = res.total
     displayList.value = res.enterprises || []
+
+    // 从全量数据中提取薄弱环节选项（仅第一次加载时）
+    if (filters.weakness === 'all' && weaknessOptions.value.length === 0 && displayList.value.length > 0) {
+      const seen = new Set()
+      weaknessOptions.value = displayList.value
+        .filter(e => e.nodeName && e.diagnosisTag)
+        .filter(e => { const k = e.nodeName; if (seen.has(k)) return false; seen.add(k); return true })
+        .map(e => ({ nodeName: e.nodeName, diagnosisTag: e.diagnosisTag }))
+    }
   } catch (e) {
     console.error('Failed to load investment data:', e)
   }
 }
 
-// ---- Actions ----
-async function applyFilters() {
-  await loadData()
+async function loadReports() {
+  try {
+    const res = await investmentService.getReports()
+    reports.value = res.reports || res || []
+  } catch (e) {
+    console.error('Failed to load reports:', e)
+  }
 }
+
+// ---- Actions ----
+async function applyFilters() { await loadData() }
 
 function applySort() {
   const list = [...displayList.value]
-  if (filters.sortBy === 'business') {
-    list.sort((a, b) => (b.businessFitScore || 0) - (a.businessFitScore || 0))
-  } else if (filters.sortBy === 'scale') {
-    list.sort((a, b) => (b.scaleStrengthScore || 0) - (a.scaleStrengthScore || 0))
-  } else if (filters.sortBy === 'region') {
-    list.sort((a, b) => (b.regionalSynergyScore || 0) - (a.regionalSynergyScore || 0))
-  } else {
-    list.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-  }
+  if (filters.sortBy === 'business') list.sort((a, b) => (b.businessFitScore || 0) - (a.businessFitScore || 0))
+  else if (filters.sortBy === 'scale') list.sort((a, b) => (b.scaleStrengthScore || 0) - (a.scaleStrengthScore || 0))
+  else if (filters.sortBy === 'region') list.sort((a, b) => (b.regionalSynergyScore || 0) - (a.regionalSynergyScore || 0))
+  else list.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
   displayList.value = list
 }
 
 function openDetail(ent) {
-  selectedEnt.value = ent
+  selectedEnt.value = { ...ent, descExpanded: false }
   panelVisible.value = true
 }
 
@@ -388,42 +438,60 @@ function closeDetail() {
 function toggleWishlist(ent) {
   const id = ent.enterpriseId
   const idx = wishList.value.indexOf(id)
-  if (idx > -1) {
-    wishList.value.splice(idx, 1)
-    ent.inWishlist = false
-  } else {
-    wishList.value.push(id)
-    ent.inWishlist = true
-  }
+  if (idx > -1) { wishList.value.splice(idx, 1); ent.inWishlist = false }
+  else { wishList.value.push(id); ent.inWishlist = true }
 }
 
 async function handleExport() {
-  await investmentService.exportList('excel')
-  eventBus.openModal('导出完成', `
-    <div class="text-center py-4">
-      <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
-      <p class="text-sm text-slate-600">招商清单已导出</p>
-      <p class="text-xs text-slate-400 mt-1">文件已保存至下载目录</p>
-    </div>
-  `)
+  exporting.value = true
+  try {
+    await investmentService.exportList({})
+    alert('导出成功！招商清单已生成。')
+  } catch (e) {
+    alert('导出失败，请稍后重试。')
+  } finally {
+    exporting.value = false
+  }
 }
 
 async function handleRematch() {
   rematching.value = true
   try {
     await investmentService.rematch()
-    eventBus.openModal('匹配完成', `
-      <div class="text-center py-4">
-        <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-3"></i>
-        <p class="text-sm text-slate-600">重新匹配完成，已更新推荐结果</p>
-      </div>
-    `)
     await loadData()
   } catch (e) {
     console.error('[Investment] Rematch failed:', e)
   } finally {
     rematching.value = false
   }
+}
+
+async function handleGenerateReport() {
+  reportGenerating.value = true
+  try {
+    await investmentService.generateReport({ type: 'investment_list', format: 'Excel' })
+    await loadReports()
+  } catch (e) {
+    console.error('Report generation failed:', e)
+  } finally {
+    reportGenerating.value = false
+  }
+}
+
+async function handleDownloadReport(reportId) {
+  try {
+    const url = await investmentService.downloadReport(reportId)
+    if (url) window.open(url, '_blank')
+    else alert('报告文件暂不可用')
+  } catch (e) {
+    alert('下载失败')
+  }
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
 }
 </script>
 

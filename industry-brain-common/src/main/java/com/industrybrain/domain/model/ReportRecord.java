@@ -43,27 +43,27 @@ public class ReportRecord implements Serializable {
     /** 报告范围 */
     private String scope;
 
-    /** 覆盖企业数量 (report表无此列) */
-    @TableField(exist = false)
+    /** 覆盖企业数量 */
+    @TableField("enterprise_count")
     private Integer enterpriseCount;
 
     /** 输出格式 PDF/XLSX，映射到 format 列 */
     @TableField("format")
     private String outputFormat;
 
-    /** 文件URL — 通过 file_id 关联 attachment 表获取 */
-    @TableField(exist = false)
+    /** 文件URL */
+    @TableField("file_url")
     private String fileUrl;
 
-    /** 文件大小 — 通过 file_id 关联 attachment 表获取 */
-    @TableField(exist = false)
+    /** 文件大小 */
+    @TableField("file_size")
     private Long fileSize;
 
-    /** 状态：pending/processing/done/failed */
+    /** 状态：pending/processing/completed/failed */
     private String status;
 
     /** 生成耗时(ms) */
-    @TableField(exist = false)
+    @TableField("generation_time_ms")
     private Long generationTime;
 
     /** 所属区域ID */

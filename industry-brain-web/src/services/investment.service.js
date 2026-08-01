@@ -52,10 +52,23 @@ export const investmentService = {
     return post(`${BASE}/rematch${qs}`)
   },
 
-  /** I07 — POST /api/v1/recommendation/export
-   *  后端: @RequestBody RecommendationRequest { chainId, targetLinks, regionCode, minThreshold, limit }
-   *  前端按需组装导出参数 */
+  /** I07 — POST /api/v1/recommendation/export */
   exportList(params = {}) {
     return post(`${BASE}/export`, params)
+  },
+
+  /** R01 — GET /api/v1/recommendation/reports */
+  getReports(page = 1, size = 20) {
+    return get(`${BASE}/reports?page=${page}&size=${size}`)
+  },
+
+  /** R03 — POST /api/v1/recommendation/reports/generate */
+  generateReport(params = {}) {
+    return post(`${BASE}/reports/generate`, params)
+  },
+
+  /** R04 — GET /api/v1/recommendation/reports/{id}/download */
+  downloadReport(id) {
+    return get(`${BASE}/reports/${id}/download`)
   }
 }

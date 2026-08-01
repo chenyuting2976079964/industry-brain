@@ -703,6 +703,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
         record.setScope(request.getScope());
         record.setOutputFormat(request.getFormat() != null ? request.getFormat() : "Excel");
         record.setStatus("pending");
+        record.setUserId(1L); // 默认系统用户
 
         reportMapper.insert(record);
 

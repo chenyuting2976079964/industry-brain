@@ -14,6 +14,10 @@
         <result property="fileId" column="file_id"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
+        <result property="fileUrl" column="file_url"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="enterpriseCount" column="enterprise_count"/>
+        <result property="generationTime" column="generation_time_ms"/>
     </resultMap>
 
     <select id="selectById" resultMap="ReportRecordMap">
@@ -40,6 +44,10 @@
             <if test="regionId != null">region_id,</if>
             <if test="userId != null">user_id,</if>
             <if test="fileId != null">file_id,</if>
+            <if test="fileUrl != null">file_url,</if>
+            <if test="fileSize != null">file_size,</if>
+            <if test="enterpriseCount != null">enterprise_count,</if>
+            <if test="generationTime != null">generation_time_ms,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="title != null">#{title},</if>
@@ -50,6 +58,10 @@
             <if test="regionId != null">#{regionId},</if>
             <if test="userId != null">#{userId},</if>
             <if test="fileId != null">#{fileId},</if>
+            <if test="fileUrl != null">#{fileUrl},</if>
+            <if test="fileSize != null">#{fileSize},</if>
+            <if test="enterpriseCount != null">#{enterpriseCount},</if>
+            <if test="generationTime != null">#{generationTime},</if>
         </trim>
     </insert>
 
@@ -60,6 +72,10 @@
             <if test="status != null">status = #{status},</if>
             <if test="scope != null">scope = #{scope},</if>
             <if test="outputFormat != null">format = #{outputFormat},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="enterpriseCount != null">enterprise_count = #{enterpriseCount},</if>
+            <if test="generationTime != null">generation_time_ms = #{generationTime},</if>
         </trim>
         where id = #{id}
     </update>
