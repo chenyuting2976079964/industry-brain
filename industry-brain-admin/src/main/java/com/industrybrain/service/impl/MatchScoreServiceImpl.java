@@ -186,47 +186,67 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
         return results;
     }
 
-    // ==================== 维度1: 业务契合度 ====================
+    // ==================== 维度1: 业务契合度（关键词子串命中算法） ====================
 
     /**
      * 计算业务契合度得分
-     * 输入：企业经营范围文本、补链节点需求文本
-     * 通过文本相似度计算 Sim 值 → 分段映射到得分
+     * 新算法：关键词子串命中匹配
+     *
+     * 1. 解析经营范围为业务项列表（按分隔符拆分，去掉"许可项目："等前缀）
+     * 2. 从节点名称生成关键词集（2-gram + 单字 + 全称本身）
+     * 3. 计算每条关键词是否在任一业务项中出现（子串包含）
+     * 4. 命中率 = 命中数 / 总关键词数
+     * 5. 命中率分段映射到得分
      */
     private double calculateBusinessFit(Enterprise enterprise, IndustryChainNode node) {
-        // 获取企业经营范围文本
-        String businessScope = enterprise.getBusinessScope();
-
-        // 兜底：经营范围为空
+        // 取description列（实际存储经营范围文本）或businessScope扩展字段
+        String businessScope = enterprise.getDescription();
         if (businessScope == null || businessScope.trim().isEmpty()) {
-            log.debug("企业经营范围为空，Sim=0");
+            businessScope = enterprise.getBusinessScope();
+        }
+        if (businessScope == null || businessScope.trim().isEmpty()) {
+            log.debug("企业经营范围为空，命中率=0");
             return 0.0;
         }
 
-        // 获取节点需求文本
-        String nodeDemandText = buildNodeDemandText(node);
-        if (nodeDemandText.isEmpty()) {
-            log.debug("节点需求文本为空，Sim=0");
+        String nodeName = node != null ? node.getNodeName() : null;
+        if (nodeName == null || nodeName.trim().isEmpty()) {
+            log.debug("节点名称为空，命中率=0");
+            return 0.0;
+        }
+        nodeName = nodeName.trim();
+
+        // 1. 解析经营范围为业务项列表
+        List<String> businessItems = parseBusinessItems(businessScope);
+
+        // 2. 从节点名称生成关键词集
+        Set<String> keywords = generateNodeKeywords(nodeName);
+
+        if (keywords.isEmpty() || businessItems.isEmpty()) {
             return 0.0;
         }
 
-        // 计算文本相似度
-        double sim;
-        try {
-            sim = computeTextSimilarity(businessScope, nodeDemandText);
-        } catch (Exception e) {
-            log.warn("文本相似度计算异常: {}", e.getMessage());
-            sim = 0.0; // 兜底
+        // 3. 计算命中率
+        int hitCount = 0;
+        for (String kw : keywords) {
+            for (String item : businessItems) {
+                if (item.contains(kw)) {
+                    hitCount++;
+                    break; // 该关键词命中，跳到下一个关键词
+                }
+            }
         }
+        double hitRate = (double) hitCount / keywords.size();
 
-        log.debug("业务契合度 Sim = {}", String.format("%.4f", sim));
+        log.debug("业务契合度: node={}, 业务项={}个, 关键词={}个, 命中={}个, 命中率={}",
+                nodeName, businessItems.size(), keywords.size(), hitCount, String.format("%.2f", hitRate));
 
-        // 分段映射
-        if (sim >= 0.8) {
+        // 4. 分段映射到得分
+        if (hitRate >= 0.6) {
             return 100.0;
-        } else if (sim >= 0.5) {
+        } else if (hitRate >= 0.3) {
             return 75.0;
-        } else if (sim >= 0.2) {
+        } else if (hitRate > 0) {
             return 40.0;
         } else {
             return 0.0;
@@ -234,108 +254,65 @@ public class MatchScoreServiceImpl implements IMatchScoreService {
     }
 
     /**
-     * 构建节点需求文本（节点名称 + 描述）
+     * 解析经营范围为业务项列表
+     * 处理结构: "许可项目：A；B；C 一般项目：D；E；F"
      */
-    private String buildNodeDemandText(IndustryChainNode node) {
-        if (node == null) return "";
-        StringBuilder sb = new StringBuilder();
-        if (node.getNodeName() != null) {
-            sb.append(node.getNodeName());
-        }
-        if (node.getDescription() != null) {
-            if (sb.length() > 0) sb.append(" ");
-            sb.append(node.getDescription());
-        }
-        return sb.toString();
-    }
+    private List<String> parseBusinessItems(String businessScope) {
+        List<String> items = new ArrayList<>();
+        if (businessScope == null || businessScope.trim().isEmpty()) return items;
 
-    /**
-     * 计算两段文本的词级TF余弦相似度
-     */
-    private double computeTextSimilarity(String text1, String text2) {
-        // 分词
-        List<String> words1 = tokenize(text1);
-        List<String> words2 = tokenize(text2);
+        // 去掉"许可项目："和"一般项目："等前缀标签
+        String cleaned = businessScope
+                .replace("许可项目：", "；")
+                .replace("许可项目:", "；")
+                .replace("一般项目：", "；")
+                .replace("一般项目:", "；")
+                .replace("（除许可业务外，可自主依法经营法律法规非禁止或限制的项目）", "")
+                .replace("(除许可业务外，可自主依法经营法律法规非禁止或限制的项目)", "")
+                .replace("（依法须经批准的项目，经相关部门批准后方可开展经营活动）", "")
+                .replace("(依法须经批准的项目，经相关部门批准后方可开展经营活动)", "")
+                .replace("（依法需经批准的项目经相关部门批准后方可经营）", "")
+                .replace("（依法须经批准的项目，经相关部门批准后方可开展经营活动，具体经营项目以相关部门批准文件或许可证件为准）", "");
 
-        if (words1.isEmpty() || words2.isEmpty()) {
-            return 0.0;
-        }
-
-        // 构建词袋
-        Set<String> vocabulary = new LinkedHashSet<>();
-        vocabulary.addAll(words1);
-        vocabulary.addAll(words2);
-
-        // 计算TF向量
-        Map<String, Double> tf1 = computeTf(words1, vocabulary);
-        Map<String, Double> tf2 = computeTf(words2, vocabulary);
-
-        // 余弦相似度
-        return cosineSimilarity(tf1, tf2, vocabulary);
-    }
-
-    /**
-     * 中文文本分词（按分隔符切分）
-     */
-    private List<String> tokenize(String text) {
-        List<String> tokens = new ArrayList<>();
-        if (text == null || text.trim().isEmpty()) return tokens;
-
-        // 按中文和常见分隔符切分
-        String[] words = text.split("[，,、；;。\\s]+");
-        for (String word : words) {
-            String trimmed = word.trim();
-            if (trimmed.length() >= 2 && trimmed.length() <= 15) {
-                tokens.add(trimmed);
+        // 按分隔符拆分为业务项
+        String[] parts = cleaned.split("[；;，,。]");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (trimmed.length() >= 2 && trimmed.length() <= 50) {
+                items.add(trimmed);
             }
         }
 
-        // 对于长文本，补充2-gram子串提升匹配
-        if (text.length() > 2) {
-            for (int i = 0; i < text.length() - 1; i++) {
-                String bigram = text.substring(i, Math.min(i + 2, text.length()));
-                if (bigram.length() == 2 && !bigram.matches("[，,、；;。\\s]+")) {
-                    tokens.add(bigram);
-                }
-            }
-        }
-
-        return tokens;
+        return items;
     }
 
     /**
-     * 计算词频（TF）向量
+     * 从节点名称生成关键词集
+     * 包含: 2-gram子串 + 单字 + 全称本身
+     * 例: "电力设备" → ["电力","设备","力设","电","力","设","备","电力设备"]
      */
-    private Map<String, Double> computeTf(List<String> words, Set<String> vocabulary) {
-        Map<String, Double> tf = new LinkedHashMap<>();
-        Map<String, Integer> freq = new HashMap<>();
-        for (String word : words) {
-            freq.merge(word, 1, Integer::sum);
+    private Set<String> generateNodeKeywords(String nodeName) {
+        Set<String> keywords = new LinkedHashSet<>();
+        if (nodeName == null || nodeName.trim().isEmpty()) return keywords;
+
+        String name = nodeName.trim();
+        // 全称
+        keywords.add(name);
+
+        // 2-gram
+        for (int i = 0; i < name.length() - 1; i++) {
+            keywords.add(name.substring(i, i + 2));
         }
 
-        int total = words.size();
-        for (String term : vocabulary) {
-            tf.put(term, total > 0 ? (double) freq.getOrDefault(term, 0) / total : 0.0);
-        }
-        return tf;
-    }
-
-    /**
-     * 计算两个TF向量的余弦相似度
-     */
-    private double cosineSimilarity(Map<String, Double> vec1, Map<String, Double> vec2, Set<String> vocabulary) {
-        double dotProduct = 0.0, norm1 = 0.0, norm2 = 0.0;
-
-        for (String term : vocabulary) {
-            double v1 = vec1.getOrDefault(term, 0.0);
-            double v2 = vec2.getOrDefault(term, 0.0);
-            dotProduct += v1 * v2;
-            norm1 += v1 * v1;
-            norm2 += v2 * v2;
+        // 单字
+        for (char c : name.toCharArray()) {
+            keywords.add(String.valueOf(c));
         }
 
-        if (norm1 == 0.0 || norm2 == 0.0) return 0.0;
-        return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+        // 去除纯标点/空白关键词
+        keywords.removeIf(kw -> kw.matches("[\\s，,、；;。]+"));
+
+        return keywords;
     }
 
     // ==================== 维度2: 规模实力 ====================
