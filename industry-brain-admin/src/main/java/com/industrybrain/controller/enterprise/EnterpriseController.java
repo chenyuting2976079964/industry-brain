@@ -92,4 +92,11 @@ public class EnterpriseController {
         List<Map<String, Object>> stats = appService.getEnterpriseTypeStats();
         return AjaxResult.success(stats);
     }
+
+    /** 触发企业类型自动分类（填充 enterprise_type 为空的企业） */
+    @PostMapping("/classifyTypes")
+    public AjaxResult classifyTypes() {
+        int count = appService.classifyEnterpriseTypes();
+        return AjaxResult.success(Map.of("updated", count));
+    }
 }

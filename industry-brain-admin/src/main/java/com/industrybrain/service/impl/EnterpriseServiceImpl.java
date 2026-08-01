@@ -29,11 +29,13 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
 
     private final com.industrybrain.mapper.mysql.EnterpriseMapper enterpriseMapper;
     private final PatentMapper patentMapper;
-    private final com.industrybrain.mapper.mysql.EnterpriseTagMapper tagMapper;
+    private final com.industrybrain.mapper.mysql.EnterpriseTagMapper enterpriseTagMapper;
     @Resource
     private RegionMapper regionMapper;
     @Resource
     private IndustrialParkMapper parkMapper;
+    @Resource
+    private EnterpriseTypeClassifier classifier;
 
     // ─── E01: 企业基本信息 ───
     @Override
@@ -56,22 +58,14 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         vo.setProvince(ent.getRegisteredAddress());
         vo.setCity(ent.getCity() != null ? ent.getCity() : "");
         vo.setDistrict(ent.getDistrict() != null ? ent.getDistrict() : "");
-        vo.setScale(ent.getIsLocal() != null && ent.getIsLocal() == 1 ? "本地企业" : "外地企业");
+        vo.setScale(convertEmployeeScale(ent.getEmployeeScale()));
 
-        // 标签：优先从 enterprise_tag 表读取，字段推导作为后备
-        List<String> tags = new ArrayList<>();
-        List<EnterpriseTag> dbTags = tagMapper.selectByEnterpriseId(id);
-        if (dbTags != null && !dbTags.isEmpty()) {
-            for (EnterpriseTag t : dbTags) {
-                if (t.getTagName() != null && !t.getTagName().isEmpty()) {
-                    tags.add(t.getTagName());
-                }
-            }
-        }
-        // 后备：尚未打标签的企业用类型标注
-        if (tags.isEmpty() && ent.getEnterpriseType() != null && !ent.getEnterpriseType().isEmpty()) {
-            tags.add(ent.getEnterpriseType());
-        }
+        // 标签从企业技术标签表(enterprise_tag)获取
+        List<String> tags = enterpriseTagMapper.selectByEnterpriseId(id)
+                .stream()
+                .map(EnterpriseTag::getTagName)
+                .distinct()
+                .collect(Collectors.toList());
         vo.setTags(tags);
         return vo;
     }
@@ -92,7 +86,7 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         if (ipcDist != null && !ipcDist.isEmpty()) {
             vo.setAdvantages(ipcDist.stream().limit(3).map(m -> {
                 EnterpriseProfileResponse.AdvantageItem adv = new EnterpriseProfileResponse.AdvantageItem();
-                adv.setName((String) m.getOrDefault("field_name", "未知领域"));
+                adv.setName((String) m.getOrDefault("ipc_main", "未知领域"));
                 adv.setPatentCount(toInt(m.get("cnt")));
                 adv.setPercentage(toInt(m.get("cnt")) * 100.0 / Math.max(stats.getTotalPatents(), 1));
                 adv.setDescription(String.format("在该领域拥有%d件专利", adv.getPatentCount()));
@@ -174,7 +168,7 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
             vo.setEntName(e.getName());
             vo.setShortName(e.getName());
             vo.setCity(e.getRegisteredAddress());
-            vo.setScale(e.getIsLocal() != null && e.getIsLocal() == 1 ? "本地企业" : "外地企业");
+            vo.setScale(convertEmployeeScale(e.getEmployeeScale()));
             vo.setTags(Collections.emptyList());
             return vo;
         }).collect(Collectors.toList());
@@ -257,6 +251,48 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         return enterpriseMapper.selectTypeStats();
     }
 
+    /**
+     * 批量分类并填充企业类型 — 先分组再批量 UPDATE，避免逐条更新
+     */
+    @Override
+    public int classifyEnterpriseTypes() {
+        List<Enterprise> all = enterpriseMapper.selectList(null);
+        if (all == null || all.isEmpty()) {
+            log.info("企业表为空，跳过分类");
+            return 0;
+        }
+
+        // 按分类结果分组 ID
+        Map<String, List<Long>> typeToIds = new LinkedHashMap<>();
+        int skipped = 0;
+        for (Enterprise e : all) {
+            if (e.getEnterpriseType() != null && !e.getEnterpriseType().isEmpty()) {
+                skipped++;
+                continue;
+            }
+            String type = classifier.classify(e);
+            typeToIds.computeIfAbsent(type, k -> new ArrayList<>()).add(e.getId());
+        }
+
+        // 批量更新（每类一条 SQL）
+        int updated = 0;
+        for (Map.Entry<String, List<Long>> entry : typeToIds.entrySet()) {
+            List<Long> ids = entry.getValue();
+            // MySQL IN 子句有长度限制，分批 5000 条
+            for (int i = 0; i < ids.size(); i += 5000) {
+                List<Long> batch = ids.subList(i, Math.min(i + 5000, ids.size()));
+                enterpriseMapper.batchUpdateType(batch, entry.getKey());
+                updated += batch.size();
+            }
+        }
+
+        log.info("企业类型分类完成: 批量更新 {} 条, 跳过(已有类型) {} 条, 总计 {} 条, 类型分布: {}",
+                updated, skipped, all.size(),
+                typeToIds.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
+        return updated;
+    }
+
     @Override
     public EnterpriseDetailResponse getEnterpriseDetail(Long enterpriseId) {
         log.info("获取企业详情, enterpriseId={}", enterpriseId);
@@ -287,6 +323,20 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
     }
 
     // ─── helpers ───
+
+    /** 人员规模文本 → 数字区间  (标准: D:\Desktop\新数据\人员规模标准.txt) */
+    private String convertEmployeeScale(String scale) {
+        if (scale == null || scale.isBlank()) return "未知";
+        return switch (scale.trim()) {
+            case "大型"   -> "1000+人";
+            case "中大型" -> "600+人";
+            case "中型"   -> "300+人";
+            case "中小型" -> "100+人";
+            case "小型"   -> "100-人";
+            default       -> scale.trim();
+        };
+    }
+
     private Long toLong(Object val) {
         if (val == null) return null;
         if (val instanceof Long) return (Long) val;

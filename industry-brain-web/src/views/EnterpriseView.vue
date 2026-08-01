@@ -30,7 +30,9 @@
           </div>
         </div>
         <div class="flex gap-2 flex-shrink-0">
-          <button class="btn-outline text-xs" @click="showToast('已收藏')"><i class="fa-regular fa-bookmark"></i> 收藏</button>
+          <button :class="['btn-outline text-xs', { 'btn-favorited': isFavorited }]" @click="toggleFavorite">
+            <i :class="isFavorited ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'"></i> {{ isFavorited ? '已收藏' : '收藏' }}
+          </button>
           <button class="btn-primary text-xs" @click="showReportModal"><i class="fa-regular fa-file-lines"></i> 下载报告</button>
         </div>
       </div>
@@ -208,21 +210,14 @@ const tagStylePool = [
 
 // ─── Data transform ───────────────────────────────────────
 function transformEnterprise(apiEnt, profile, evaluate, patentData) {
-  const tags = (profile?.technologyFields?.map(t => t.fieldName) || apiEnt.tags || []).slice(0, 6)
+  // 标签从 enterprise_tag 表获取（apiEnt.tags）
+  const tags = (apiEnt.tags || []).slice(0, 6)
 
   const advantages = (profile?.advantages || []).map(a => ({
-    name: a.fieldName,
-    count: `${a.enterprisePatentCount || 0}项`,
-    desc: a.fieldName + '领域' + (a.industryAvg != null ? '，行业均值' + a.industryAvg : '')
+    name: a.name || '未知领域',
+    count: `${a.patentCount || 0}项`,
+    desc: a.description || (a.name || '未知领域') + '领域'
   }))
-
-  const scores = (evaluate?.scores || []).map(s => ({
-    n: s.dimension,
-    v: s.score,
-    c: scoreColor(s.score)
-  }))
-
-  const policies = [] // API doesn't provide policy matching per-evaluate yet
 
   return {
     id: apiEnt.id,
@@ -245,7 +240,6 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
     weaknessDetail: (profile?.weaknesses || []).length > 0
       ? profile.weaknesses[0].fieldName + '领域存在技术储备不足，建议加大研发投入'
       : '暂无详细数据',
-    evaluate: buildEvaluate(evaluate),
     patents: (patentData?.rows || []).map(p => ({
       n: p.patentName || p.patentNumber || '',
       t: p.patentType || '发明',
@@ -253,6 +247,7 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
       s: p.legalStatus || '授权',
       desc: p.ipcMain || ''
     })),
+    evaluate: buildEvaluate(evaluate),
     _raw: { apiEnt, profile, evaluate, patentData }
   }
 }
@@ -307,6 +302,7 @@ const patentTypeFilter = ref('all')
 const currentPatentPage = ref(1)
 const loading = ref(false)
 const pageSize = 6
+const isFavorited = ref(false)
 
 const ent = computed(() => currentEnt.value || {
   name: '加载中...',
@@ -428,6 +424,11 @@ function showReportModal() {
     </div>`)
 }
 
+function toggleFavorite() {
+  isFavorited.value = !isFavorited.value
+  showToast(isFavorited.value ? '已收藏' : '已取消收藏')
+}
+
 function showToast(msg) {
   const el = document.createElement('div')
   el.className = 'fixed top-4 right-4 bg-slate-800 text-white text-xs px-4 py-2 rounded-lg shadow-lg z-[999]'
@@ -519,6 +520,7 @@ onMounted(async () => {
   gap: 6px;
 }
 .btn-outline:hover { border-color: #1e40af; color: #1e40af; }
+.btn-favorited { border-color: #f59e0b; color: #d97706; background: #fffbeb; }
 
 .input-field {
   width: 100%;

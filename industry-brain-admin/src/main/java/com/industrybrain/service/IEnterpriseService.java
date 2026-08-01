@@ -35,4 +35,7 @@ public interface IEnterpriseService {
     Long getEnterprisesCountByType(String type);
     /** 获取企业类型的分布统计 */
     List<Map<String, Object>> getEnterpriseTypeStats();
+
+    /** 批量分类并填充企业类型（仅更新 enterprise_type 为空的企业） */
+    int classifyEnterpriseTypes();
 }
