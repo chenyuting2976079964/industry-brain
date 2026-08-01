@@ -99,6 +99,10 @@ public class InvestmentRecommendation {
     @TableField(exist = false)
     private String diagnosisTag;
 
+    /** 企业规模（关联查询填充） */
+    @TableField(exist = false)
+    private String employeeScale;
+
     /** 更新时间 */
     @TableField(exist = false)
     private Date updateTime;

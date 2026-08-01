@@ -25,6 +25,7 @@
         <result property="regionCode" column="region_code"/>
         <result property="nodeName" column="node_name"/>
         <result property="diagnosisTag" column="diagnosis_tag"/>
+        <result property="employeeScale" column="employee_scale"/>
     </resultMap>
 
     <select id="selectById" resultMap="InvestmentRecommendationMap">
@@ -37,8 +38,8 @@
     </select>
 
     <select id="selectMatchList" resultMap="InvestmentRecommendationMap">
-        select ir.*, e.name as enterprise_name, e.description as industry, cn.name as node_name,
-               nd.diagnosis_tag
+        select ir.*, e.name as enterprise_name, e.description as industry, e.employee_scale,
+               cn.name as node_name, nd.diagnosis_tag
         from investment_recommendation ir
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
@@ -48,14 +49,14 @@
             <if test="regionId != null">and ir.region_id = #{regionId}</if>
             <if test="weakness != null and weakness != 'all'">and nd.diagnosis_tag = #{weakness}</if>
             <if test="matchMin != null and matchMin > 0">and ir.total_score &gt;= #{matchMin}</if>
+            <if test="scale != null and scale != 'all'">and e.employee_scale = #{scale}</if>
             <if test="keyword != null and keyword != ''">and e.name like concat('%', #{keyword}, '%')</if>
             <if test="nodeId != null">and ir.target_node_id = #{nodeId}</if>
-            <if test="tab == 'high'">and ir.total_score &gt;= 85</if>
-            <if test="tab == 'weakchain'">and nd.diagnosis_tag in ('弱链', '缺链')</if>
         </where>
         <choose>
-            <when test="sortBy == 'patent'">order by ir.business_fit_score desc</when>
+            <when test="sortBy == 'business'">order by ir.business_fit_score desc</when>
             <when test="sortBy == 'scale'">order by ir.scale_strength_score desc</when>
+            <when test="sortBy == 'region'">order by ir.regional_synergy_score desc</when>
             <otherwise>order by ir.total_score desc</otherwise>
         </choose>
         <if test="limit != null">limit #{offset}, #{limit}</if>
@@ -72,10 +73,9 @@
             <if test="regionId != null">and ir.region_id = #{regionId}</if>
             <if test="weakness != null and weakness != 'all'">and nd.diagnosis_tag = #{weakness}</if>
             <if test="matchMin != null and matchMin > 0">and ir.total_score &gt;= #{matchMin}</if>
+            <if test="scale != null and scale != 'all'">and e.employee_scale = #{scale}</if>
             <if test="keyword != null and keyword != ''">and e.name like concat('%', #{keyword}, '%')</if>
             <if test="nodeId != null">and ir.target_node_id = #{nodeId}</if>
-            <if test="tab == 'high'">and ir.total_score &gt;= 85</if>
-            <if test="tab == 'weakchain'">and nd.diagnosis_tag in ('弱链', '缺链')</if>
         </where>
     </select>
 

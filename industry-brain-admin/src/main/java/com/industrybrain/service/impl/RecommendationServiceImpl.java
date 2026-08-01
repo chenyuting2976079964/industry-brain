@@ -1102,6 +1102,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
         ent.setInitial(firstChar(rec.getEnterpriseName()));
         ent.setDescription(rec.getIndustry());
         ent.setLocation(rec.getRegionCode());
+        ent.setScale(rec.getEmployeeScale());
         ent.setMatchScore(rec.getTotalScore() != null
                 ? rec.getTotalScore().setScale(0, RoundingMode.HALF_UP) : BigDecimal.ZERO);
         ent.setMatchLevel(getMatchLevelKey(rec.getTotalScore()));

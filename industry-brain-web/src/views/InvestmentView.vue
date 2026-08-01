@@ -24,19 +24,6 @@
       </div>
     </div>
 
-    <!-- ==================== SUB NAV TABS ==================== -->
-    <div class="flex items-center gap-2 mb-4 bg-white rounded-xl p-1.5 border border-slate-100 w-fit">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="tab-btn"
-        :class="{ active: activeTab === tab.key }"
-        @click="switchTab(tab.key)"
-      >
-        <i :class="tab.icon + ' mr-1.5'"></i>{{ tab.label }}
-      </button>
-    </div>
-
     <!-- ==================== FILTER PANEL ==================== -->
     <div class="bg-white rounded-xl p-4 border border-slate-100 data-card mb-4">
       <div class="flex items-center gap-4 flex-wrap">
@@ -59,27 +46,30 @@
           <label class="text-xs text-slate-400 block mb-1">目标规模</label>
           <select v-model="filters.scale" class="select-field text-xs" @change="applyFilters">
             <option value="all">全部规模</option>
-            <option value="large">大型（1000人+）</option>
-            <option value="mid">中型（200-1000人）</option>
-            <option value="small">小型（200人以下）</option>
+            <option value="大型">大型</option>
+            <option value="中大型">中大型</option>
+            <option value="中型">中型</option>
+            <option value="中小型">中小型</option>
+            <option value="小型">小型</option>
           </select>
         </div>
         <div>
           <label class="text-xs text-slate-400 block mb-1">排序</label>
           <select v-model="filters.sortBy" class="select-field text-xs" @change="applySort">
-            <option value="match">匹配度优先</option>
-            <option value="patent">专利实力优先</option>
-            <option value="scale">产业带动优先</option>
+            <option value="match">综合得分优先</option>
+            <option value="business">业务契合度优先</option>
+            <option value="scale">规模实力优先</option>
+            <option value="region">地域协同度优先</option>
           </select>
         </div>
         <div>
           <label class="text-xs text-slate-400 block mb-1">搜索企业</label>
           <div class="relative">
-            <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs pointer-events-none"></i>
             <input
               v-model="filters.keyword"
-              class="input-field text-xs pl-7"
-              placeholder="名称/技术领域..."
+              class="input-field text-xs pl-8 pr-3"
+              placeholder="企业名称..."
               @input="applyFilters"
             />
           </div>
@@ -392,7 +382,6 @@ import { investmentService } from '@/services/investment.service'
 const eventBus = useEventBus()
 
 // ---- State ----
-const activeTab = ref('all')
 const pageSubtitle = ref('基于弱链/缺链节点自动匹配 · 综合评估招商价值')
 const contextNode = ref('')
 const panelVisible = ref(false)
@@ -401,10 +390,6 @@ const displayList = ref([])
 const totalCount = ref(0)
 const wishList = ref([])
 const rematching = ref(false)
-
-const tabs = [
-  { key: 'all', label: '全部推荐', icon: 'fa-solid fa-list' }
-]
 
 const filters = reactive({
   weakness: 'all',
@@ -430,9 +415,6 @@ onMounted(async () => {
         filters.weakness = ctx.weaknessKey
       }
     }
-    if (ctx.tab) {
-      activeTab.value = ctx.tab
-    }
     // Clear context after reading
     sessionStorage.removeItem('navContext')
   } catch (e) { console.error('[Investment] Failed to parse nav context:', e) }
@@ -451,40 +433,27 @@ async function loadData() {
       keyword: filters.keyword
     })
     totalCount.value = res.total
-    displayList.value = applyTabFilter(res.list)
+    displayList.value = res.list
   } catch (e) {
     console.error('Failed to load investment data:', e)
   }
 }
 
-function applyTabFilter(list) {
-  if (activeTab.value === 'high') {
-    return list.filter(e => e.matchScore >= 85)
-  }
-  if (activeTab.value === 'weakchain') {
-    return list.filter(e => e.weakness && ['precision', 'sensor', 'ai', 'metal'].includes(e.weakness))
-  }
-  return list
-}
-
 // ---- Actions ----
-async function switchTab(key) {
-  activeTab.value = key
-  await loadData()
-}
-
 async function applyFilters() {
   await loadData()
 }
 
 function applySort() {
   const list = [...displayList.value]
-  if (filters.sortBy === 'patent') {
-    list.sort((a, b) => b.scaleStrengthScore - a.scaleStrengthScore)
+  if (filters.sortBy === 'business') {
+    list.sort((a, b) => (b.businessFitScore || 0) - (a.businessFitScore || 0))
   } else if (filters.sortBy === 'scale') {
-    list.sort((a, b) => b.regionalSynergyScore - a.regionalSynergyScore)
+    list.sort((a, b) => (b.scaleStrengthScore || 0) - (a.scaleStrengthScore || 0))
+  } else if (filters.sortBy === 'region') {
+    list.sort((a, b) => (b.regionalSynergyScore || 0) - (a.regionalSynergyScore || 0))
   } else {
-    list.sort((a, b) => b.matchScore - a.matchScore)
+    list.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
   }
   displayList.value = list
 }
