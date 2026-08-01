@@ -259,11 +259,14 @@ function getChainIcon(name) {
 }
 
 // ─── Data transforms ──────────────────────────────────────
+// 后端 diagnosisTag 是中文（强链/补链/弱链/缺链），映射为前端英文 status
+const tagToStatus = { 强链: 'strong', 补链: 'supplement', 弱链: 'weak', 缺链: 'missing', 未知: 'missing' }
+
 function transformNode(apiNode) {
   return {
     id: apiNode.id,
     name: apiNode.nodeName,
-    status: apiNode.diagnosisTag || 'missing',
+    status: tagToStatus[apiNode.diagnosisTag] || 'missing',
     enterprises: String(apiNode.enterpriseCount ?? 0),
     patents: String(apiNode.patentCount ?? 0),
     highVal: String(apiNode.highValueCount ?? 0),
@@ -276,7 +279,7 @@ function transformNode(apiNode) {
 }
 
 function transformLink(apiLink) {
-  return { from: apiLink.fromNodeId, to: apiLink.toNodeId }
+  return { from: apiLink.sourceNodeId, to: apiLink.targetNodeId }
 }
 
 // ─── Reactive state ───────────────────────────────────────
@@ -483,7 +486,7 @@ async function selectNode(id) {
   // Fetch node detail for firm info
   try {
     const detail = await getNodeDetail(node._raw ? node._raw.id : id)
-    const holders = detail.patentHolders || []
+    const holders = detail.enterprises || []
     selectedNode.value.firms = holders.length > 0
       ? holders.map(h => h.enterpriseName).join('、')
       : '（暂无企业）'

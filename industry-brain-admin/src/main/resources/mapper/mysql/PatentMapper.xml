@@ -40,7 +40,7 @@
     </select>
 
     <!-- 统计某企业的专利总数 -->
-    <select id="selectTotalCount" resultType="long">
+    <select id="selectTotalCountByEnterprise" resultType="long">
         SELECT COUNT(*)
         FROM patent
         WHERE applicant_enterprise_id = #{enterpriseId}
@@ -48,7 +48,7 @@
     </select>
 
     <!-- 统计某企业的高价值专利数量 (maintenance_years >= 5 视为高价值) -->
-    <select id="selectHighValueCount" resultType="long">
+    <select id="selectHighValueCountByEnterprise" resultType="long">
         SELECT COUNT(*)
         FROM patent
         WHERE applicant_enterprise_id = #{enterpriseId}
@@ -57,7 +57,7 @@
     </select>
 
     <!-- 查询某企业的高价值专利 Top 5 (按维护年限排序) -->
-    <select id="selectTop5HighValue" resultMap="PatentMap">
+    <select id="selectTop5HighValueByEnterprise" resultMap="PatentMap">
         SELECT id, patent_number, patent_name, patent_type, applicant,
                applicant_enterprise_id, ipc_main, application_date, legal_status,
                maintenance_years, data_source, region_id, created_at, updated_at
@@ -69,7 +69,7 @@
     </select>
 
     <!-- 按IPC主分类统计专利分布 (GROUP BY ipc_main) -->
-    <select id="selectTechDistribution" resultType="java.util.HashMap">
+    <select id="selectTechDistributionByEnterprise" resultType="java.util.HashMap">
         SELECT
             COALESCE(ipc_main, '未分类') AS tech_field,
             COUNT(*)                      AS patent_count,

@@ -43,14 +43,14 @@ public interface PatentMapper extends BaseMapper<Patent> {
                            @Param("patentType") String patentType);
 
     /** 统计某企业的专利总数 */
-    long selectTotalCount(@Param("enterpriseId") Long enterpriseId);
+    long selectTotalCountByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 统计全部专利总数 (无参版本) */
     @Select("SELECT COUNT(*) FROM patent WHERE is_deleted = 0")
     long selectTotalCount();
 
     /** 统计某企业的高价值专利数量 */
-    long selectHighValueCount(@Param("enterpriseId") Long enterpriseId);
+    long selectHighValueCountByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 统计全部高价值专利数量 (无参版本) */
     @Select("SELECT COUNT(*) FROM patent WHERE maintenance_years >= 5 AND is_deleted = 0")
@@ -58,7 +58,7 @@ public interface PatentMapper extends BaseMapper<Patent> {
 
 
     /** 查询某企业的高价值专利 Top 5 (带参版本) */
-    List<Patent> selectTop5HighValue(@Param("enterpriseId") Long enterpriseId);
+    List<Patent> selectTop5HighValueByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 查询全局高价值专利 Top 5 (无参版本) */
     @Select("SELECT id, patent_number, patent_name, applicant, maintenance_years FROM patent " +
@@ -66,7 +66,7 @@ public interface PatentMapper extends BaseMapper<Patent> {
     List<Map<String, Object>> selectTop5HighValue();
 
     /** 按技术领域统计专利分布 (带参版本) */
-    List<Map<String, Object>> selectTechDistribution(@Param("enterpriseId") Long enterpriseId);
+    List<Map<String, Object>> selectTechDistributionByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
     /** 按技术领域统计专利分布 (无参版本) */
     @Select("SELECT ipc_main AS techField, COUNT(DISTINCT applicant_enterprise_id) AS enterpriseCount " +
@@ -134,12 +134,66 @@ public interface PatentMapper extends BaseMapper<Patent> {
     List<java.util.Map<String, Object>> selectIpcDistribution(@Param("enterpriseId") Long enterpriseId);
 
     /**
+     * 按企业ID集合统计 IPC subclass 级分布（链内节点生成用）
+     */
+    @Select("<script>SELECT LEFT(ipc_main, 4) AS ipcSubclass, COUNT(*) AS cnt, " +
+            "COUNT(DISTINCT applicant_enterprise_id) AS entCount " +
+            "FROM patent WHERE ipc_main IS NOT NULL AND is_deleted = 0 " +
+            "AND applicant_enterprise_id IS NOT NULL " +
+            "AND applicant_enterprise_id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach> " +
+            "GROUP BY LEFT(ipc_main, 4) ORDER BY cnt DESC</script>")
+    List<java.util.Map<String, Object>> selectIpcSubclassStatsByEnterpriseIds(@Param("ids") List<Long> ids);
+
+    /**
      * 统计全部专利的IPC主分类分布（图谱IPC映射规则填充用）
      */
     @Select("SELECT ipc_main AS ipcMain, COUNT(*) AS cnt FROM patent " +
             "WHERE ipc_main IS NOT NULL AND is_deleted = 0 " +
             "GROUP BY ipc_main ORDER BY cnt DESC")
     List<java.util.Map<String, Object>> selectIpcStats();
+
+    /**
+     * IPC subclass 级分布（LEFT 4 位），含企业数（产业链自动聚合用）
+     */
+    @Select("SELECT LEFT(ipc_main, 4) AS ipcSubclass, COUNT(*) AS cnt, " +
+            "COUNT(DISTINCT applicant_enterprise_id) AS entCount " +
+            "FROM patent WHERE ipc_main IS NOT NULL AND is_deleted = 0 " +
+            "AND applicant_enterprise_id IS NOT NULL " +
+            "GROUP BY LEFT(ipc_main, 4) ORDER BY cnt DESC")
+    List<java.util.Map<String, Object>> selectIpcSubclassStats();
+
+    /**
+     * IPC subclass 归属的企业ID列表（节点企业归属用）
+     */
+    @Select("SELECT DISTINCT applicant_enterprise_id FROM patent " +
+            "WHERE ipc_main IS NOT NULL AND is_deleted = 0 " +
+            "AND applicant_enterprise_id IS NOT NULL " +
+            "AND LEFT(ipc_main, 4) = #{ipcSubclass}")
+    List<Long> selectEnterpriseIdsByIpcSubclass(@Param("ipcSubclass") String ipcSubclass);
+
+    /**
+     * IPC subclass 两两共现企业数（社区发现聚类用）
+     * 返回 a/b/overlap
+     */
+    @Select("SELECT a.ipc AS a, b.ipc AS b, COUNT(DISTINCT a.eid) AS overlap FROM ( " +
+            "  SELECT LEFT(p1.ipc_main,4) AS ipc, p1.applicant_enterprise_id AS eid " +
+            "  FROM patent p1 WHERE p1.ipc_main IS NOT NULL AND p1.applicant_enterprise_id IS NOT NULL AND p1.is_deleted = 0 " +
+            "  GROUP BY ipc, eid " +
+            ") a JOIN ( " +
+            "  SELECT LEFT(p2.ipc_main,4) AS ipc, p2.applicant_enterprise_id AS eid " +
+            "  FROM patent p2 WHERE p2.ipc_main IS NOT NULL AND p2.applicant_enterprise_id IS NOT NULL AND p2.is_deleted = 0 " +
+            "  GROUP BY ipc, eid " +
+            ") b ON a.eid = b.eid AND a.ipc < b.ipc " +
+            "GROUP BY a.ipc, b.ipc")
+    List<java.util.Map<String, Object>> selectIpcSubclassCooccurrence();
+
+    /** 按企业ID集合查询专利（节点专利归属用） */
+    @Select("<script>SELECT * FROM patent WHERE is_deleted = 0 " +
+            "AND applicant_enterprise_id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>" +
+            "</script>")
+    List<Patent> selectByEnterpriseIds(@Param("ids") List<Long> ids);
 
     /**
      * 统计企业高价值专利数（发明类型 + 被引用>=5次）— 别名: selectHighValueCountForAlgorithm

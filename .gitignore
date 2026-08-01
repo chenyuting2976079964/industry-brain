@@ -35,6 +35,9 @@ logs/
 *.bak
 *.orig
 
+# 运行截图/调试产物
+.run-screens/
+
 # Environment
 .env
 .env.local

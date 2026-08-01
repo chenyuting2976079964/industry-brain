@@ -34,4 +34,17 @@ public interface EnterpriseTagMapper extends BaseMapper<EnterpriseTag> {
     /** 按标签名查询企业ID列表 */
     @Select("SELECT DISTINCT enterprise_id FROM enterprise_tag WHERE tag_name = #{tagName}")
     List<Long> selectEnterpriseIdsByTagName(@Param("tagName") String tagName);
+
+    /** 按标签名查询本地企业ID列表（is_local=1，产业链构建只用本地企业） */
+    @Select("SELECT DISTINCT t.enterprise_id FROM enterprise_tag t " +
+            "INNER JOIN enterprise e ON e.id = t.enterprise_id AND e.is_deleted = 0 AND e.is_local = 1 " +
+            "WHERE t.tag_name = #{tagName}")
+    List<Long> selectLocalEnterpriseIdsByTagName(@Param("tagName") String tagName);
+
+    /** 标签两两共现企业数（产业链自动聚类用） */
+    @Select("SELECT a.tag_name AS tagA, b.tag_name AS tagB, COUNT(DISTINCT a.enterprise_id) AS overlap " +
+            "FROM enterprise_tag a JOIN enterprise_tag b " +
+            "ON a.enterprise_id = b.enterprise_id AND a.tag_name < b.tag_name " +
+            "GROUP BY a.tag_name, b.tag_name")
+    List<java.util.Map<String, Object>> selectTagCooccurrence();
 }

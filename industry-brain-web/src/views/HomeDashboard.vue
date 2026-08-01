@@ -139,7 +139,7 @@
         </h3>
         <div class="space-y-2">
           <div
-            v-for="alert in alerts"
+            v-for="alert in (alertShowAll ? alerts : alerts.slice(0, 5))"
             :key="alert.id"
             class="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors"
             :class="alertLevelClass(alert.level)"
@@ -157,6 +157,14 @@
             <i class="fa-regular fa-circle-check text-emerald-400 text-lg block mb-1"></i>
             暂无待处理预警
           </div>
+          <button
+            v-if="alerts.length > 5"
+            @click="alertShowAll = !alertShowAll"
+            class="w-full py-2 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+          >
+            <i :class="alertShowAll ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="mr-1"></i>
+            {{ alertShowAll ? '收起' : '查看全部 ' + alerts.length + ' 条预警' }}
+          </button>
         </div>
       </div>
     </div>
@@ -180,7 +188,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="park in parks" :key="park.id">
+          <tr v-for="park in (parkShowAll ? parks : parks.slice(0, 8))" :key="park.id">
             <td class="font-medium cursor-pointer hover:text-blue-600 transition-colors" @click="openParkDetail(park)">
               {{ park.name }}
             </td>
@@ -195,6 +203,14 @@
           </tr>
         </tbody>
       </table>
+      <button
+        v-if="parks.length > 8"
+        @click="parkShowAll = !parkShowAll"
+        class="w-full mt-3 py-2 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+      >
+        <i :class="parkShowAll ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" class="mr-1"></i>
+        {{ parkShowAll ? '收起' : '查看全部 ' + parks.length + ' 个园区' }}
+      </button>
     </div>
   </div>
 </template>
@@ -215,6 +231,8 @@ const kpiData = reactive({ patent: null, enterprise: null, diagnosis: null })
 const chainDist = reactive({ upstream: null, midstream: null, downstream: null })
 const alerts = ref([])
 const parks = ref([])
+const alertShowAll = ref(false)
+const parkShowAll = ref(false)
 
 // ---- Alert helpers ----
 function alertLevelClass(level) {
