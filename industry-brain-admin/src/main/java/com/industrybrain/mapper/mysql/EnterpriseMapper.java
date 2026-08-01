@@ -74,7 +74,9 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
             "FROM enterprise e " +
             "LEFT JOIN region r ON e.region_id = r.id " +
             "LEFT JOIN (SELECT applicant_enterprise_id, COUNT(*) AS patent_count, " +
-            "SUM(CASE WHEN maintenance_years >= 5 THEN 1 ELSE 0 END) AS high_value_count, " +
+            "SUM(CASE WHEN patent_type = '发明' AND (maintenance_years >= 5 " +
+            "     OR LEFT(ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN})) " +
+            "     THEN 1 ELSE 0 END) AS high_value_count, " +
             "COUNT(DISTINCT applicant_enterprise_id) AS enterprise_count " +
             "FROM patent WHERE is_deleted = 0 GROUP BY applicant_enterprise_id) ps " +
             "ON e.id = ps.applicant_enterprise_id " +

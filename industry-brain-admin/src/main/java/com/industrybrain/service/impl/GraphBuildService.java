@@ -3,6 +3,10 @@ package com.industrybrain.service.impl;
 import com.industrybrain.domain.model.*;
 import com.industrybrain.mapper.mysql.*;
 import com.industrybrain.service.IPatentMappingService;
+import com.industrybrain.service.cluster.ClusterResult;
+import com.industrybrain.service.cluster.IndustryClusterEngine;
+import com.industrybrain.service.cluster.TagRuleUtil;
+import com.industrybrain.utils.TextSimilarity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -45,9 +49,16 @@ public class GraphBuildService implements ApplicationRunner {
     private final IpcChainMappingMapper ipcChainMappingMapper;
     private final EnterpriseMapper enterpriseMapper;
     private final IPatentMappingService patentMappingService;
+    private final IndustryClusterEngine clusterEngine;
     private final org.springframework.beans.factory.ObjectProvider<Neo4jSyncService> neo4jSyncServiceProvider;
 
     private static final LocalDateTime NOW = LocalDateTime.now();
+
+    /** 自动聚类生成的链 → (layer → 标签列表)，seedChainsFromData 填充、buildNodesFromTags 消费 */
+    private Map<Long, Map<String, List<String>>> chainNodesByChain = new HashMap<>();
+
+    /** 节点 id → 覆盖的领域标签列表（同层相似标签合并后）；buildEnterpriseNodes / buildPatentNodes 用并集归属 */
+    private Map<Long, List<String>> nodeCoveredTags = new HashMap<>();
 
     /** IPC subclass 共现聚类的最小企业数（过滤碎片） */
     private static final int MIN_IPC_ENT = 2;
@@ -454,8 +465,8 @@ public class GraphBuildService implements ApplicationRunner {
      */
     public void rebuildGraph() {
         long start = System.currentTimeMillis();
-        // 1. 链定义：industry_chain 为空时自动聚合生成
-        int chainCount = seedChainsFromData();
+        // 1. 链定义：自动聚类生成（rebuild 强制重新聚类，清空旧链定义重建）
+        int chainCount = seedChainsFromData(true);
         // 2. 清空图谱相关表（保留 industry_chain）
         clearGraph();
         // 3. 节点：每个领域标签 → chain_node（层级=环节定义）
@@ -484,64 +495,53 @@ public class GraphBuildService implements ApplicationRunner {
     }
 
     /**
-     * 产业链生成：按「产业链 × 上中下游环节 × 领域标签」映射生成
-     * 每条产业链含上/中/下游环节，每环节映射领域标签。
-     * 仅当 industry_chain 为空时执行（保证 id 稳定）
+     * 产业链生成：自动聚类生成（向量 + 规则匹配）。
+     * 结果写入 industry_chain 表，并把链 → (layer → 标签) 存入 chainNodesByChain 供 buildNodesFromTags 消费。
+     *
+     * @param forceRebuild true=强制重新聚类并重建链定义（rebuild 用）；false=仅当表空才生成（启动幂等）
      */
-    private int seedChainsFromData() {
+    private int seedChainsFromData(boolean forceRebuild) {
         List<IndustryChain> existing = chainInfoMapper.selectAllOrdered();
-        if (existing != null && !existing.isEmpty()) {
+        if (!forceRebuild && existing != null && !existing.isEmpty()) {
             return existing.size();
         }
 
-        // 规模企业 ID 集合（产业链存在性判定：有规模企业支撑）
-        Set<Long> scaleEnterpriseIds = new HashSet<>();
-        List<Long> scaleIds = enterpriseMapper.selectScaleEnterpriseIds();
-        if (scaleIds != null) scaleEnterpriseIds.addAll(scaleIds);
+        // forceRebuild 时：无条件物理清空旧链定义（含逻辑删除残留行；子表由外键 CASCADE 级联清理）
+        if (forceRebuild) {
+            int deleted = chainInfoMapper.physicallyDeleteAll();
+            log.info("已物理清空产业链定义（删除 {} 行）", deleted);
+        }
 
+        chainNodesByChain = new HashMap<>();
         int chainId = 1;
         int generated = 0;
-        chainIdByIpcPrefix = new HashMap<>();
 
-        for (Map.Entry<String, List<ChainStage>> entry : CHAIN_STAGE_TAGS.entrySet()) {
-            String chainName = entry.getKey();
-            List<ChainStage> stages = entry.getValue();
+        ClusterResult result = clusterEngine.buildClusters();
+        List<ClusterResult.ChainDef> chains = result != null ? result.getChains() : Collections.emptyList();
+        if (chains.isEmpty()) {
+            log.warn("自动聚类未生成任何产业链");
+            return 0;
+        }
 
-            // 该链所有环节的领域标签（去重）
-            Set<String> chainTags = new LinkedHashSet<>();
-            for (ChainStage stage : stages) {
-                chainTags.addAll(stage.tags);
-            }
+        for (ClusterResult.ChainDef chain : chains) {
+            String name = chain.getName();
+            if (name == null || name.isBlank()) name = "自动产业链" + chainId;
 
-            // 该链覆盖的企业（所有环节标签的本地企业并集 — 产业链只用本地企业构建）
-            Set<Long> chainEnts = new HashSet<>();
-            for (String tag : chainTags) {
-                List<Long> ents = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
-                if (ents != null) chainEnts.addAll(ents);
-            }
-            // 存在性判定：企业数 ≥5 且至少 1 家规模企业
-            if (chainEnts.size() < 5 || !chainEnts.stream().anyMatch(scaleEnterpriseIds::contains)) {
-                log.debug("产业链不存在（企业数={}, 无规模企业），跳过: {}", chainEnts.size(), chainName);
-                continue;
-            }
-
-            IndustryChain chain = IndustryChain.builder()
+            IndustryChain industryChain = IndustryChain.builder()
                     .id((long) chainId)
-                    .name(chainName)
+                    .name(name)
                     .code("AUTO_" + chainId)
                     .isDeleted(0)
                     .createdAt(NOW)
                     .updatedAt(NOW)
                     .build();
-            chainInfoMapper.insert(chain);
-            // 记录该链的标签 → 链 id 映射（buildNodesFromTags 用）
-            for (String tag : chainTags) {
-                chainIdByIpcPrefix.put("tag:" + tag, (long) chainId);
-            }
+            chainInfoMapper.insert(industryChain);
+
+            chainNodesByChain.put((long) chainId, chain.getTagsByLayer());
             generated++;
             chainId++;
         }
-        log.info("按环节标签生成产业链: {} 条", generated);
+        log.info("按自动聚类生成产业链: {} 条", generated);
         return generated;
     }
 
@@ -596,9 +596,13 @@ public class GraphBuildService implements ApplicationRunner {
     }
 
     /**
-     * 从「产业链 × 环节 × 领域标签」生成产业链节点
-     * 每条链的每个环节 → 该环节的领域标签各成一个节点（节点名 = 标签名）
-     * 节点层级 = 环节定义（up/mid/down）。领域内必须要有公司（标签企业数为 0 不建节点）
+     * 从自动聚类结果（链 → layer → 标签）生成产业链节点。
+     * 节点名 = 标签，层级 = layer。领域内必须要有公司（标签企业数为 0 不建节点）。
+     *
+     * 精简节点：
+     *  - 同链同层内语义近亲标签合并为一个节点（节点名取企业数最多的代表标签，description 记录合并来源）
+     *  - 合并后每层节点数仍超 MAX_NODES_PER_LAYER 则按企业强度保留 Top N
+     *  - 合并组记录到 nodeCoveredTags，供 buildEnterpriseNodes / buildPatentNodes 用并集归属，不丢数据
      */
     private int buildNodesFromTags() {
         List<IndustryChain> chains = chainInfoMapper.selectAllOrdered();
@@ -606,49 +610,112 @@ public class GraphBuildService implements ApplicationRunner {
             log.warn("无产业链定义，跳过节点生成");
             return 0;
         }
-        // 链 id → 链名
-        Map<Long, String> chainNameById = new HashMap<>();
-        for (IndustryChain chain : chains) chainNameById.put(chain.getId(), chain.getName());
 
+        nodeCoveredTags = new HashMap<>();
         int inserted = 0;
         for (IndustryChain chain : chains) {
-            List<ChainStage> stages = CHAIN_STAGE_TAGS.get(chain.getName());
-            if (stages == null) continue;
+            Map<String, List<String>> tagsByLayer = chainNodesByChain.get(chain.getId());
+            if (tagsByLayer == null) continue;
 
-            for (ChainStage stage : stages) {
-                for (String tag : stage.tags) {
-                    // 领域必须要有公司：查该标签本地企业数
-                    List<Long> tagEnts = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
-                    int entCount = tagEnts == null ? 0 : tagEnts.size();
-                    if (entCount == 0) continue;
+            for (Map.Entry<String, List<String>> layerEntry : tagsByLayer.entrySet()) {
+                String layer = layerEntry.getKey();
+                List<String> tags = layerEntry.getValue();
+                if (tags == null) continue;
 
-                    ChainNode node = ChainNode.builder()
-                            .chainId(chain.getId())
-                            .nodeName(tag)
-                            .layer(stage.layer)
-                            .description(stage.stageName + "领域: " + tag)
-                            .sortOrder(0)
-                            .isDeleted(0)
-                            .createdAt(NOW)
-                            .updatedAt(NOW)
-                            .build();
-                    chainNodeMapper.insert(node);
+                // 1. 同层内合并语义近亲标签（企业数降序 → 贪心归组）
+                List<LayerNode> layerNodes = buildLayerNodes(chain.getId(), layer, tags);
+                if (layerNodes.isEmpty()) continue;
+
+                for (LayerNode ln : layerNodes) {
+                    chainNodeMapper.insert(ln.node);
+                    // 插入后才回填自增 ID，此时记录合并来源（供企业/专利归属用并集）
+                    nodeCoveredTags.put(ln.node.getId(), ln.covered);
                     inserted++;
                 }
             }
         }
-        log.info("生成产业链节点（领域标签）: {}", inserted);
+        log.info("生成产业链节点（自动聚类标签，同层合并 + 每层上限）: {}", inserted);
         return inserted;
+    }
+
+    /** 节点 + 合并来源标签（插入后记录到 nodeCoveredTags） */
+    private static final class LayerNode {
+        final ChainNode node;
+        final List<String> covered;
+        LayerNode(ChainNode node, List<String> covered) {
+            this.node = node;
+            this.covered = covered;
+        }
+    }
+
+    /** 构建某一层的节点：同层近亲标签合并 → 每层上限截断 */
+    private List<LayerNode> buildLayerNodes(Long chainId, String layer, List<String> tags) {
+        // 标签按全部企业数降序，代表标签 = 企业最多的标签（产业链推导用全部企业）
+        Map<String, Integer> entCount = new HashMap<>();
+        for (String tag : tags) {
+            List<Long> ents = enterpriseTagMapper.selectEnterpriseIdsByTagName(tag);
+            int cnt = ents == null ? 0 : ents.size();
+            if (cnt == 0) continue;  // 无企业的标签不建节点
+            entCount.put(tag, cnt);
+        }
+        if (entCount.isEmpty()) return Collections.emptyList();
+
+        List<String> sorted = new ArrayList<>(entCount.keySet());
+        sorted.sort(Comparator.comparingInt((String t) -> entCount.get(t)).reversed());
+
+        // 贪心归组：当前代表标签已覆盖的合并组，新标签尝试并入第一个语义近亲组
+        List<List<String>> groups = new ArrayList<>();
+        for (String tag : sorted) {
+            boolean merged = false;
+            for (List<String> group : groups) {
+                if (similarTag(group.get(0), tag)) {
+                    group.add(tag);
+                    merged = true;
+                    break;
+                }
+            }
+            if (!merged) groups.add(new ArrayList<>(List.of(tag)));
+        }
+
+        // 每层上限：保留企业强度 Top MAX_NODES_PER_LAYER
+        if (groups.size() > MAX_NODES_PER_LAYER) {
+            groups = groups.subList(0, MAX_NODES_PER_LAYER);
+            log.info("层 {} 节点超上限，截断为 {} 个（共 {} 个合并组）", layer, MAX_NODES_PER_LAYER, groups.size());
+        }
+
+        List<LayerNode> nodes = new ArrayList<>();
+        for (List<String> group : groups) {
+            String rep = group.get(0);
+            ChainNode node = ChainNode.builder()
+                    .chainId(chainId)
+                    .nodeName(rep)
+                    .layer(layer)
+                    .description(buildGroupDescription(group))
+                    .sortOrder(0)
+                    .isDeleted(0)
+                    .createdAt(NOW)
+                    .updatedAt(NOW)
+                    .build();
+            nodes.add(new LayerNode(node, group));
+        }
+        return nodes;
+    }
+
+    /** 两标签是否视为同层可合并：命中语义近亲词典 或 互相包含 */
+    private boolean similarTag(String a, String b) {
+        if (a == null || b == null || a.equals(b)) return true;
+        if (TagRuleUtil.isSameChain(a, b)) return true;
+        return TextSimilarity.containsEither(a, b);
+    }
+
+    /** 节点描述：合并组来源（如 人工智能/大数据/云计算） */
+    private String buildGroupDescription(List<String> group) {
+        if (group.size() == 1) return "自动聚类领域: " + group.get(0);
+        return "自动聚类领域（合并: " + String.join("/", group) + "）";
     }
 
     /** 每层节点数上限（三列均衡） */
     private static final int MAX_NODES_PER_LAYER = 8;
-
-    /** 链 → 覆盖企业（buildNodesFromTags 构建，buildEnterpriseNodes 消费） */
-    private Map<Long, Set<Long>> chainIdToEnts = new HashMap<>();
-
-    /** IPC class 前缀 → 链 id 的映射（由 seedChainsFromData 构建，buildNodesFromTags 消费） */
-    private Map<String, Long> chainIdByIpcPrefix = new HashMap<>();
 
     /**
      * 生成连线：同链内按层串连（up→mid→down SUPPLIES）
@@ -722,7 +789,8 @@ public class GraphBuildService implements ApplicationRunner {
 
     /**
      * 企业归属：企业按其领域标签归入对应节点（节点名 = 标签名）
-     * 同名标签可能出现在多条链 → 逐个节点独立归属（不用 map 覆盖）
+     * 同名标签可能出现在多条链 → 逐个节点独立归属（不用 map 覆盖）。
+     * 节点为同层合并节点时，取其覆盖标签并集（nodeCoveredTags）归属，避免合并后丢企业。
      */
     private int buildEnterpriseNodes() {
         List<ChainNode> allNodes = chainNodeMapper.selectList(null);
@@ -731,7 +799,7 @@ public class GraphBuildService implements ApplicationRunner {
         int inserted = 0;
         List<EnterpriseNode> batch = new ArrayList<>();
         for (ChainNode node : allNodes) {
-            List<Long> enterpriseIds = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(node.getNodeName());
+            List<Long> enterpriseIds = coveredTagEnterpriseIds(node);
             if (enterpriseIds == null || enterpriseIds.isEmpty()) continue;
             for (Long eid : enterpriseIds) {
                 batch.add(EnterpriseNode.builder()
@@ -756,9 +824,21 @@ public class GraphBuildService implements ApplicationRunner {
         return inserted;
     }
 
+    /** 节点覆盖标签的本地企业并集（合并节点取 nodeCoveredTags，单标签节点退化为自身） */
+    private List<Long> coveredTagEnterpriseIds(ChainNode node) {
+        List<String> covered = nodeCoveredTags.getOrDefault(node.getId(), List.of(node.getNodeName()));
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        for (String tag : covered) {
+            List<Long> ents = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
+            if (ents != null) ids.addAll(ents);
+        }
+        return new ArrayList<>(ids);
+    }
+
     /**
      * 专利归属：每个节点（领域标签）的专利 = 该领域覆盖企业的专利
-     * 直接按企业归属，不依赖 A1 算法（A1 依赖 IPC 规则，标签节点匹配不上）
+     * 直接按企业归属，不依赖 A1 算法（A1 依赖 IPC 规则，标签节点匹配不上）。
+     * 节点为同层合并节点时，取其覆盖标签企业并集（coveredTagEnterpriseIds）归属。
      */
     private int buildPatentNodes() {
         List<ChainNode> allNodes = chainNodeMapper.selectList(null);
@@ -767,7 +847,7 @@ public class GraphBuildService implements ApplicationRunner {
         int inserted = 0;
         List<PatentNode> batch = new ArrayList<>();
         for (ChainNode node : allNodes) {
-            List<Long> enterpriseIds = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(node.getNodeName());
+            List<Long> enterpriseIds = coveredTagEnterpriseIds(node);
             if (enterpriseIds == null || enterpriseIds.isEmpty()) continue;
             // 分批查询该领域企业的专利
             for (int i = 0; i < enterpriseIds.size(); i += 500) {
@@ -808,20 +888,11 @@ public class GraphBuildService implements ApplicationRunner {
         int inserted = 0;
         LocalDate today = LocalDate.now();
         for (ChainNode node : allNodes) {
-            int enterpriseCount = enterpriseNodeMapper.countByNodeId(node.getId());
+            int largeScaleCount = enterpriseNodeMapper.countLargeScaleByNodeId(node.getId());
             int patentCount = patentNodeMapper.countByNodeId(node.getId());
             int highValueCount = patentNodeMapper.countHighValueByNodeId(node.getId());
 
-            String tag;
-            if (enterpriseCount >= 20 || patentCount >= 200) {
-                tag = "强链";
-            } else if (enterpriseCount >= 5 || patentCount >= 50) {
-                tag = "补链";
-            } else if (enterpriseCount > 0 || patentCount > 0) {
-                tag = "弱链";
-            } else {
-                tag = "缺链";
-            }
+            String tag = diagnoseTag(largeScaleCount, highValueCount);
 
             NodeDiagnosis diag = NodeDiagnosis.builder()
                     .regionId(340500L)  // 马鞍山市
@@ -829,8 +900,8 @@ public class GraphBuildService implements ApplicationRunner {
                     .diagnosisTag(tag)
                     .highValuePatentCount(highValueCount)
                     .totalPatentCount(patentCount)
-                    .enterpriseCount(enterpriseCount)
-                    .patentDensity(enterpriseCount > 0 ? new BigDecimal((double) patentCount / enterpriseCount) : BigDecimal.ZERO)
+                    .enterpriseCount(largeScaleCount)
+                    .patentDensity(patentCount > 0 ? new BigDecimal((double) patentCount / (largeScaleCount > 0 ? largeScaleCount : 1)) : BigDecimal.ZERO)
                     .diagnosisBasis("基于IPC专利聚类自动生成")
                     .diagnosisDate(today)
                     .isDeleted(0)
@@ -842,6 +913,25 @@ public class GraphBuildService implements ApplicationRunner {
         }
         log.info("生成节点诊断: {}", inserted);
         return inserted;
+    }
+
+    /**
+     * 强弱链诊断判定标准（大规模企业数 × 高价值专利数）：
+     *   强链：大规模企业≥20，或 高价值专利≥100
+     *   补链：大规模企业 10~19，或 高价值专利 50~99
+     *   弱链：大规模企业 5~9，或 高价值专利 20~49
+     *   缺链：大规模企业=0，或 高价值专利=0（完全空白）
+     * 逐级判定，强链优先；不满足任一档但仍有规模/专利基础的兜底为弱链。
+     *
+     * @param largeScaleCount 大规模企业数（员工规模 大型/中大型）
+     * @param highValueCount  高价值专利数
+     */
+    private String diagnoseTag(int largeScaleCount, int highValueCount) {
+        if (largeScaleCount >= 20 || highValueCount >= 100) return "强链";
+        if ((largeScaleCount >= 10 && largeScaleCount < 20) || (highValueCount >= 50 && highValueCount < 100)) return "补链";
+        if ((largeScaleCount >= 5 && largeScaleCount < 10) || (highValueCount >= 20 && highValueCount < 50)) return "弱链";
+        if (largeScaleCount == 0 || highValueCount == 0) return "缺链";
+        return "弱链";
     }
 
     /**

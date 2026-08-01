@@ -46,7 +46,10 @@
         LEFT JOIN (
             SELECT p.applicant_enterprise_id,
                    COUNT(DISTINCT p.id) AS patent_count,
-                   COUNT(DISTINCT CASE WHEN p.maintenance_years >= 10 THEN p.id END) AS high_value_count
+                   COUNT(DISTINCT CASE WHEN p.patent_type = '发明'
+                            AND (p.maintenance_years >= 5
+                                 OR LEFT(p.ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN}))
+                           THEN p.id END) AS high_value_count
             FROM patent_node pn
             INNER JOIN patent p ON pn.patent_id = p.id AND p.is_deleted = 0
             WHERE pn.node_id = #{nodeId}

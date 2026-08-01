@@ -51,4 +51,8 @@ public interface NodeDiagnosisMapper extends BaseMapper<NodeDiagnosis> {
     /** 统计被诊断的节点总数 */
     @Select("SELECT COUNT(DISTINCT node_id) FROM node_diagnosis WHERE is_deleted = 0")
     long selectNodeCount();
+
+    /** 物理删除某节点某日某区域的诊断记录（uk_region_node_date 唯一键冲突前清理旧行） */
+    @org.apache.ibatis.annotations.Delete("DELETE FROM node_diagnosis WHERE region_id = #{regionId} AND node_id = #{nodeId} AND diagnosis_date = #{diagnosisDate}")
+    int physicallyDelete(@Param("regionId") Long regionId, @Param("nodeId") Long nodeId, @Param("diagnosisDate") java.time.LocalDate diagnosisDate);
 }

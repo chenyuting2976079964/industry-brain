@@ -28,6 +28,7 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
     private final NodeDiagnosisMapper nodeDiagnosisMapper;
     private final ChainNodeMapper chainNodeMapper;
     private final PatentMapper patentMapper;
+    private final EnterpriseNodeMapper enterpriseNodeMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     @Resource
     private java.util.concurrent.Executor taskExecutor;
@@ -145,10 +146,10 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
         vo.setMissingCount(missing);
         vo.setTotalCount(strong + supplement + weak + missing);
         vo.setCategories(Arrays.asList(
-            new DiagnosisSummaryResponse.CategoryDetail("强链", "强链", strong, "高价值≥200且企业≥20家", "#52c41a"),
-            new DiagnosisSummaryResponse.CategoryDetail("补链", "补链", supplement, "高价值≥50或企业≥5家", "#faad14"),
-            new DiagnosisSummaryResponse.CategoryDetail("弱链", "弱链", weak, "高价值<50且企业<5家", "#ff4d4f"),
-            new DiagnosisSummaryResponse.CategoryDetail("缺链", "缺链", missing, "无覆盖企业", "#bfbfbf")
+            new DiagnosisSummaryResponse.CategoryDetail("强链", "强链", strong, "大规模企业≥20 或 高价值专利≥100", "#52c41a"),
+            new DiagnosisSummaryResponse.CategoryDetail("补链", "补链", supplement, "大规模企业10~19 或 高价值专利50~99", "#faad14"),
+            new DiagnosisSummaryResponse.CategoryDetail("弱链", "弱链", weak, "大规模企业5~9 或 高价值专利20~49", "#ff4d4f"),
+            new DiagnosisSummaryResponse.CategoryDetail("缺链", "缺链", missing, "大规模企业=0 或 高价值专利=0", "#bfbfbf")
         ));
         return vo;
     }
@@ -184,8 +185,8 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
                 try {
                     int patentCount = patentMapper.selectCountByNodeId(node.getId());
                     int highValueCount = patentMapper.selectHighValueCountByNodeId(node.getId());
-                    int enterpriseCount = patentMapper.selectEnterpriseCountByNodeId(node.getId());
-                    diagnoseAndSave(node.getId(), regionId, patentCount, highValueCount, enterpriseCount);
+                    int largeScaleCount = enterpriseNodeMapper.countLargeScaleByNodeId(node.getId());
+                    diagnoseAndSave(node.getId(), regionId, patentCount, highValueCount, largeScaleCount);
                 } catch (Exception e) {
                     failed++;
                     log.error("Recalc: node#{} ({}) failed", node.getId(), node.getNodeName(), e);
@@ -203,28 +204,54 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
         }
     }
 
-    private void diagnoseAndSave(Long nodeId, Long regionId, int patentCount, int highValueCount, int enterpriseCount) {
+    /**
+     * 强弱链诊断判定（大规模企业数 × 高价值专利数）：
+     *   强链：大规模企业≥20，或 高价值专利≥100
+     *   补链：大规模企业 10~19，或 高价值专利 50~99
+     *   弱链：大规模企业 5~9，或 高价值专利 20~49
+     *   缺链：大规模企业=0，或 高价值专利=0
+     * 逐级判定，强链优先命中。
+     *
+     * @param largeScaleCount 大规模企业数（员工规模 大型/中大型）
+     * @param highValueCount  高价值专利数
+     */
+    private void diagnoseAndSave(Long nodeId, Long regionId, int patentCount, int highValueCount, int largeScaleCount) {
         String tag, basis;
-        if (enterpriseCount == 0) {
-            tag = "缺链"; basis = "该节点无覆盖企业(企业数=0)，处于完全缺失状态";
-        } else if (enterpriseCount > 50 && highValueCount > 500) {
-            tag = "强链"; basis = String.format("企业规模(%d家)和高价值专利(%d件)均远超阈值，强制判定为强链", enterpriseCount, highValueCount);
-        } else if (highValueCount >= 200 && enterpriseCount >= 20) {
-            tag = "强链"; basis = String.format("高价值专利%d件(≥200)且覆盖企业%d家(≥20)", highValueCount, enterpriseCount);
-        } else if (highValueCount >= 50 || enterpriseCount >= 5 || patentCount >= 100) {
+        if (largeScaleCount >= 20 || highValueCount >= 100) {
+            tag = "强链";
+            String reason = largeScaleCount >= 20
+                    ? String.format("大规模企业%d家(≥20)", largeScaleCount)
+                    : String.format("高价值专利%d件(≥100)", highValueCount);
+            basis = reason + "，该环节在全国具有比较优势，技术实力强";
+        } else if ((largeScaleCount >= 10 && largeScaleCount < 20) || (highValueCount >= 50 && highValueCount < 100)) {
             tag = "补链";
-            String reason = highValueCount >= 50 ? String.format("高价值专利%d件(≥50)", highValueCount)
-                    : enterpriseCount >= 5 ? String.format("企业数%d家(≥5)", enterpriseCount)
-                    : String.format("专利总数%d件(≥100)", patentCount);
-            basis = reason + "，具备一定基础但仍有提升空间";
+            String reason = (largeScaleCount >= 10 && largeScaleCount < 20)
+                    ? String.format("大规模企业%d家(10~19)", largeScaleCount)
+                    : String.format("高价值专利%d件(50~99)", highValueCount);
+            basis = reason + "，该环节有一定基础但质量待提升，需引进高价值技术";
+        } else if ((largeScaleCount >= 5 && largeScaleCount < 10) || (highValueCount >= 20 && highValueCount < 50)) {
+            tag = "弱链";
+            String reason = (largeScaleCount >= 5 && largeScaleCount < 10)
+                    ? String.format("大规模企业%d家(5~9)", largeScaleCount)
+                    : String.format("高价值专利%d件(20~49)", highValueCount);
+            basis = reason + "，该环节技术薄弱，需重点招商引进";
+        } else if (largeScaleCount == 0 || highValueCount == 0) {
+            tag = "缺链";
+            basis = largeScaleCount == 0
+                    ? "该环节无大规模企业覆盖，完全空白，最优先级招商"
+                    : "该环节无高价值专利，技术空白，最优先级招商";
         } else {
-            tag = "弱链"; basis = String.format("高价值专利%d件(<50)且企业数%d家(<5)，需要重点补强", highValueCount, enterpriseCount);
+            tag = "弱链";
+            basis = String.format("大规模企业%d家且高价值专利%d件，规模不足需重点招商引进", largeScaleCount, highValueCount);
         }
         NodeDiagnosis diagnosis = NodeDiagnosis.builder()
                 .regionId(regionId).nodeId(nodeId).diagnosisTag(tag)
                 .highValuePatentCount(highValueCount).totalPatentCount(patentCount)
-                .enterpriseCount(enterpriseCount).diagnosisBasis(basis)
+                .enterpriseCount(largeScaleCount).diagnosisBasis(basis)
                 .diagnosisDate(LocalDate.now()).build();
+        // 物理删除该节点当日的旧诊断（uk_region_node_date 唯一键约束，避免重复插入冲突；
+        // 不能用 MyBatis-Plus delete()——它走逻辑删除，物理行仍在，唯一键仍冲突）
+        nodeDiagnosisMapper.physicallyDelete(regionId, nodeId, diagnosis.getDiagnosisDate());
         nodeDiagnosisMapper.insert(diagnosis);
     }
 

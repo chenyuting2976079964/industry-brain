@@ -51,7 +51,7 @@ mvn spring-boot:run -pl industry-brain-admin -Dspring-boot.run.profiles=dev
 | `MYSQL_HOST` | localhost | MySQL 主机 |
 | `MYSQL_PORT` | 3307 | MySQL 端口（Docker 映射） |
 | `MYSQL_USER` | root | MySQL 用户名 |
-| `MYSQL_PASSWORD` | root | MySQL 密码（实际为 root123） |
+| `MYSQL_PASSWORD` | root123 | MySQL 密码（Docker 容器 root 密码） |
 | `REDIS_HOST` | localhost | Redis 主机 |
 | `ELASTICSEARCH_HOST` | localhost | Elasticsearch 主机 |
 | `NEO4J_URI` | bolt://localhost:7687 | Neo4j Bolt 地址 |
@@ -64,13 +64,25 @@ mvn spring-boot:run -pl industry-brain-admin -Dspring-boot.run.profiles=dev
 > 本机默认使用 `MYSQL_PASSWORD=root123`（Docker MySQL 的 root 密码）。
 > 若其他主机与后端不在同一主机，`server.port`（8080）保持默认即可。
 
+### 直接连接 MySQL（如用 Navicat / DBeaver / mysql 客户端）
+
+```bash
+mysql -h LAN_IP -P 3307 -u root -proot123
+```
+
+- 主机：`LAN_IP`（本机局域网 IP，**不能用 localhost**）
+- 端口：`3307`（Docker 将容器内 3306 映射到宿主机 3307）
+- 用户名：`root`，密码：`root123`
+
 ## 5. 验证
 
 后端启动后，在本机或其他主机访问：
 
-- 健康检查：`curl http://BACKEND_IP:8080/api/admin/health`
+- 健康检查：`curl http://BACKEND_IP:8080/api/v1/admin/health`
 - 产业链图谱：`curl http://BACKEND_IP:8080/api/v1/industry/chain/list`
 - 首页 KPI：`curl http://BACKEND_IP:8080/api/v1/homedashboard/kpi`
+
+> 说明：`dev` profile 下 `context-path` 为 `/`，上述路径即完整路径；控制器本身带有 `/api/v1` 前缀。
 
 ## 6. 图谱重建
 

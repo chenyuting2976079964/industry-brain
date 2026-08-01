@@ -1,4 +1,7 @@
-"""Import enterprise CSV data into MySQL using iterative single-row inserts."""
+"""Import enterprise CSV data into MySQL using iterative single-row inserts.
+
+支持重建关联：导入前保存旧 id→external_id 映射，TRUNCATE 企业表后按 external_id 重建各子表关联。
+"""
 import pymysql
 import csv
 import os
@@ -35,6 +38,180 @@ COL_NAMES = ','.join(COLS)
 PH = ','.join(['%s'] * 21)
 # Use INSERT IGNORE — skip duplicates, auto-inc unsupplied ids
 SQL = f'INSERT IGNORE INTO enterprise ({COL_NAMES}) VALUES ({PH})'
+
+# 企业表的子表及其外键字段（用于重建关联）
+CHILD_TABLES = [
+    ('enterprise_advantage', 'enterprise_id'),
+    ('enterprise_alias', 'enterprise_id'),
+    ('enterprise_evaluation', 'enterprise_id'),
+    ('enterprise_node', 'enterprise_id'),
+    ('enterprise_tag', 'enterprise_id'),
+    ('investment_recommendation', 'enterprise_id'),
+    ('patent', 'applicant_enterprise_id'),
+]
+
+
+def get_capital_wan(cap_text: str | None) -> float | None:
+    """
+    提取注册资本数值，统一转换为万元。
+    支持格式：
+      "1000万元人民币", "1.5亿元", "500万美元", "1000万港元",
+      "1000万元", "1亿元", "1000", "1000万"
+    无法提取数字返回 None
+    """
+    if not cap_text:
+        return None
+    text = str(cap_text).strip()
+    if not text:
+        return None
+
+    # 提取数字
+    m = re.search(r"[0-9.]+", text)
+    if not m:
+        return None
+    num = float(m.group())
+
+    # 识别单位并换算
+    if "亿" in text:
+        num *= 10000  # 亿 → 万
+    # 万美元/万港元/万美元 已经是"万"为单位，无需再乘
+    # "万" 本身已在单位中，乘以系数即可
+    if "美元" in text or "美金" in text:
+        num *= 7.0  # 1 USD ≈ 7 RMB
+    elif "港元" in text or "港币" in text:
+        num *= 0.9  # 1 HKD ≈ 0.9 RMB
+
+    return round(num, 2)
+
+
+def calc_enterprise_type(enterprise: dict) -> str | None:
+    """
+    根据企业信息自动计算企业类型标签。
+
+    :param enterprise: 包含 name, description, establishment_date,
+                       employee_scale, registered_capital 的字典
+    :return: '高新技术企业' | '专精特新' | '科技型中小企业' | '龙头企业' | None
+    """
+    name = (enterprise.get("name") or "").strip()
+    desc = (enterprise.get("description") or "").strip()
+    estab_raw = enterprise.get("establishment_date")
+    emp_scale = (enterprise.get("employee_scale") or "").strip()
+    cap_raw = enterprise.get("registered_capital")
+
+    # 解析成立日期
+    estab_date = None
+    if estab_raw:
+        if isinstance(estab_raw, date):
+            estab_date = estab_raw
+        elif isinstance(estab_raw, datetime):
+            estab_date = estab_raw.date()
+        elif isinstance(estab_raw, str):
+            raw_str = estab_raw.strip()[:10]
+            if raw_str:
+                try:
+                    estab_date = datetime.strptime(raw_str, "%Y-%m-%d").date()
+                except ValueError:
+                    pass
+
+    cap_wan = get_capital_wan(cap_raw)
+
+    # ===================== 1. 高新技术企业 =====================
+    name_tech_keys = ("科技", "技术")
+    desc_rd_keys = ("研发", "技术开发", "技术服务", "技术转让", "技术推广", "知识产权", "高新产品")
+    cond1_name = any(k in name for k in name_tech_keys)
+    cond1_desc = any(k in desc for k in desc_rd_keys)
+    if cond1_name and cond1_desc:
+        return "高新技术企业"
+
+    # ===================== 2. 专精特新 =====================
+    spec_keys = ("专精特新", "小巨人", "专精")
+    cond2_keyword = any(k in name for k in spec_keys) or any(k in desc for k in spec_keys)
+    cond2_date = False
+    if estab_date:
+        try:
+            three_year_day = date(estab_date.year + 3, estab_date.month, estab_date.day)
+        except ValueError:
+            # 2/29 成立的企业，+3 年后落在非闰年 → 退到 3/1
+            three_year_day = date(estab_date.year + 3, 3, 1)
+        cond2_date = date.today() >= three_year_day
+    if cond2_keyword and cond2_date:
+        return "专精特新"
+
+    # ===================== 3. 科技型中小企业 =====================
+    tech_pos_keys = ("科技", "软件", "信息", "网络", "数字", "智能", "数据",
+                     "生物", "芯片", "电子", "新材料", "新能源")
+    black_keys = ("商贸", "置业", "建设", "地产", "物流", "运输")
+    cond3_pos = any(k in name for k in tech_pos_keys)
+    cond3_black = any(k in name for k in black_keys)
+    cond3_scale = emp_scale in ("中小型", "小型")
+    if cond3_pos and (not cond3_black) and cond3_scale:
+        return "科技型中小企业"
+
+    # ===================== 4. 龙头企业 =====================
+    # 前置条件：不属于以上三类科技企业
+    leader_name_keys = ("集团", "控股", "产业集团", "城投", "产投", "国资")
+    cond4_name = any(k in name for k in leader_name_keys)
+    cond4_cap = cap_wan is not None and cap_wan >= 10000  # ≥1亿元(10000万元)
+    cond4_scale = emp_scale in ("大型", "超大型")
+    if (cond4_name and cond4_cap) or cond4_scale:
+        return "龙头企业"
+
+    # ===================== 5. 兜底 =====================
+    return None
+
+
+def backup_id_mapping(cur) -> dict:
+    """保存旧 id → external_id 映射（用于 TRUNCATE 后重建子表关联）。"""
+    cur.execute("SELECT id, external_id FROM enterprise")
+    mapping = {}
+    for old_id, ext_id in cur.fetchall():
+        if ext_id:
+            mapping[ext_id] = old_id
+    print(f'[BACKUP] 旧企业映射: {len(mapping):,} 条')
+    return mapping
+
+
+def remap_child_tables(cur, conn, old_mapping: dict):
+    """
+    企业表 TRUNCATE 重导后，通过 external_id 把子表里的旧 id 改写到新 id。
+
+    逻辑：
+      1. 收集当前 enterprise 的 external_id → 新 id
+      2. 由 old_mapping(external_id→旧id) 与新映射(external_id→新id) 推出 旧id→新id 字典
+      3. 对每个子表，把仍指向旧 id 的记录改写到新 id
+    """
+    # 新 id 映射: external_id → 新 id
+    cur.execute("SELECT id, external_id FROM enterprise WHERE external_id IS NOT NULL")
+    new_map = {ext: nid for nid, ext in cur.fetchall()}
+    print(f'[REMAP] 新企业映射: {len(new_map):,} 条')
+
+    # 旧 id → 新 id 字典（仅保留能匹配上的）
+    old_to_new = {
+        old_id: new_map[ext]
+        for ext, old_id in old_mapping.items()
+        if ext in new_map and old_id != new_map[ext]
+    }
+    print(f'[REMAP] 旧id→新id 变更映射: {len(old_to_new):,} 条')
+
+    for table, fk_col in CHILD_TABLES:
+        # 该子表所有引用了旧 id 的 enterprise_id 值
+        cur.execute(f"SELECT DISTINCT {fk_col} FROM {table} WHERE {fk_col} IS NOT NULL")
+        old_ids = [r[0] for r in cur.fetchall()]
+        if not old_ids:
+            print(f'[REMAP] {table}: 无关联记录，跳过')
+            continue
+
+        updated = 0
+        for old_id in old_ids:
+            new_id = old_to_new.get(old_id)
+            if new_id is not None:
+                cur.execute(
+                    f'UPDATE {table} SET {fk_col} = %s WHERE {fk_col} = %s',
+                    (new_id, old_id),
+                )
+                updated += cur.rowcount
+        conn.commit()
+        print(f'[REMAP] {table}: 处理 {len(old_ids):,} 个旧 id，更新 {updated:,} 行')
 
 
 def get_capital_wan(cap_text: str | None) -> float | None:
@@ -145,6 +322,11 @@ def calc_enterprise_type(enterprise: dict) -> str | None:
 def main():
     conn = pymysql.connect(**DB_CONFIG)
     cur = conn.cursor()
+
+    # 1. 备份旧 id → external_id 映射
+    old_mapping = backup_id_mapping(cur)
+
+    # 2. 清空并重导企业表
     cur.execute('SET FOREIGN_KEY_CHECKS = 0')
     cur.execute('TRUNCATE TABLE enterprise')
     conn.commit()
@@ -218,8 +400,12 @@ def main():
         conn.commit()
 
     print(f'\n[DONE] Total: {total:,}')
-
     cur.execute('SET FOREIGN_KEY_CHECKS = 1')
+
+    # 3. 重建子表关联
+    remap_child_tables(cur, conn, old_mapping)
+
+    # 4. 验证
     cur.execute('SELECT COUNT(*), MIN(id), MAX(id) FROM enterprise')
     r = cur.fetchone()
     print(f'[VERIFY] count={r[0]:,}, min_id={r[1]}, max_id={r[2]}')

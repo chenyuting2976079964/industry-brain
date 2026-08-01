@@ -6,3 +6,23 @@
 spring:
   profiles:
     active: dev
+
+# ==========================================
+# 自动聚类构建产业链 — 向量嵌入配置
+# enabled=false 时走纯规则聚类降级（无需外部 API）
+# ==========================================
+embedding:
+  enabled: true                      # 配好 key 后改 true
+  base-url: ${EMBEDDING_BASE_URL:https://api.siliconflow.cn/v1}
+  api-key: ${EMBEDDING_API_KEY:sk-wsffznbtsdfbulrbjzjnptanrbebykwajglmpfxwrejoboaq}
+  model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+  dimension: ${EMBEDDING_DIMENSION:1024}
+  batch-size: 16
+  timeout-ms: 15000
+  max-retries: 2
+  retry-backoff-ms: 500
+  cluster-threshold: 0.42
+  vector-weight: 0.7
+  rule-weight: 0.3
+  description-limit: 5
+

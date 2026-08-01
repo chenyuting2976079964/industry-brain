@@ -35,34 +35,75 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
     public List<ChainResponse> getChainList() {
         List<IndustryChain> chains = chainInfoMapper.selectAllOrdered();
         if (chains == null || chains.isEmpty()) return Collections.emptyList();
-        return chains.stream().map(c -> {
-            ChainResponse vo = new ChainResponse();
-            vo.setId(c.getId());
-            vo.setChainName(c.getName());
-            vo.setChainCode(c.getCode());
 
-            List<NodeDiagnosis> latestResults = nodeDiagnosisMapper.selectLatestByChainId(c.getId());
-            if (latestResults == null) latestResults = Collections.emptyList();
-            int strong = 0, supplement = 0, weak = 0, missing = 0;
-            int totalPatents = 0, totalEnterprises = 0;
-            for (NodeDiagnosis r : latestResults) {
-                totalPatents += r.getTotalPatentCount() != null ? r.getTotalPatentCount() : 0;
-                totalEnterprises += r.getEnterpriseCount() != null ? r.getEnterpriseCount() : 0;
-                String tag = r.getDiagnosisTag();
-                if ("强链".equals(tag)) strong++;
-                else if ("补链".equals(tag)) supplement++;
-                else if ("弱链".equals(tag)) weak++;
-                else if ("缺链".equals(tag)) missing++;
+        List<ChainResponse> result = new ArrayList<>();
+        for (IndustryChain c : chains) {
+            ChainResponse vo = buildChainResponse(c);
+            if (vo == null) continue;  // 节点为空或没有强链/补链节点的产业链，隐藏
+            result.add(vo);
+        }
+        return result;
+    }
+
+    /**
+     * 构建单条产业链响应；不满足显示条件时返回 null（调用方隐藏该链）。
+     *
+     * 显示条件（三个条件同时满足）：
+     *   1. 节点非空（有诊断记录）
+     *   2. 上中下游三层中至少有两层有节点（覆盖层数 ≥ 2）
+     *   3. 节点中有强链或补链（strong + supplement > 0）
+     */
+    private ChainResponse buildChainResponse(IndustryChain c) {
+        ChainResponse vo = new ChainResponse();
+        vo.setId(c.getId());
+        vo.setChainName(c.getName());
+        vo.setChainCode(c.getCode());
+
+        List<NodeDiagnosis> latestResults = nodeDiagnosisMapper.selectLatestByChainId(c.getId());
+        if (latestResults == null || latestResults.isEmpty()) {
+            log.debug("产业链「{}」无节点，隐藏", c.getName());
+            return null;  // 条件1：节点为空 → 隐藏
+        }
+
+        // 统计该链覆盖的层数（up/mid/down 至少两层有节点）
+        Set<String> coveredLayers = new HashSet<>();
+        List<ChainNode> nodes = chainNodeMapper.selectByChainId(c.getId());
+        if (nodes != null) {
+            for (ChainNode n : nodes) {
+                if (n.getLayer() != null && !n.getLayer().isBlank()) {
+                    coveredLayers.add(n.getLayer());
+                }
             }
-            vo.setNodeCount(latestResults.size());
-            vo.setTotalPatents(totalPatents);
-            vo.setTotalEnterprises(totalEnterprises);
-            vo.setStrongCount(strong);
-            vo.setSupplementCount(supplement);
-            vo.setWeakCount(weak);
-            vo.setMissingCount(missing);
-            return vo;
-        }).collect(Collectors.toList());
+        }
+        if (coveredLayers.size() < 2) {
+            log.debug("产业链「{}」覆盖层数 {} < 2，隐藏", c.getName(), coveredLayers.size());
+            return null;  // 条件2：覆盖层数不足两层 → 隐藏
+        }
+
+        int strong = 0, supplement = 0, weak = 0, missing = 0;
+        int totalPatents = 0, totalEnterprises = 0;
+        for (NodeDiagnosis r : latestResults) {
+            totalPatents += r.getTotalPatentCount() != null ? r.getTotalPatentCount() : 0;
+            totalEnterprises += r.getEnterpriseCount() != null ? r.getEnterpriseCount() : 0;
+            String tag = r.getDiagnosisTag();
+            if ("强链".equals(tag)) strong++;
+            else if ("补链".equals(tag)) supplement++;
+            else if ("弱链".equals(tag)) weak++;
+            else if ("缺链".equals(tag)) missing++;
+        }
+        // 条件3：节点中有强链或补链 → 否则隐藏
+        if (strong + supplement == 0) {
+            log.debug("产业链「{}」无强链/补链节点，隐藏", c.getName());
+            return null;
+        }
+        vo.setNodeCount(latestResults.size());
+        vo.setTotalPatents(totalPatents);
+        vo.setTotalEnterprises(totalEnterprises);
+        vo.setStrongCount(strong);
+        vo.setSupplementCount(supplement);
+        vo.setWeakCount(weak);
+        vo.setMissingCount(missing);
+        return vo;
     }
 
     /** C02: 产业链全部节点 (含诊断标签) */

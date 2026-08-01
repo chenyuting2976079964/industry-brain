@@ -69,14 +69,14 @@ public class InvestmentMatchResponse {
         /** 匹配等级显示文本 */
         private String matchLevelText;
 
-        /** 专利实力分 */
-        private BigDecimal patentStrengthScore;
+        /** 业务契合度得分（0-100） */
+        private BigDecimal businessFitScore;
 
-        /** 产业链适配分 */
-        private BigDecimal industryFitScore;
+        /** 规模实力得分（0-100） */
+        private BigDecimal scaleStrengthScore;
 
-        /** 产业带动分 */
-        private BigDecimal drivingPotentialScore;
+        /** 地域协同度得分（0-100） */
+        private BigDecimal regionalSynergyScore;
 
         /** 综合评分 */
         private BigDecimal totalScore;

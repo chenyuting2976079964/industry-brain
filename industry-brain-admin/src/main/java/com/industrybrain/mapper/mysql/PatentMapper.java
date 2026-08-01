@@ -52,17 +52,26 @@ public interface PatentMapper extends BaseMapper<Patent> {
     /** 统计某企业的高价值专利数量 */
     long selectHighValueCountByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
-    /** 统计全部高价值专利数量 (无参版本) */
-    @Select("SELECT COUNT(*) FROM patent WHERE maintenance_years >= 5 AND is_deleted = 0")
+    /** 统计全部高价值专利数量 (无参版本) — 国知局标准：发明 + (维持≥5年 或 战略新兴产业IPC) */
+    @Select("<script>SELECT COUNT(*) FROM patent WHERE is_deleted = 0 " +
+            "AND patent_type = '发明' " +
+            "AND (maintenance_years >= 5 " +
+            "     OR LEFT(ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN}))" +
+            "</script>")
     long selectHighValueCount();
 
 
     /** 查询某企业的高价值专利 Top 5 (带参版本) */
     List<Patent> selectTop5HighValueByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
-    /** 查询全局高价值专利 Top 5 (无参版本) */
-    @Select("SELECT id, patent_number, patent_name, applicant, maintenance_years FROM patent " +
-            "WHERE is_deleted = 0 ORDER BY maintenance_years DESC LIMIT 5")
+    /** 查询全局高价值专利 Top 5 (无参版本) — 国知局标准过滤 */
+    @Select("<script>SELECT id, patent_number, patent_name, applicant, maintenance_years FROM patent " +
+            "WHERE is_deleted = 0 " +
+            "AND patent_type = '发明' " +
+            "AND (maintenance_years >= 5 " +
+            "     OR LEFT(ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN})) " +
+            "ORDER BY maintenance_years DESC LIMIT 5" +
+            "</script>")
     List<Map<String, Object>> selectTop5HighValue();
 
     /** 按技术领域统计专利分布 (带参版本) */
@@ -85,9 +94,13 @@ public interface PatentMapper extends BaseMapper<Patent> {
             "WHERE pn.node_id = #{nodeId} AND p.is_deleted = 0")
     int selectCountByNodeId(@Param("nodeId") Long nodeId);
 
-    /** 按节点ID统计高价值专利数 */
-    @Select("SELECT COUNT(*) FROM patent_node pn INNER JOIN patent p ON pn.patent_id = p.id " +
-            "WHERE pn.node_id = #{nodeId} AND p.maintenance_years >= 5 AND p.is_deleted = 0")
+    /** 按节点ID统计高价值专利数 — 国知局标准：发明 + (维持≥5年 或 战略新兴产业IPC) */
+    @Select("<script>SELECT COUNT(*) FROM patent_node pn INNER JOIN patent p ON pn.patent_id = p.id " +
+            "WHERE pn.node_id = #{nodeId} AND p.is_deleted = 0 " +
+            "AND p.patent_type = '发明' " +
+            "AND (p.maintenance_years >= 5 " +
+            "     OR LEFT(p.ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN}))" +
+            "</script>")
     int selectHighValueCountByNodeId(@Param("nodeId") Long nodeId);
 
     /** 按节点ID统计企业数 */
@@ -99,9 +112,13 @@ public interface PatentMapper extends BaseMapper<Patent> {
     @Select("SELECT COUNT(*) FROM patent WHERE applicant_enterprise_id = #{enterpriseId} AND is_deleted = 0")
     int selectCountByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
 
-    /** 按企业ID统计高价值专利数 */
-    @Select("SELECT COUNT(*) FROM patent WHERE applicant_enterprise_id = #{enterpriseId} " +
-            "AND maintenance_years >= 5 AND is_deleted = 0")
+    /** 按企业ID统计高价值专利数 — 国知局标准：发明 + (维持≥5年 或 战略新兴产业IPC) */
+    @Select("<script>SELECT COUNT(*) FROM patent WHERE applicant_enterprise_id = #{enterpriseId} " +
+            "AND is_deleted = 0 " +
+            "AND patent_type = '发明' " +
+            "AND (maintenance_years >= 5 " +
+            "     OR LEFT(ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN}))" +
+            "</script>")
     int selectHighValueCountByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
 
     /** 按企业ID统计发明专利数 */

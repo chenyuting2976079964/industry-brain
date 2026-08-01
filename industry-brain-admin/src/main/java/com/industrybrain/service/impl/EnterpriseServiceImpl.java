@@ -1,5 +1,6 @@
 package com.industrybrain.service.impl;
 
+import com.industrybrain.common.utils.HighValuePatentUtils;
 import com.industrybrain.domain.model.Enterprise;
 import com.industrybrain.domain.model.*;
 import com.industrybrain.dto.request.EnterpriseSearchRequest;
@@ -117,7 +118,7 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
             if (p.getApplicationDate() != null) vo.setApplicationDate(p.getApplicationDate().toString());
             vo.setLegalStatus(p.getLegalStatus());
             vo.setStatusColor("授权".equals(p.getLegalStatus()) ? "#52c41a" : "#1890ff");
-            vo.setIsHighValue(p.getMaintenanceYears() != null && p.getMaintenanceYears() >= 5);
+            vo.setIsHighValue(HighValuePatentUtils.isHighValue(p.getPatentType(), p.getMaintenanceYears(), p.getIpcCode()));
             vo.setIpcMain(p.getIpcCode());
             return vo;
         }).collect(Collectors.toList());
