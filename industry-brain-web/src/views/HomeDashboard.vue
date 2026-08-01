@@ -61,7 +61,6 @@
         <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-400">
           <span>规上: {{ (kpiData.enterprise?.aboveScale || 0).toLocaleString() }}</span>
           <span>高新: {{ (kpiData.enterprise?.highTech || 0).toLocaleString() }}</span>
-          <span>专精特新: {{ (kpiData.enterprise?.specialized || 0).toLocaleString() }}</span>
         </div>
       </div>
 
@@ -139,7 +138,7 @@
         </h3>
         <div class="space-y-2">
           <div
-            v-for="alert in (alertShowAll ? alerts : alerts.slice(0, 5))"
+            v-for="alert in (alertShowAll ? alerts : alerts.slice(0, 4))"
             :key="alert.id"
             class="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors"
             :class="alertLevelClass(alert.level)"
@@ -158,7 +157,7 @@
             暂无待处理预警
           </div>
           <button
-            v-if="alerts.length > 5"
+            v-if="alerts.length > 4"
             @click="alertShowAll = !alertShowAll"
             class="w-full py-2 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors font-medium"
           >
@@ -313,15 +312,22 @@ async function openPatentDetail() {
 // ---- KPI Modal: Enterprise Detail (H07) ----
 async function openEnterpriseDetail() {
   const data = await homeDashboardService.getEnterpriseDetail()
+  // 梯队名 → 本地企业页筛选 category
+  const tierCategoryMap = {
+    '龙头企业': 'leading',
+    '高新技术企业': 'hightech',
+    '科技型中小企业': 'sme',
+    '其他企业': 'other'
+  }
   const tiers = data.tiers.map(t => `
-    <div class="flex items-center gap-4 p-3 bg-${t.color}-50 rounded-lg">
+    <div class="flex items-center gap-4 p-3 bg-${t.color}-50 rounded-lg cursor-pointer hover:shadow-md transition-all" data-action="enterprise-list" data-category="${tierCategoryMap[t.name] || 'all'}">
       <div class="w-10 h-10 bg-${t.color}-100 rounded-lg flex items-center justify-center flex-shrink-0">
         <i class="fa-solid fa-${t.icon} text-${t.color}-600 text-sm"></i>
       </div>
       <div class="flex-1">
         <div class="flex justify-between items-center mb-1">
           <span class="text-sm font-medium text-slate-700">${t.name}</span>
-          <span class="text-sm font-bold text-${t.color}-600">${t.count.toLocaleString()} 家</span>
+          <span class="text-sm font-bold text-${t.color}-600">${t.count.toLocaleString()} 家 <i class="fa-solid fa-chevron-right text-${t.color}-400 text-[10px] ml-0.5"></i></span>
         </div>
         <div class="h-2 bg-${t.color}-100 rounded-full overflow-hidden">
           <div class="h-full bg-${t.color}-500 rounded-full" style="width:${t.pct}%"></div>
@@ -332,7 +338,7 @@ async function openEnterpriseDetail() {
 
   modal.open('企业梯队分析', `
     <div class="space-y-4">
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-2 gap-3">
         <div class="bg-slate-50 rounded-lg p-4 text-center cursor-pointer hover:bg-blue-50 transition-all border border-transparent hover:border-blue-200" data-action="enterprise-list" data-category="all">
           <p class="text-2xl font-bold text-blue-600">${data.total.toLocaleString()}</p>
           <p class="text-xs text-slate-500 mt-1">企业总数 <span class="text-blue-500 ml-1 text-[10px]">查看 →</span></p>
@@ -341,12 +347,7 @@ async function openEnterpriseDetail() {
           <p class="text-2xl font-bold text-emerald-600">${data.hightechCount.toLocaleString()}</p>
           <p class="text-xs text-slate-500 mt-1">高新技术企业 <span class="text-blue-500 ml-1 text-[10px]">查看 →</span></p>
         </div>
-        <div class="bg-slate-50 rounded-lg p-4 text-center cursor-pointer hover:bg-purple-50 transition-all border border-transparent hover:border-purple-200" data-action="enterprise-list" data-category="specialized">
-          <p class="text-2xl font-bold text-purple-600">${data.specializedCount.toLocaleString()}</p>
-          <p class="text-xs text-slate-500 mt-1">专精特新企业 <span class="text-blue-500 ml-1 text-[10px]">查看 →</span></p>
-        </div>
       </div>
-      <p class="text-sm text-slate-600">${data.description}</p>
       <div class="space-y-3">${tiers}</div>
       <button class="w-full py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors" data-action="navigate" data-page="industry">
         <i class="fa-solid fa-sitemap mr-1"></i>查看产业链分布
@@ -356,7 +357,7 @@ async function openEnterpriseDetail() {
     'enterprise-list': (el) => {
       const category = el.getAttribute('data-category')
       modal.close()
-      sessionStorage.setItem('navContext', JSON.stringify({ category }))
+      sessionStorage.setItem('navContext', JSON.stringify({ filter: { category } }))
       router.push('/local-enterprises')
     },
     navigate: (el) => {

@@ -76,7 +76,7 @@
 
       <div class="dash-right">
         <div class="panel">
-          <div class="panel-title"><i class="fa-solid fa-trophy mr-2 text-amber-400"></i>高价值专利 TOP5</div>
+          <div class="panel-title"><i class="fa-solid fa-trophy mr-2 text-amber-400"></i>高价值专利</div>
           <div class="patent-list">
             <div v-for="p in patentTop5" :key="p.patentId" class="patent-row">
               <span class="patent-rank" :class="'rank-' + p.rank">{{ p.rank }}</span>

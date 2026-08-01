@@ -16,7 +16,7 @@ embedding:
   base-url: ${EMBEDDING_BASE_URL:https://api.siliconflow.cn/v1}
   api-key: ${EMBEDDING_API_KEY:sk-wsffznbtsdfbulrbjzjnptanrbebykwajglmpfxwrejoboaq}
   model: ${EMBEDDING_MODEL:BAAI/bge-m3}
-  dimension: ${EMBEDDING_DIMENSION:1024}
+  dimension: ${EMBEDDING_DIMENSION:1024}企业梯队分析
   batch-size: 16
   timeout-ms: 15000
   max-retries: 2

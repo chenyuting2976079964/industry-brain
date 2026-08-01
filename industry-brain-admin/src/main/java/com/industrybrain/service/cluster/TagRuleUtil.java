@@ -25,7 +25,7 @@ public final class TagRuleUtil {
         "人力资源", "劳务/人力资源", "咨询服务", "贸易", "企业服务", "租赁服务", "投资管理", "普惠金融",
         "银行", "证券/基金", "保险", "金融服务", "法律服务", "财会/评估", "教育培训", "广告/会展",
         "广告/传媒", "酒店/公寓", "物业管理", "物业/保洁", "安保服务", "殡葬服务", "旅游/景区", "拍卖",
-        "餐饮/酒店", "危险品运输");
+        "餐饮/酒店");
 
     /** 标签 → 规范链名（命名第一优先级） */
     public static final Map<String, String> TAG_CHAIN_NAME = new LinkedHashMap<>();
@@ -109,6 +109,7 @@ public final class TagRuleUtil {
         TAG_CHAIN_NAME.put("污水处理", "环保水务");
         TAG_CHAIN_NAME.put("水务/水环境", "环保水务");
         TAG_CHAIN_NAME.put("土壤修复", "环保水务");
+        TAG_CHAIN_NAME.put("危险品运输", "环保水务");
 
         TAG_CHAIN_NAME.put("仓储", "物流仓储");
         TAG_CHAIN_NAME.put("冷链物流", "物流仓储");
@@ -240,6 +241,7 @@ public final class TagRuleUtil {
         TAG_LAYER.put("水务/水环境", "mid");
         TAG_LAYER.put("废气治理", "mid");
         TAG_LAYER.put("固废处理", "mid");
+        TAG_LAYER.put("危险品运输", "down");
 
         // 物流仓储：仓储 up / 运输 mid / 配送 down
         TAG_LAYER.put("仓储", "up");

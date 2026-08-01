@@ -64,13 +64,13 @@ public interface PatentMapper extends BaseMapper<Patent> {
     /** 查询某企业的高价值专利 Top 5 (带参版本) */
     List<Patent> selectTop5HighValueByEnterprise(@Param("enterpriseId") Long enterpriseId);
 
-    /** 查询全局高价值专利 Top 5 (无参版本) — 国知局标准过滤 */
+    /** 查询全局高价值专利 随机抽取5个 (无参版本) — 国知局标准过滤 */
     @Select("<script>SELECT id, patent_number, patent_name, applicant, maintenance_years FROM patent " +
             "WHERE is_deleted = 0 " +
             "AND patent_type = '发明' " +
             "AND (maintenance_years >= 5 " +
             "     OR LEFT(ipc_main,3) IN (${@com.industrybrain.common.utils.HighValuePatentUtils@IPC_SQL_IN})) " +
-            "ORDER BY maintenance_years DESC LIMIT 5" +
+            "ORDER BY RAND() LIMIT 5" +
             "</script>")
     List<Map<String, Object>> selectTop5HighValue();
 

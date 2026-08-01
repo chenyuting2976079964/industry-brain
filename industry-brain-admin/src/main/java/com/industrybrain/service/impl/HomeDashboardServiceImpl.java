@@ -30,6 +30,7 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
     private final ChainNodeMapper chainNodeMapper;
     private final IndustrialParkMapper parkMapper;
     private final ChainInfoMapper chainInfoMapper;
+    private final EnterpriseNodeMapper enterpriseNodeMapper;
 
     // ─── H01: KPI ───
     public Map<String, Object> getKpi() {
@@ -124,25 +125,25 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
 
     // ─── H02: 产业链分布 ───
     public Map<String, Object> getChainDist() {
-        List<com.industrybrain.domain.model.ChainNode> nodes = chainNodeMapper.selectList(null);
+        // 按层（up/mid/down）统计节点关联的去重本地企业数
         long up = 0, mid = 0, down = 0;
-        if (nodes != null) {
-            for (com.industrybrain.domain.model.ChainNode n : nodes) {
-                if (n.getLayer() == null) continue;
-                switch (n.getLayer()) {
-                    case "up": up++; break;
-                    case "mid": mid++; break;
-                    case "down": down++; break;
-                }
+        List<Map<String, Object>> stats = enterpriseNodeMapper.countByLayer();
+        if (stats != null) {
+            for (Map<String, Object> row : stats) {
+                String layer = (String) row.get("layer");
+                long cnt = ((Number) row.get("ent_cnt")).longValue();
+                if ("up".equals(layer)) up = cnt;
+                else if ("mid".equals(layer)) mid = cnt;
+                else if ("down".equals(layer)) down = cnt;
             }
         }
-        long totalNodes = up + mid + down;
-        if (totalNodes == 0) totalNodes = 1;
+        long totalEnts = up + mid + down;
+        if (totalEnts == 0) totalEnts = 1;
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("upstream", Map.of("count", up, "pct", (int)(up * 100 / totalNodes)));
-        result.put("midstream", Map.of("count", mid, "pct", (int)(mid * 100 / totalNodes)));
-        result.put("downstream", Map.of("count", down, "pct", (int)(down * 100 / totalNodes)));
+        result.put("upstream", Map.of("count", up, "pct", (int)(up * 100 / totalEnts)));
+        result.put("midstream", Map.of("count", mid, "pct", (int)(mid * 100 / totalEnts)));
+        result.put("downstream", Map.of("count", down, "pct", (int)(down * 100 / totalEnts)));
         return result;
     }
 
@@ -304,14 +305,24 @@ public class HomeDashboardServiceImpl implements IHomeDashboardService {
         result.put("hightechCount", highTechCount);
         result.put("specializedCount", specializedCount);
 
+        // 构建梯队：数量为 0 的类型不入梯队（如无专精特新企业则不显示该档）
         List<Map<String, Object>> tiers = new ArrayList<>();
-        tiers.add(Map.of("name", "龙头企业", "count", leadingCount, "pct", total > 0 ? (int)(leadingCount * 100 / total) : 0, "icon", "crown", "color", "amber"));
-        tiers.add(Map.of("name", "专精特新企业", "count", specializedCount, "pct", total > 0 ? (int)(specializedCount * 100 / total) : 0, "icon", "medal", "color", "purple"));
-        tiers.add(Map.of("name", "高新技术企业", "count", highTechCount, "pct", total > 0 ? (int)(highTechCount * 100 / total) : 0, "icon", "flask", "color", "blue"));
-        tiers.add(Map.of("name", "科技型中小企业", "count", techSmallCount, "pct", total > 0 ? (int)(techSmallCount * 100 / total) : 0, "icon", "microchip", "color", "cyan"));
-        tiers.add(Map.of("name", "其他企业", "count", otherCount, "pct", total > 0 ? (int)(otherCount * 100 / total) : 0, "icon", "building", "color", "red"));
+        if (leadingCount > 0) {
+            tiers.add(Map.of("name", "龙头企业", "count", leadingCount, "pct", total > 0 ? (int)(leadingCount * 100 / total) : 0, "icon", "crown", "color", "amber"));
+        }
+        if (specializedCount > 0) {
+            tiers.add(Map.of("name", "专精特新企业", "count", specializedCount, "pct", total > 0 ? (int)(specializedCount * 100 / total) : 0, "icon", "medal", "color", "purple"));
+        }
+        if (highTechCount > 0) {
+            tiers.add(Map.of("name", "高新技术企业", "count", highTechCount, "pct", total > 0 ? (int)(highTechCount * 100 / total) : 0, "icon", "flask", "color", "blue"));
+        }
+        if (techSmallCount > 0) {
+            tiers.add(Map.of("name", "科技型中小企业", "count", techSmallCount, "pct", total > 0 ? (int)(techSmallCount * 100 / total) : 0, "icon", "microchip", "color", "cyan"));
+        }
+        if (otherCount > 0) {
+            tiers.add(Map.of("name", "其他企业", "count", otherCount, "pct", total > 0 ? (int)(otherCount * 100 / total) : 0, "icon", "building", "color", "red"));
+        }
         result.put("tiers", tiers);
-        result.put("description", "龙头企业引领、专精特新攻坚、高新技术支撑的梯度培育体系。");
         return result;
     }
 

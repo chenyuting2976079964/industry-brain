@@ -168,33 +168,32 @@ def main():
         enterprises = cur.fetchall()
 
         for eid, ename in enterprises:
-            tech_match = round(random.uniform(50, 98), 2)
-            tech_strength = round(random.uniform(40, 95), 2)
-            active = round(random.uniform(30, 90), 2)
-            industry_fit = round(random.uniform(45, 97), 2)
-            driving = round(random.uniform(35, 92), 2)
-            chain_cov = round(random.uniform(20, 85), 2)
+            # 三维度得分（v2 算法：业务契合×0.5 + 规模实力×0.35 + 地域协同×0.15）
+            business_fit = round(random.uniform(50, 98), 2)    # 业务契合度（经营文本相似度）
+            scale_strength = round(random.uniform(40, 95), 2)  # 规模实力（团队规模×20+资本×15÷35）
+            regional_synergy = round(random.uniform(60, 100), 2)  # 地域协同度（省内100/省外60）
             total_score = round(
-                tech_match * 0.3 + tech_strength * 0.2 + active * 0.1 +
-                industry_fit * 0.2 + driving * 0.15 + chain_cov * 0.05, 2
+                business_fit * 0.5 + scale_strength * 0.35 + regional_synergy * 0.15, 2
             )
 
-            distance_levels = ["本市", "本省", "邻省", "其他"]
+            # 评级：A≥80 / B≥60 / C<60
+            rating = "A" if total_score >= 80 else ("B" if total_score >= 60 else "C")
+            match_reasons = f"业务契合度={business_fit:.0f},规模实力={scale_strength:.0f},地域协同度={regional_synergy:.0f}"
+            demand_province = "34"  # 安徽（regionCode 前2位）
+
             statuses = ["pending", "contacted", "signed"]
 
             cur.execute("""
                 INSERT INTO investment_recommendation
                 (region_id, target_node_id, enterprise_id,
-                 tech_match_score, tech_strength_score, active_score,
-                 industry_fit_score, driving_potential_score, chain_coverage,
-                 total_score, distance_level, status, recommendation_date,
-                 created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                 business_fit_score, scale_strength_score, regional_synergy_score,
+                 total_score, rating, match_reasons, demand_province,
+                 status, recommendation_date, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
             """, (
                 1, node_id, eid,
-                tech_match, tech_strength, active,
-                industry_fit, driving, chain_cov,
-                total_score, random.choice(distance_levels),
+                business_fit, scale_strength, regional_synergy,
+                total_score, rating, match_reasons, demand_province,
                 random.choice(statuses), date.today(),
             ))
             rec_count += 1

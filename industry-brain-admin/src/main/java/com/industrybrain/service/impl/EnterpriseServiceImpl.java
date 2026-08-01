@@ -50,6 +50,7 @@ public class EnterpriseServiceImpl implements IEnterpriseService {
         vo.setShortName(ent.getName());
         vo.setAvatarLetter(ent.getName() != null && !ent.getName().isEmpty()
             ? ent.getName().substring(0, 1) : "企");
+        vo.setDescription(ent.getDescription());
         vo.setLegalPerson(ent.getLegalRepresentative());
         vo.setRegisteredCapital(ent.getRegisteredCapital());
         if (ent.getEstablishmentDate() != null) {

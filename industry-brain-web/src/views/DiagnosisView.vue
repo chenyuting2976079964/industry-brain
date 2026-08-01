@@ -182,6 +182,10 @@ const layerNames = { up: '上游', mid: '中游', down: '下游' }
 const statusMap = { strong: '强链', supplement: '补链', weak: '弱链', missing: '缺链' }
 const firmColors = ['blue', 'purple', 'emerald', 'amber', 'cyan']
 const levelMap = { 1: 'up', 2: 'mid', 3: 'down' }
+// API 返回的层级编码 → 前端 layer（兼容数字/英文两种格式）
+const nodeLevelToLayer = { 1: 'up', 2: 'mid', 3: 'down', up: 'up', mid: 'mid', down: 'down' }
+// 中文诊断标签 → 前端英文 status
+const tagToStatus = { 强链: 'strong', 补链: 'supplement', 弱链: 'weak', 缺链: 'missing' }
 
 // ─── Data transforms ──────────────────────────────────────
 function transformDiagNode(apiItem, maxPatents) {
@@ -193,8 +197,8 @@ function transformDiagNode(apiItem, maxPatents) {
     id: apiItem.nodeId,
     name: apiItem.nodeName,
     subtitle: apiItem.diagnosisBasis || apiItem.nodeLevelLabel || '',
-    status: apiItem.diagnosisTag || 'missing',
-    layer: levelMap[apiItem.nodeLevel] || 'mid',
+    status: tagToStatus[apiItem.diagnosisTag] || 'missing',
+    layer: nodeLevelToLayer[apiItem.nodeLevel] || levelMap[apiItem.nodeLevel] || 'mid',
     patents: String(pCount),
     highVal: String(hvCount),
     highValPct: pCount > 0 ? (hvCount / pCount * 100).toFixed(1) + '%' : '0%',

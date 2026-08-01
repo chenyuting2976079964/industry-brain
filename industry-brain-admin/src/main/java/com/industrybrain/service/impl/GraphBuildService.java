@@ -648,7 +648,7 @@ public class GraphBuildService implements ApplicationRunner {
         }
     }
 
-    /** 构建某一层的节点：同层近亲标签合并 → 每层上限截断 */
+    /** 构建某一层的节点：同层近亲标签合并（每组限 MAX_TAGS_PER_GROUP）→ 每层上限截断 */
     private List<LayerNode> buildLayerNodes(Long chainId, String layer, List<String> tags) {
         // 标签按全部企业数降序，代表标签 = 企业最多的标签（产业链推导用全部企业）
         Map<String, Integer> entCount = new HashMap<>();
@@ -663,12 +663,13 @@ public class GraphBuildService implements ApplicationRunner {
         List<String> sorted = new ArrayList<>(entCount.keySet());
         sorted.sort(Comparator.comparingInt((String t) -> entCount.get(t)).reversed());
 
-        // 贪心归组：当前代表标签已覆盖的合并组，新标签尝试并入第一个语义近亲组
+        // 贪心归组：同层近亲标签合并，但每组最多 MAX_TAGS_PER_GROUP 个标签，超出则另起一组
+        // （部分拆分：不再把所有近亲标签压成一个节点，保证每层节点更丰富）
         List<List<String>> groups = new ArrayList<>();
         for (String tag : sorted) {
             boolean merged = false;
             for (List<String> group : groups) {
-                if (similarTag(group.get(0), tag)) {
+                if (group.size() < MAX_TAGS_PER_GROUP && similarTag(group.get(0), tag)) {
                     group.add(tag);
                     merged = true;
                     break;
@@ -716,6 +717,9 @@ public class GraphBuildService implements ApplicationRunner {
 
     /** 每层节点数上限（三列均衡） */
     private static final int MAX_NODES_PER_LAYER = 8;
+
+    /** 每个合并组最多容纳的近亲标签数（部分拆分：同层标签分组更细，节点更多） */
+    private static final int MAX_TAGS_PER_GROUP = 2;
 
     /**
      * 生成连线：同链内按层串连（up→mid→down SUPPLIES）

@@ -102,6 +102,7 @@ public class DashboardServiceImpl implements IDashboardService {
     /** F04: 高价值专利TOP5 */
     @Override
     public List<PatentTop5Response> getPatentTop5(String regionCode) {
+        // 随机抽取 5 个高价值专利（每次进入页面随机刷新，无评分）
         List<Map<String, Object>> top5 = patentMapper.selectTop5HighValue();
         if (top5 == null) return Collections.emptyList();
         int rank = 1;
@@ -113,8 +114,6 @@ public class DashboardServiceImpl implements IDashboardService {
             vo.setPatentName(pName != null ? pName : ((String) m.get("applicant")));
             vo.setPatentId(((Number) m.get("id")).longValue());
             vo.setApplicant((String) m.get("applicant"));
-            Object years = m.get("maintenance_years");
-            vo.setScore(years != null ? ((Number) years).intValue() * 10 : 0);
             result.add(vo);
         }
         return result;

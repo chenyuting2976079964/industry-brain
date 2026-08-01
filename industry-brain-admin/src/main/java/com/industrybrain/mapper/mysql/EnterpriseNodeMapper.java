@@ -28,6 +28,14 @@ public interface EnterpriseNodeMapper extends BaseMapper<EnterpriseNode> {
             "WHERE en.node_id = #{nodeId} AND e.employee_scale IN ('大型', '中大型')")
     int countLargeScaleByNodeId(@Param("nodeId") Long nodeId);
 
+    /** 统计各层（up/mid/down）节点关联的去重企业数 — 产业链分布看板用 */
+    @Select("SELECT cn.layer AS layer, COUNT(DISTINCT en.enterprise_id) AS ent_cnt " +
+            "FROM enterprise_node en " +
+            "INNER JOIN chain_node cn ON cn.id = en.node_id AND cn.is_deleted = 0 " +
+            "WHERE cn.layer IS NOT NULL " +
+            "GROUP BY cn.layer")
+    List<java.util.Map<String, Object>> countByLayer();
+
     /** 批量插入企业-节点关联（图谱构建用） */
     int batchInsert(@Param("list") List<EnterpriseNode> list);
 }

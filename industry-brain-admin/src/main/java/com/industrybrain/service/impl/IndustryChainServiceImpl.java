@@ -48,10 +48,9 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
     /**
      * 构建单条产业链响应；不满足显示条件时返回 null（调用方隐藏该链）。
      *
-     * 显示条件（三个条件同时满足）：
+     * 显示条件（两个条件同时满足）：
      *   1. 节点非空（有诊断记录）
-     *   2. 上中下游中，强链/补链节点覆盖至少两层（缺链/弱链节点不计入有效层）
-     *   3. 节点中有强链或补链（strong + supplement > 0）
+     *   2. 上中下游三层（up/mid/down）都有节点
      */
     private ChainResponse buildChainResponse(IndustryChain c) {
         ChainResponse vo = new ChainResponse();
@@ -65,29 +64,22 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
             return null;  // 条件1：节点为空 → 隐藏
         }
 
-        // 统计强链/补链节点覆盖的层数（up/mid/down 至少两层有强补链节点）
-        // 缺链/弱链节点不算有效节点，不参与层覆盖统计
-        Set<Long> strongSuppNodeIds = latestResults.stream()
-            .filter(r -> {
-                String tag = r.getDiagnosisTag();
-                return "强链".equals(tag) || "补链".equals(tag);
-            })
-            .map(NodeDiagnosis::getNodeId)
-            .collect(Collectors.toSet());
-
+        // 条件2：上中下游三层都要有节点（up/mid/down）
         Set<String> coveredLayers = new HashSet<>();
         List<ChainNode> nodes = chainNodeMapper.selectByChainId(c.getId());
         if (nodes != null) {
             for (ChainNode n : nodes) {
-                if (strongSuppNodeIds.contains(n.getId())
-                        && n.getLayer() != null && !n.getLayer().isBlank()) {
+                if (n.getLayer() != null && !n.getLayer().isBlank()) {
                     coveredLayers.add(n.getLayer());
                 }
             }
         }
-        if (coveredLayers.size() < 2) {
-            log.debug("产业链「{}」强补链覆盖层数 {} < 2，隐藏", c.getName(), coveredLayers.size());
-            return null;  // 条件2：强补链覆盖层数不足两层 → 隐藏
+        if (coveredLayers.size() < 3
+                || !coveredLayers.contains("up")
+                || !coveredLayers.contains("mid")
+                || !coveredLayers.contains("down")) {
+            log.debug("产业链「{}」上中下游三层不完整，隐藏（覆盖: {}）", c.getName(), coveredLayers);
+            return null;
         }
 
         int strong = 0, supplement = 0, weak = 0, missing = 0;
@@ -100,11 +92,6 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
             else if ("补链".equals(tag)) supplement++;
             else if ("弱链".equals(tag)) weak++;
             else if ("缺链".equals(tag)) missing++;
-        }
-        // 条件3：节点中有强链或补链 → 否则隐藏
-        if (strong + supplement == 0) {
-            log.debug("产业链「{}」无强链/补链节点，隐藏", c.getName());
-            return null;
         }
         vo.setNodeCount(latestResults.size());
         vo.setTotalPatents(totalPatents);

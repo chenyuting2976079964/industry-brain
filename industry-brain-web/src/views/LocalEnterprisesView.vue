@@ -64,7 +64,7 @@
     <!-- Grid View -->
     <div v-else-if="viewMode === 'grid'" class="grid grid-cols-2 gap-3">
       <div
-        v-for="(e, i) in filteredEnterprises"
+        v-for="(e, i) in pagedEnterprises"
         :key="e.name"
         class="ent-card bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md cursor-pointer"
         @click="viewEnterprise(e.name)"
@@ -96,7 +96,7 @@
     <!-- List View -->
     <div v-else class="grid grid-cols-1 gap-2">
       <div
-        v-for="(e, i) in filteredEnterprises"
+        v-for="(e, i) in pagedEnterprises"
         :key="e.name"
         class="ent-card bg-white rounded-xl border border-slate-100 p-3 hover:shadow-md flex items-center gap-4 cursor-pointer"
         @click="viewEnterprise(e.name)"
@@ -118,6 +118,23 @@
         </div>
         <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
       </div>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="filteredEnterprises.length > pageSize" class="flex items-center justify-center gap-1 mt-6">
+      <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <button
+        v-for="p in pageNumbers"
+        :key="p"
+        :class="['page-btn', { active: p === currentPage }]"
+        @click="changePage(p)"
+      >{{ p }}</button>
+      <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <span class="ml-3 text-xs text-slate-400">共 {{ filteredEnterprises.length }} 家</span>
     </div>
   </div>
 </template>
@@ -192,6 +209,39 @@ const filteredEnterprises = computed(() => {
   })
 })
 
+// ─── Pagination ────────────────────────────────────────────
+const pageSize = 50
+const currentPage = ref(1)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredEnterprises.value.length / pageSize)))
+
+const pagedEnterprises = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredEnterprises.value.slice(start, start + pageSize)
+})
+
+const pageNumbers = computed(() => {
+  const total = totalPages.value
+  const cur = currentPage.value
+  const pages = []
+  // 显示窗口: 当前页前后各2页 + 首尾
+  const want = new Set([1, total, cur - 2, cur - 1, cur, cur + 1, cur + 2])
+  let prev = 0
+  for (let i = 1; i <= total; i++) {
+    if (want.has(i)) {
+      if (i - prev > 1) pages.push('...')
+      pages.push(i)
+      prev = i
+    }
+  }
+  return pages
+})
+
+function changePage(p) {
+  if (p < 1 || p > totalPages.value) return
+  currentPage.value = p
+}
+
 const activeTags = computed(() => {
   const tags = []
   if (filters.district) tags.push({ key: 'district', label: '地区: ' + filters.district })
@@ -202,19 +252,21 @@ const activeTags = computed(() => {
 
 // ─── Methods ───────────────────────────────────────────────
 function applyFilters() {
-  // reactive triggers computed automatically
+  currentPage.value = 1  // 筛选变化回到第一页
 }
 
 function resetFilters() {
   filters.district = ''
   filters.type = ''
   filters.search = ''
+  currentPage.value = 1
 }
 
 function removeFilter(key) {
   if (key === 'district') filters.district = ''
   else if (key === 'type') filters.type = ''
   else if (key === 'search') filters.search = ''
+  currentPage.value = 1
 }
 
 function viewEnterprise(name) {
@@ -262,6 +314,26 @@ onMounted(async () => {
 <style scoped>
 .ent-card { transition: all .2s; cursor: pointer; }
 .ent-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, .1); }
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-btn:hover:not(:disabled) { border-color: #93c5fd; color: #1e40af; background: #eff6ff; }
+.page-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; }
+.page-btn:disabled { opacity: .4; cursor: not-allowed; }
+.page-btn[data-ellipsis] { border: none; cursor: default; }
 
 .tag-specialized { background: #f3e8ff; color: #7c3aed; }
 .tag-hightech { background: #dbeafe; color: #1d4ed8; }

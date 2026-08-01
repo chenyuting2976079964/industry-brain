@@ -83,7 +83,6 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
             "WHERE e.is_deleted = 0 AND e.is_local = 1 " +
             "<if test='keyword != null and keyword != \"\"'>AND e.name LIKE CONCAT('%', #{keyword}, '%')</if> " +
             "ORDER BY ps.high_value_count DESC, e.name ASC " +
-            "LIMIT 200" +
             "</script>")
     List<java.util.Map<String, Object>> selectLocalEnterprises(@Param("keyword") String keyword);
 
