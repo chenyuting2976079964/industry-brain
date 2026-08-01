@@ -55,20 +55,5 @@ export const investmentService = {
   /** I07 — POST /api/v1/recommendation/export */
   exportList(params = {}) {
     return post(`${BASE}/export`, params)
-  },
-
-  /** R01 — GET /api/v1/recommendation/reports */
-  getReports(page = 1, size = 20) {
-    return get(`${BASE}/reports?page=${page}&size=${size}`)
-  },
-
-  /** R03 — POST /api/v1/recommendation/reports/generate */
-  generateReport(params = {}) {
-    return post(`${BASE}/reports/generate`, params)
-  },
-
-  /** R04 — GET /api/v1/recommendation/reports/{id}/download */
-  downloadReport(id) {
-    return get(`${BASE}/reports/${id}/download`)
   }
 }

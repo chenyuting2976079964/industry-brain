@@ -33,7 +33,16 @@ export const reportsService = {
    *  后端返回: ReportStatsResponse */
   getStats() { return get(`${BASE}/reports/stats`) },
 
-  /** R08 — POST /api/v1/recommendation/reports/export-all
-   *  后端: @RequestBody ExportAllRequest { format } */
-  exportAll(format = 'excel') { return post(`${BASE}/reports/export-all`, { format }) }
+  /** R08 — POST /api/v1/recommendation/reports/export-all */
+  exportAll(format = 'excel') { return post(`${BASE}/reports/export-all`, { format }) },
+
+  /** 获取报告生成选项（前端静态配置） */
+  getReportOptions() {
+    return {
+      types: ['招商推荐清单', '产业链诊断报告', '企业画像报告', '补链建议方案'],
+      scopes: ['全部产业链', '智能制造', '新能源汽车', '集成电路', '新材料'],
+      counts: ['Top 10', 'Top 20', 'Top 50', '全部'],
+      formats: ['Excel', 'PDF']
+    }
+  }
 }

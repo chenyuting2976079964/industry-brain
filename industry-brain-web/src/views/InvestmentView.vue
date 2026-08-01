@@ -211,46 +211,6 @@
       </div>
     </div>
 
-    <!-- ==================== REPORT SECTION ==================== -->
-    <div class="bg-white rounded-xl p-5 border border-slate-100 data-card mt-4">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-slate-700">
-          <i class="fa-regular fa-file-lines mr-2 text-blue-500"></i>招商报告
-        </h3>
-        <button class="btn-primary text-xs" @click="handleGenerateReport" :disabled="reportGenerating">
-          <i :class="reportGenerating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-plus'"></i>{{ reportGenerating ? '生成中...' : '生成报告' }}
-        </button>
-      </div>
-      <div v-if="reports.length === 0" class="text-center py-6 text-xs text-slate-400">
-        <i class="fa-regular fa-folder-open text-3xl block mb-2"></i>暂无报告，点击"生成报告"创建
-      </div>
-      <div v-else class="space-y-2">
-        <div
-          v-for="r in reports"
-          :key="r.id"
-          class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
-        >
-          <div class="flex items-center gap-3 flex-1 min-w-0">
-            <i :class="['fa-regular text-blue-500', r.status === 'completed' ? 'fa-file-excel' : r.status === 'processing' ? 'fa-clock fa-spin' : 'fa-circle-exclamation text-red-400'].join(' ')"></i>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-medium text-slate-700 truncate">{{ r.title || '招商推荐报告' }}</p>
-              <p class="text-[10px] text-slate-400 mt-0.5">
-                {{ r.status === 'completed' ? '生成时间: ' + (r.reportDate || r.createdAt || r.created_at || '—') : r.status === 'processing' ? '正在生成...' : '生成失败' }}
-                <span v-if="r.enterpriseCount"> · {{ r.enterpriseCount }} 家企业</span>
-              </p>
-            </div>
-          </div>
-          <button
-            v-if="r.status === 'completed'"
-            class="btn-outline text-xs flex-shrink-0 ml-3"
-            @click="handleDownloadReport(r.id)"
-          >
-            <i class="fa-solid fa-download"></i>下载
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- ==================== SLIDE PANEL: Enterprise Detail ==================== -->
     <Teleport to="body">
       <div v-if="panelVisible" class="panel-overlay show" @click="closeDetail"></div>
@@ -335,7 +295,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { investmentService } from '@/services/investment.service'
 
 // ---- State ----
@@ -348,9 +308,6 @@ const totalCount = ref(0)
 const wishList = ref([])
 const rematching = ref(false)
 const exporting = ref(false)
-const reportGenerating = ref(false)
-const reports = ref([])
-
 const filters = reactive({
   weakness: 'all',
   minMatch: 'all',
@@ -375,7 +332,6 @@ onMounted(async () => {
   } catch (e) { console.error('[Investment] Failed to parse nav context:', e) }
 
   await loadData()
-  await loadReports()
 })
 
 // ---- Data loading ----
@@ -401,15 +357,6 @@ async function loadData() {
     }
   } catch (e) {
     console.error('Failed to load investment data:', e)
-  }
-}
-
-async function loadReports() {
-  try {
-    const res = await investmentService.getReports()
-    reports.value = res.reports || res || []
-  } catch (e) {
-    console.error('Failed to load reports:', e)
   }
 }
 
@@ -466,33 +413,6 @@ async function handleRematch() {
   }
 }
 
-async function handleGenerateReport() {
-  reportGenerating.value = true
-  try {
-    await investmentService.generateReport({ type: 'investment_list', format: 'Excel' })
-    await loadReports()
-  } catch (e) {
-    console.error('Report generation failed:', e)
-  } finally {
-    reportGenerating.value = false
-  }
-}
-
-async function handleDownloadReport(reportId) {
-  try {
-    const url = await investmentService.downloadReport(reportId)
-    if (url) window.open(url, '_blank')
-    else alert('报告文件暂不可用')
-  } catch (e) {
-    alert('下载失败')
-  }
-}
-
-function formatTime(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
-}
 </script>
 
 <style scoped>

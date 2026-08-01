@@ -825,7 +825,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
             if ("investment_list".equals(request.getType())) {
                 List<InvestmentRecommendation> enterprises = recommendationMapper.selectMatchList(
                         null, null, null, null, null, null,
-                        request.getNodeId(), null, 0, 200);
+                        request.getNodeId(), null, 0, 50);
                 enterpriseCount = enterprises.size();
                 excelData = buildInvestmentListExcel(enterprises, record.getTitle());
             } else {
