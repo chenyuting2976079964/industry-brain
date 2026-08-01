@@ -5,6 +5,7 @@ import com.industrybrain.domain.model.Enterprise;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 import java.util.Map;
@@ -104,4 +105,13 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
     /** 按企业类型统计本地企业数（is_local=1） */
     @Select("SELECT COUNT(*) FROM enterprise WHERE enterprise_type = #{type} AND is_local = 1 AND is_deleted = 0")
     Long countByTypeLocal(@Param("type") String type);
+
+    /** 批量更新企业类型 */
+    @Update("<script>UPDATE enterprise SET enterprise_type = #{type} WHERE is_deleted = 0 AND id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach></script>")
+    int batchUpdateType(@Param("ids") java.util.List<Long> ids, @Param("type") String type);
+
+    /** 统计 enterprise_type 为空的企业数 */
+    @Select("SELECT COUNT(*) FROM enterprise WHERE is_deleted = 0 AND (enterprise_type IS NULL OR enterprise_type = '')")
+    long countNullType();
 }

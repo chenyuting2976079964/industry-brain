@@ -20,15 +20,19 @@
               <h2 class="text-xl font-bold text-slate-800">{{ ent.name }}</h2>
               <span v-for="(tag, i) in ent.tags" :key="i" :class="['badge', ent.tagStyles[i % ent.tagStyles.length]]">{{ tag }}</span>
             </div>
+            <p class="text-sm text-slate-400 mt-1">{{ ent.desc }}</p>
             <div class="flex items-center gap-5 mt-2 text-xs text-slate-500 flex-wrap">
               <span><i class="fa-regular fa-building mr-1"></i>成立 {{ ent.year }}年</span>
               <span><i class="fa-solid fa-location-dot mr-1"></i>{{ ent.loc }}</span>
+              <span><i class="fa-regular fa-user mr-1"></i>{{ ent.size }}</span>
               <span><i class="fa-regular fa-building mr-1"></i>注册资本 {{ ent.capital }}</span>
             </div>
           </div>
         </div>
         <div class="flex gap-2 flex-shrink-0">
-          <button :class="isFavorited ? 'btn-primary text-xs' : 'btn-outline text-xs'" @click="toggleFavorite"><i :class="isFavorited ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'"></i> {{ isFavorited ? '已收藏' : '收藏' }}</button>
+          <button :class="['btn-outline text-xs', { 'btn-favorited': isFavorited }]" @click="toggleFavorite">
+            <i :class="isFavorited ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'"></i> {{ isFavorited ? '已收藏' : '收藏' }}
+          </button>
           <button class="btn-primary text-xs" @click="showReportModal"><i class="fa-regular fa-file-lines"></i> 下载报告</button>
         </div>
       </div>
@@ -128,6 +132,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -136,7 +141,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useEventBus } from '@/stores/eventBus'
-import { getEnterprise, getEnterpriseProfile, getEnterprisePatents, getEnterpriseEvaluate, searchEnterprise, getLocalEnterprises } from '@/services/enterprise.service'
+import { getEnterprise, getEnterpriseProfile, getEnterprisePatents, searchEnterprise, getLocalEnterprises } from '@/services/enterprise.service'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -145,12 +150,6 @@ const eventBus = useEventBus()
 appStore.setPage('企业详情', 'enterprise')
 
 // ─── Helpers ──────────────────────────────────────────────
-function scoreColor(score) {
-  if (score >= 80) return 'emerald'
-  if (score >= 60) return 'blue'
-  return 'cyan'
-}
-
 const tagStylePool = [
   'status-strong-bg', 'bg-purple-50 text-purple-600',
   'bg-blue-50 text-blue-600', 'bg-amber-50 text-amber-600',
@@ -158,22 +157,15 @@ const tagStylePool = [
 ]
 
 // ─── Data transform ───────────────────────────────────────
-function transformEnterprise(apiEnt, profile, evaluate, patentData) {
-  const tags = (profile?.technologyFields?.map(t => t.fieldName) || apiEnt.tags || []).slice(0, 6)
+function transformEnterprise(apiEnt, profile, patentData) {
+  // 标签从 enterprise_tag 表获取（apiEnt.tags）
+  const tags = (apiEnt.tags || []).slice(0, 6)
 
   const advantages = (profile?.advantages || []).map(a => ({
-    name: a.name,
+    name: a.name || '未知领域',
     count: `${a.patentCount || 0}项`,
-    desc: a.description || (a.name + '领域')
+    desc: a.description || (a.name || '未知领域') + '领域'
   }))
-
-  const scores = (evaluate?.scores || []).map(s => ({
-    n: s.name,
-    v: s.score,
-    c: scoreColor(s.score)
-  }))
-
-  const policies = [] // API doesn't provide policy matching per-evaluate yet
 
   return {
     id: apiEnt.id,
@@ -196,7 +188,6 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
     weaknessDetail: (profile?.weaknesses || []).length > 0
       ? profile.weaknesses[0].fieldName + '领域存在技术储备不足，建议加大研发投入'
       : '暂无详细数据',
-    evaluate: buildEvaluate(evaluate),
     patents: (patentData?.rows || []).map(p => ({
       n: p.patentName || p.patentNumber || '',
       t: p.patentType || '发明',
@@ -204,49 +195,7 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
       s: p.legalStatus || '授权',
       desc: p.ipcMain || ''
     })),
-    _raw: { apiEnt, profile, evaluate, patentData }
-  }
-}
-
-function buildEvaluate(evaluate) {
-  if (!evaluate) {
-    return {
-      level: 'C', label: '暂无评估', match: 0,
-      scores: [{ n: '技术匹配度', v: 0, c: 'cyan' }, { n: '专利实力', v: 0, c: 'cyan' }, { n: '产业带动潜力', v: 0, c: 'cyan' }],
-      investType: '—', urgent: '低', risk: '未知', policy: '—',
-      suggestion: '暂无详细招商建议', landSuggest: '—', policyMatch: []
-    }
-  }
-
-  const levels = [
-    { threshold: 85, level: 'A', label: '强烈推荐' },
-    { threshold: 70, level: 'A', label: '推荐' },
-    { threshold: 50, level: 'B', label: '关注' },
-  ]
-  const levelResult = levels.find(l => evaluate.compositeScore >= l.threshold) || { level: 'C', label: '一般' }
-
-  const scores = (evaluate.scores || []).map(s => ({
-    n: s.name,
-    v: s.score,
-    c: scoreColor(s.score)
-  }))
-
-  return {
-    level: levelResult.level,
-    label: levelResult.label,
-    match: evaluate.compositeScore || 0,
-    scores: scores.length > 0 ? scores : [
-      { n: '技术实力', v: evaluate.techStrength || 0, c: scoreColor(evaluate.techStrength) },
-      { n: '增长潜力', v: evaluate.growthPotential || 0, c: scoreColor(evaluate.growthPotential) },
-      { n: '创新指数', v: evaluate.innovationIndex || 0, c: scoreColor(evaluate.innovationIndex) }
-    ],
-    investType: '—',
-    urgent: '中',
-    risk: '低风险',
-    policy: '鼓励类产业',
-    suggestion: '请结合技术画像综合评估招商价值',
-    landSuggest: '—',
-    policyMatch: []
+    _raw: { apiEnt, profile, patentData }
   }
 }
 
@@ -267,10 +216,6 @@ const ent = computed(() => currentEnt.value || {
   tags: [], tagStyles: [], desc: '', loc: '', year: '', size: '', capital: '',
   totalPatents: 0, highValue: 0, invention: 0, techMatch: '',
   advantages: [], weakness: '', weaknessDetail: '',
-  evaluate: {
-    level: 'C', label: '—', match: 0,
-    scores: [], investType: '', urgent: '', risk: '', policy: '', suggestion: '', landSuggest: '', policyMatch: []
-  },
   patents: []
 })
 
@@ -314,27 +259,16 @@ const patentPageInfo = computed(() => {
   return start + '-' + end + ' / 共 ' + total + ' 条匹配'
 })
 
-const evaluateLevelBg = computed(() => {
-  const map = { A: 'bg-gradient-to-br from-emerald-500 to-emerald-700', B: 'bg-gradient-to-br from-blue-500 to-blue-700', C: 'bg-gradient-to-br from-slate-500 to-slate-700' }
-  return map[ent.value.evaluate?.level] || 'bg-gradient-to-br from-slate-500 to-slate-700'
-})
-
-const urgencyColor = computed(() => {
-  const map = { '高': 'text-red-600', '中': 'text-amber-600', '低': 'text-slate-500' }
-  return map[ent.value.evaluate?.urgent] || 'text-slate-500'
-})
-
 // ─── Data loading ─────────────────────────────────────────
 async function loadEnterpriseData(entId) {
   loading.value = true
   try {
-    const [apiEnt, profile, evaluate, patentData] = await Promise.all([
+    const [apiEnt, profile, patentData] = await Promise.all([
       getEnterprise(entId),
       getEnterpriseProfile(entId).catch(() => null),
-      getEnterpriseEvaluate(entId).catch(() => null),
       getEnterprisePatents(entId, { page: 1, size: 100 }).catch(() => ({ rows: [] }))
     ])
-    currentEnt.value = transformEnterprise(apiEnt, profile, evaluate, patentData)
+    currentEnt.value = transformEnterprise(apiEnt, profile, patentData)
     currentPatentPage.value = 1
   } catch (e) {
     console.error('Failed to load enterprise data', e)
@@ -476,6 +410,7 @@ onMounted(async () => {
   gap: 6px;
 }
 .btn-outline:hover { border-color: #1e40af; color: #1e40af; }
+.btn-favorited { border-color: #f59e0b; color: #d97706; background: #fffbeb; }
 
 .input-field {
   width: 100%;
