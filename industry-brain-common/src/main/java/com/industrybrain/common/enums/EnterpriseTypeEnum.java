@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
  * 企业类型枚举
  */
 @Getter
-@AllArgsConstructor
 public enum EnterpriseTypeEnum {
     LEADER("LEADER", "龙头企业", "行业领军企业，具有强大市场影响力和技术实力"),
     SPECIALIZED("SPECIALIZED", "专精特新", "专业化、精细化、特色化、新颖化的中小企业"),
@@ -24,6 +23,12 @@ public enum EnterpriseTypeEnum {
     private final String code;
     private final String label;
     private final String description;
+
+    EnterpriseTypeEnum(String code, String label, String description) {
+        this.code = code;
+        this.label = label;
+        this.description = description;
+    }
 
     /**
      * 根据code获取枚举实例

@@ -8,7 +8,6 @@ import lombok.Getter;
  * 对标技术架构文档: 上中下游三列图谱布局
  */
 @Getter
-@AllArgsConstructor
 public enum ChainLayerEnum {
     UPSTREAM("upstream", "上游", "原材料、核心技术、关键零部件"),
     MIDSTREAM("midstream", "中游", "核心制造、系统集成、平台服务"),
@@ -17,6 +16,12 @@ public enum ChainLayerEnum {
     private final String code;
     private final String label;
     private final String description;
+
+    ChainLayerEnum(String code, String label, String description) {
+        this.code = code;
+        this.label = label;
+        this.description = description;
+    }
 
     public static ChainLayerEnum fromCode(String code) {
         for (ChainLayerEnum e : values()) {

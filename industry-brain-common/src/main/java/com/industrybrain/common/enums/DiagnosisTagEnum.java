@@ -8,7 +8,6 @@ import lombok.Getter;
  * A2算法输出: 四档分类 (绿/黄/红/灰)
  */
 @Getter
-@AllArgsConstructor
 public enum DiagnosisTagEnum {
     STRONG("strong", "强链", "#52c41a", "高价值占比和专利密度均高于全国平均水平"),
     SUPPLEMENT("supplement", "补链", "#faad14", "高价值占比达到全国均值60%以上，但仍有提升空间"),
@@ -19,6 +18,13 @@ public enum DiagnosisTagEnum {
     private final String label;
     private final String color;
     private final String description;
+
+    DiagnosisTagEnum(String code, String label, String color, String description) {
+        this.code = code;
+        this.label = label;
+        this.color = color;
+        this.description = description;
+    }
 
     public static DiagnosisTagEnum fromCode(String code) {
         for (DiagnosisTagEnum e : values()) {

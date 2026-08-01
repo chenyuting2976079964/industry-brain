@@ -240,6 +240,7 @@ function transformEnterprise(apiEnt, profile, evaluate, patentData) {
     weaknessDetail: (profile?.weaknesses || []).length > 0
       ? profile.weaknesses[0].fieldName + '领域存在技术储备不足，建议加大研发投入'
       : '暂无详细数据',
+    evaluate: buildEvaluate(evaluate),
     patents: (patentData?.rows || []).map(p => ({
       n: p.patentName || p.patentNumber || '',
       t: p.patentType || '发明',
@@ -303,7 +304,6 @@ const currentPatentPage = ref(1)
 const loading = ref(false)
 const isFavorited = ref(false)
 const pageSize = 6
-const isFavorited = ref(false)
 
 const ent = computed(() => currentEnt.value || {
   name: '加载中...',
