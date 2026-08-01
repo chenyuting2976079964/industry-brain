@@ -94,34 +94,32 @@
     <div class="space-y-3">
       <div
         v-for="ent in displayList"
-        :key="ent.id"
+        :key="ent.recommendationId"
         class="enterprise-card bg-white rounded-xl p-5 border border-slate-100"
       >
         <div class="flex items-start justify-between">
           <!-- Left: company info -->
           <div class="flex items-start gap-4 flex-1">
             <div
-              class="w-12 h-12 bg-gradient-to-br rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0"
-              :class="ent.gradient"
+              class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0"
             >
               {{ ent.initial }}
             </div>
             <div class="flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="font-semibold text-slate-800">{{ ent.name }}</h3>
+                <h3 class="font-semibold text-slate-800">{{ ent.enterpriseName }}</h3>
                 <span
                   v-for="(tag, i) in ent.tags"
                   :key="i"
                   class="badge text-xs"
                   :class="ent.tagStyles[i]"
                 >{{ tag }}</span>
-                <span v-if="ent.badge3" class="badge text-xs" :class="ent.badge3Style">{{ ent.badge3 }}</span>
               </div>
-              <p class="text-xs text-slate-400 mt-1">{{ ent.desc }}</p>
+              <p class="text-xs text-slate-400 mt-1">{{ ent.description }}</p>
               <div class="flex gap-3 mt-1.5 text-xs text-slate-500">
-                <span><i class="fa-regular fa-file-lines mr-1"></i>{{ ent.patentCount }}项</span>
-                <span><i class="fa-regular fa-building mr-1"></i>{{ ent.year }}年</span>
-                <span><i class="fa-regular fa-user mr-1"></i>{{ ent.employees }}</span>
+                <span v-if="ent.location"><i class="fa-solid fa-location-dot mr-1"></i>{{ ent.location }}</span>
+                <span v-if="ent.scale"><i class="fa-regular fa-user mr-1"></i>{{ ent.scale }}</span>
+                <span v-if="ent.registeredCapital"><i class="fa-regular fa-building mr-1"></i>{{ ent.registeredCapital }}</span>
               </div>
             </div>
           </div>
@@ -130,17 +128,17 @@
             <div class="w-16 h-16 rounded-full bg-emerald-50 border-4 border-emerald-200 inline-flex items-center justify-center">
               <span class="text-emerald-600 font-bold text-lg">{{ ent.matchScore }}</span>
             </div>
-            <p class="text-[10px] text-emerald-600 mt-1">匹配度</p>
+            <p class="text-[10px] text-emerald-600 mt-1">综合</p>
           </div>
         </div>
 
         <!-- Match Reasons -->
         <div class="mt-3 pt-3 border-t border-slate-100">
-          <div class="flex items-center gap-1 text-xs text-slate-400 mb-2 flex-wrap">
+          <div class="flex items-center gap-1 text-xs text-slate-400 mb-2 flex-wrap" v-if="ent.matchReasons && ent.matchReasons.length">
             <span class="font-medium text-slate-600">匹配理由：</span>
             <template v-for="(reason, ri) in ent.matchReasons" :key="ri">
-              <span class="px-1.5 py-0.5 rounded" :class="reason.color">{{ reason.text }}</span>
-              <span v-if="ri < ent.matchReasons.length - 1" class="text-slate-300">→</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{{ reason }}</span>
+              <span v-if="ri < ent.matchReasons.length - 1" class="text-slate-300">·</span>
             </template>
           </div>
 
@@ -180,11 +178,11 @@
         <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-slate-100">
           <button
             class="btn-outline text-xs"
-            :class="{ 'btn-primary': wishList.includes(ent.id) }"
-            @click="toggleWishlist(ent.id)"
+            :class="{ 'btn-primary': ent.inWishlist }"
+            @click="toggleWishlist(ent)"
           >
-            <i :class="wishList.includes(ent.id) ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'"></i>
-            {{ wishList.includes(ent.id) ? '已加入' : '加入清单' }}
+            <i :class="ent.inWishlist ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'"></i>
+            {{ ent.inWishlist ? '已加入' : '加入清单' }}
           </button>
           <button class="btn-primary text-xs" @click="openDetail(ent)">
             <i class="fa-regular fa-eye"></i> 查看企业
@@ -433,7 +431,7 @@ async function loadData() {
       keyword: filters.keyword
     })
     totalCount.value = res.total
-    displayList.value = res.list
+    displayList.value = res.enterprises || []
   } catch (e) {
     console.error('Failed to load investment data:', e)
   }
@@ -468,12 +466,15 @@ function closeDetail() {
   setTimeout(() => { selectedEnt.value = null }, 300)
 }
 
-function toggleWishlist(id) {
+function toggleWishlist(ent) {
+  const id = ent.enterpriseId
   const idx = wishList.value.indexOf(id)
   if (idx > -1) {
     wishList.value.splice(idx, 1)
+    ent.inWishlist = false
   } else {
     wishList.value.push(id)
+    ent.inWishlist = true
   }
 }
 
