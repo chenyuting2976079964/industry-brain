@@ -92,7 +92,7 @@
 
       <!-- ==================== FULLSCREEN DASHBOARD OVERLAY ==================== -->
       <div v-if="appStore.showDashOverlay" class="dash-overlay" ref="dashOverlayRef">
-        <button @click="exitDashboard" class="dash-close-btn">
+        <button @click="exitDashboard" class="dash-close-btn" title="退出 (Esc)">
           <i class="fa-solid fa-xmark"></i>
         </button>
         <DashboardFullView />

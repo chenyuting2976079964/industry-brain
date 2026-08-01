@@ -80,14 +80,23 @@ public class DashboardServiceImpl implements IDashboardService {
     public List<TechDistResponse> getTechDistribution(String regionCode) {
         List<Map<String, Object>> rows = patentMapper.selectTechDistribution();
         if (rows == null) return Collections.emptyList();
-        long total = rows.stream().mapToLong(m -> ((Number) m.get("enterpriseCount")).longValue()).sum();
-        return rows.stream().map(m -> {
+        // IPC 翻译为中文名，并按中文名合并计数
+        Map<String, Long> merged = new java.util.LinkedHashMap<>();
+        for (Map<String, Object> m : rows) {
+            String ipcCode = (String) m.get("techField");
+            String name = IpcNameMapper.toName(ipcCode);
+            long cnt = ((Number) m.get("enterpriseCount")).longValue();
+            merged.merge(name, cnt, Long::sum);
+        }
+        long total = merged.values().stream().mapToLong(Long::longValue).sum();
+        return merged.entrySet().stream().map(e -> {
             TechDistResponse vo = new TechDistResponse();
-            vo.setFieldName((String) m.get("techField"));
-            vo.setEnterpriseCount(((Number) m.get("enterpriseCount")).longValue());
-            vo.setPercentage(vo.getEnterpriseCount() * 100.0 / Math.max(total, 1));
+            vo.setFieldName(e.getKey());
+            vo.setEnterpriseCount(e.getValue());
+            vo.setPercentage(e.getValue() * 100.0 / Math.max(total, 1));
             return vo;
-        }).collect(Collectors.toList());
+        }).sorted((a, b) -> Long.compare(b.getEnterpriseCount(), a.getEnterpriseCount()))
+          .collect(Collectors.toList());
     }
 
     /** F04: 高价值专利TOP5 */
@@ -100,10 +109,12 @@ public class DashboardServiceImpl implements IDashboardService {
         for (Map<String, Object> m : top5) {
             PatentTop5Response vo = new PatentTop5Response();
             vo.setRank(rank++);
-            vo.setPatentName((String) m.get("patentName"));
+            String pName = (String) m.get("patent_name");
+            vo.setPatentName(pName != null ? pName : ((String) m.get("applicant")));
             vo.setPatentId(((Number) m.get("id")).longValue());
             vo.setApplicant((String) m.get("applicant"));
-            vo.setScore(m.get("maintenanceYears") != null ? ((Number) m.get("maintenanceYears")).intValue() * 10 : 0);
+            Object years = m.get("maintenance_years");
+            vo.setScore(years != null ? ((Number) years).intValue() * 10 : 0);
             result.add(vo);
         }
         return result;
@@ -186,6 +197,35 @@ public class DashboardServiceImpl implements IDashboardService {
         }
 
         return markers;
+    }
+
+    /** F07: 本地企业总体分布（按类型统计） */
+    @Override
+    public Map<String, Object> getLocalEnterpriseStats(String regionCode) {
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        long totalLocal = enterpriseMapper.selectCountByLocal(1);
+        result.put("totalLocal", totalLocal);
+        // 按 employee_scale 近似分类
+        List<Map<String, Object>> scaleStats = enterpriseMapper.selectLocalByScale();
+        long large = 0, mediumLarge = 0, mediumSmall = 0, small = 0;
+        if (scaleStats != null) {
+            for (Map<String, Object> row : scaleStats) {
+                String scale = (String) row.get("employee_scale");
+                long cnt = ((Number) row.get("cnt")).longValue();
+                if (scale == null) { small += cnt; continue; }
+                if (scale.contains("大型") && !scale.contains("中") && !scale.contains("小")) large += cnt;
+                else if (scale.contains("中大型") || scale.contains("中大")) mediumLarge += cnt;
+                else if (scale.contains("中小")) mediumSmall += cnt;
+                else if (scale.contains("中型")) mediumLarge += cnt;
+                else if (scale.contains("小型")) small += cnt;
+                else small += cnt;
+            }
+        }
+        result.put("leadingEnterprise", large);
+        result.put("highTechEnterprise", mediumLarge);
+        result.put("techSME", mediumSmall);
+        result.put("regularEnterprise", small);
+        return result;
     }
 
     // ─── Helpers ───

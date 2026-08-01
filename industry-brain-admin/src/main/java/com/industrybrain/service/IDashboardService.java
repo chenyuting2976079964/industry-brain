@@ -3,6 +3,7 @@ package com.industrybrain.service;
 import com.industrybrain.dto.response.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 全景大屏业务接口 — F01~F06
@@ -29,4 +30,7 @@ public interface IDashboardService {
 
     /** F06: 地图标注点 */
     List<MapMarkerResponse> getMapMarkers(String regionCode);
+
+    /** F07: 本地企业总体分布（按类型统计） */
+    Map<String, Object> getLocalEnterpriseStats(String regionCode);
 }

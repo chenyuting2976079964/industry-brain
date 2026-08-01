@@ -116,4 +116,8 @@ public interface     EnterpriseMapper extends BaseMapper<Enterprise> {
     /** 统计 enterprise_type 为空的企业数 */
     @Select("SELECT COUNT(*) FROM enterprise WHERE is_deleted = 0 AND (enterprise_type IS NULL OR enterprise_type = '')")
     long countNullType();
+
+    /** 按人员规模统计本地企业数 */
+    @Select("SELECT employee_scale, COUNT(*) as cnt FROM enterprise WHERE is_local = 1 AND is_deleted = 0 GROUP BY employee_scale")
+    List<Map<String, Object>> selectLocalByScale();
 }
