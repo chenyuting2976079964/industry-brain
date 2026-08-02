@@ -31,28 +31,80 @@
           <h3 class="text-sm font-bold text-slate-700">{{ chainTitle }}</h3>
           <p class="text-[11px] text-slate-400 mt-0.5">{{ chainSubtitle }}</p>
         </div>
-        <div class="relative" ref="chainContent" style="min-height:580px">
-          <div class="graph-container" :style="{ display: 'flex', gap: 0, position: 'relative', minHeight: '560px' }">
+        <div class="relative" style="min-height:580px">
+          <!-- 图谱最小宽度保证三列不会窄于节点圆圈（否则出点会跑出入点右侧，连线塌缩成不可见），窄屏横向滚动 -->
+          <div style="overflow-x: auto;">
+          <div ref="graphContainerRef" class="graph-container" :style="{ display: 'flex', gap: 0, position: 'relative', minHeight: '560px', minWidth: '900px' }">
+            <!-- 连线层：SVG 覆盖在上中下游三列之上，绘制节点间供应关系 -->
+            <svg
+              v-if="svgSize.w > 0 && linkPaths.length"
+              class="link-layer"
+              :width="svgSize.w"
+              :height="svgSize.h"
+              :viewBox="'0 0 ' + svgSize.w + ' ' + svgSize.h"
+            >
+              <defs>
+                <!-- 按层级的渐变色：上游蓝 → 中游青 → 下游绿，与列头颜色呼应 -->
+                <linearGradient id="grad-up-mid" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#93c5fd"/>
+                  <stop offset="100%" stop-color="#5eead4"/>
+                </linearGradient>
+                <linearGradient id="grad-mid-down" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#5eead4"/>
+                  <stop offset="100%" stop-color="#6ee7b7"/>
+                </linearGradient>
+                <linearGradient id="grad-same" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#cbd5e1"/>
+                  <stop offset="100%" stop-color="#cbd5e1"/>
+                </linearGradient>
+                <!-- 柔和发光，增强线条立体感 -->
+                <filter id="link-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0.6" stdDeviation="1.2" flood-color="rgba(51,65,85,0.12)"/>
+                </filter>
+                <!-- 箭头按目标层级配色 -->
+                <marker id="arrow-mid" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#22d3ee"/>
+                </marker>
+                <marker id="arrow-down" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+                </marker>
+                <marker id="arrow-same" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+                </marker>
+              </defs>
+              <path
+                v-for="link in linkPaths"
+                :key="link.id"
+                :d="link.d"
+                class="link-path"
+                :class="{ 'link-dimmed': link.dimmed, 'link-hl': link.hl, 'link-faded': link.faded }"
+                :stroke="'url(#' + link.grad + ')'"
+                :marker-end="'url(#' + link.arrow + ')'"
+                filter="url(#link-glow)"
+                :title="link.source + ' → ' + link.target"
+              />
+            </svg>
             <div
               v-for="(layer, li) in layers"
               :key="layer.key"
               :data-layer="layer.key"
-              :style="{ width: li === 1 ? '38%' : '31%', flexShrink: 0, borderRight: li < 2 ? '1px solid #e2e8f0' : 'none' }"
+              :style="{ width: li === 1 ? '38%' : '31%', flexShrink: 0, borderRight: li < 2 ? '1px solid #e2e8f0' : 'none', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }"
             >
               <div class="text-center py-2 text-xs font-semibold" :style="{ background: layer.headerBg, color: layer.headerColor, borderBottom: '2px solid ' + layer.headerColor }">
                 <i :class="layer.icon + ' mr-1.5'"></i>{{ layer.label }}
               </div>
-              <div class="flex flex-col items-center gap-3 py-4 px-2">
+              <div class="flex flex-col items-center justify-center gap-3 py-4 px-2" style="flex: 1;">
                 <div
                   v-for="node in getNodesByLayer(layer.key)"
                   :key="node.id"
-                  :ref="el => setNodeRef(node.id, el)"
                   class="graph-node flex flex-col items-center"
                   :data-id="node.id"
                   :data-name="node.name"
                   :data-layer="node.layer"
                   :data-status="node.status"
-                  :style="{ opacity: node.filtered ? 0.18 : 1, pointerEvents: node.filtered ? 'none' : '' }"
+                  :style="{ opacity: node.filtered || node.hidden ? 0.18 : 1, pointerEvents: node.filtered || node.hidden ? 'none' : '' }"
+                  @mouseenter="hoveredNode = node.id"
+                  @mouseleave="hoveredNode = null"
                   @click="selectNode(node.id)"
                 >
                   <div
@@ -77,27 +129,7 @@
                 </div>
               </div>
             </div>
-            <svg class="link-svg" :style="{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }">
-              <defs>
-                <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8" opacity="0.5" />
-                </marker>
-                <marker id="arrowHeadDim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M0,0 L10,5 L0,10 Z" fill="#e2e8f0" opacity="0.3" />
-                </marker>
-              </defs>
-              <path
-                v-for="(link, idx) in visibleLinks"
-                :key="idx"
-                :d="link.d"
-                :stroke="link.active ? '#94a3b8' : '#e2e8f0'"
-                :stroke-width="link.active ? 1.5 : 1"
-                fill="none"
-                :opacity="link.active ? 0.5 : 0.15"
-                stroke-linecap="round"
-                :marker-end="link.active ? 'url(#arrowHead)' : 'url(#arrowHeadDim)'"
-              />
-            </svg>
+          </div>
           </div>
         </div>
       </div>
@@ -216,11 +248,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useEventBus } from '@/stores/eventBus'
-import { getChainList, getChainNodes, getChainLinks, getNodeDetail } from '@/services/industryChain.service'
+import { getChainList, getChainNodes, getNodeDetail, getChainLinks } from '@/services/industryChain.service'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -278,27 +310,23 @@ function transformNode(apiNode) {
   }
 }
 
-function transformLink(apiLink) {
-  return { from: apiLink.sourceNodeId, to: apiLink.targetNodeId }
-}
-
 // ─── Reactive state ───────────────────────────────────────
 const chainList = ref([])
 const currentChain = ref(null)
 const nodesRef = ref([])
 const linksRef = ref([])
+const graphContainerRef = ref(null)
+const svgSize = ref({ w: 0, h: 0 })
 const layerFilter = ref('all')
 const statusFilter = ref('all')
 const searchQuery = ref('')
 const panelOpen = ref(false)
 const selectedNode = ref(null)
-const chainContent = ref(null)
-const nodeRefs = ref({})
+const hoveredNode = ref(null)
 
-function setNodeRef(id, el) {
-  if (el) {
-    nodeRefs.value[id] = el
-  }
+/** 辅助函数：节点显隐状态直接存在节点上（deep reactive），触发连线重算 */
+function setNodeVisibility(node, visible) {
+  node.hidden = !visible
 }
 
 // ─── Computed ──────────────────────────────────────────────
@@ -309,11 +337,79 @@ const currentChainMeta = computed(() =>
 const chainData = computed(() => ({
   name: currentChainMeta.value?.chainName || '',
   total: currentChainMeta.value?.totalPatents ?? 0,
-  nodes: nodesRef.value,
-  links: linksRef.value
+  nodes: nodesRef.value
 }))
 
 const nodes = computed(() => nodesRef.value)
+
+/**
+ * 节点连线：从 linksRef 读出节点间供应关系，换算为 SVG 路径。
+ * 所有连线统一从源节点圆圈右侧正中间同一点出发，进入目标节点圆圈左侧正中间同一点。
+ */
+const linkPaths = computed(() => {
+  const container = graphContainerRef.value
+  if (!container) return []
+  const containerRect = container.getBoundingClientRect()
+  const els = document.querySelectorAll('.graph-node')
+  if (!els.length) return []
+
+  const elById = new Map()
+  els.forEach(el => elById.set(el.dataset.id, el))
+
+  // 节点圆圈中心位置 + 半径（相对图形容器左上角）
+  const pos = (n) => {
+    const el = elById.get(String(n.id))
+    if (!el) return null
+    const cr = (el.querySelector('.node-ring') || el).getBoundingClientRect()
+    return {
+      x: cr.left + cr.width / 2 - containerRect.left,
+      y: cr.top + cr.height / 2 - containerRect.top,
+      r: Math.max(cr.width, cr.height) / 2
+    }
+  }
+
+  // 解析出源/目标节点都存在的连线（跳过被隐藏的节点）
+  const resolved = []
+  linksRef.value.forEach(l => {
+    const src = nodes.value.find(n => n.id === l.sourceNodeId)
+    const tgt = nodes.value.find(n => n.id === l.targetNodeId)
+    if (!src || !tgt) return
+    if (src.hidden || tgt.hidden) return
+    const a = pos(src)
+    const b = pos(tgt)
+    if (!a || !b) return
+    resolved.push({ id: l.id, src, tgt, a, b, dimmed: src.filtered || tgt.filtered })
+  })
+
+  // 焦点节点：优先选中节点，无选中时用悬停节点
+  const focusId = selectedNode.value?.id || hoveredNode.value
+  // 存在焦点时，与之相连的连线高亮，其余连线淡出
+  const hlMode = !!focusId && resolved.some(l => focusId && (l.src.id === focusId || l.tgt.id === focusId))
+
+  return resolved.map(l => {
+    const x1 = l.a.x + l.a.r
+    const y1 = l.a.y
+    const x2 = l.b.x - l.b.r
+    const y2 = l.b.y
+
+    let d
+    if (l.src.layer === l.tgt.layer) {
+      d = `M${x1},${y1} L${x2},${y2}`
+    } else {
+      const bend = Math.max(28, Math.abs(x2 - x1) * 0.35)
+      d = `M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`
+    }
+
+    const cross = l.src.layer !== l.tgt.layer
+    const grad = cross ? (l.tgt.layer === 'down' ? 'grad-mid-down' : 'grad-up-mid') : 'grad-same'
+    const arrow = cross ? (l.tgt.layer === 'down' ? 'arrow-down' : 'arrow-mid') : 'arrow-same'
+    const connected = !!focusId && (l.src.id === focusId || l.tgt.id === focusId)
+    const hl = hlMode ? connected : false
+    const faded = hlMode && !connected
+
+    return { id: l.id, d, grad, arrow, hl, faded, source: l.src.name, target: l.tgt.name, dimmed: l.dimmed }
+  })
+})
 
 const chainTitle = computed(() =>
   (currentChainMeta.value?.chainName || '产业链') + '产业链全景图'
@@ -359,87 +455,36 @@ const firmList = computed(() => {
   return firms.split('、').filter(Boolean)
 })
 
-// ─── SVG Links ────────────────────────────────────────────
-function nodeSize(node) {
-  const pat = parseInt(node.patents) || 1
-  return Math.max(68, Math.min(100, 42 + Math.round(pat / 50)))
-}
-
-const visibleLinks = ref([])
-
-function computeLinks() {
-  const data = chainData.value
-  if (!data || !data.nodes.length) { visibleLinks.value = []; return }
-
-  const container = chainContent.value
-  if (!container) { visibleLinks.value = []; return }
-
-  const allNodes = data.nodes
-  const nodeMap = {}
-  for (const n of allNodes) {
-    const el = nodeRefs.value[n.id]
-    if (!el) continue
-    const ring = el.querySelector('.node-ring')
-    if (!ring) continue
-    const ringRect = ring.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-    nodeMap[n.id] = {
-      cx: ringRect.left - containerRect.left + ringRect.width / 2,
-      cy: ringRect.top - containerRect.top + ringRect.height / 2,
-      right: ringRect.right - containerRect.left,
-      left: ringRect.left - containerRect.left
-    }
-  }
-
-  const links = []
-  for (const lk of data.links) {
-    const from = nodeMap[lk.from]
-    const to = nodeMap[lk.to]
-    if (!from || !to) continue
-
-    const fromNode = nodes.value.find(n => n.id === lk.from)
-    const toNode = nodes.value.find(n => n.id === lk.to)
-    const bothActive = fromNode && toNode && !fromNode.filtered && !toNode.filtered
-
-    const x1 = from.right, y1 = from.cy
-    const x2 = to.left, y2 = to.cy
-    const dx = Math.abs(x2 - x1)
-    if (dx < 10) continue
-    const cp = dx * 0.45
-    links.push({
-      d: 'M' + x1 + ',' + y1 + ' C' + (x1 + cp) + ',' + y1 + ' ' + (x2 - cp) + ',' + y2 + ' ' + x2 + ',' + y2,
-      active: bothActive
-    })
-  }
-  visibleLinks.value = links
-}
-
-function scheduleLinkDraw() {
-  nextTick(() => {
-    computeLinks()
-    setTimeout(computeLinks, 300)
-    setTimeout(computeLinks, 800)
-  })
-}
-
-watch(currentChain, () => {
-  scheduleLinkDraw()
-})
-
 // ─── Data loading ─────────────────────────────────────────
+/** 重新测量图形容器尺寸（供 SVG 连线层使用） */
+function measureGraph() {
+  const c = graphContainerRef.value
+  if (c) {
+    svgSize.value.w = c.offsetWidth
+    svgSize.value.h = c.offsetHeight
+  }
+}
+
 async function loadChainData(chainId) {
   try {
-    const [apiNodes, apiLinks] = await Promise.all([
-      getChainNodes(chainId),
-      getChainLinks(chainId)
-    ])
+    const apiNodes = await getChainNodes(chainId)
     nodesRef.value = (apiNodes || []).map(transformNode)
-    linksRef.value = (apiLinks || []).map(transformLink)
   } catch (e) {
     console.error('Failed to load chain data', e)
     nodesRef.value = []
+  }
+
+  try {
+    const apiLinks = await getChainLinks(chainId)
+    linksRef.value = apiLinks || []
+  } catch (e) {
+    console.error('Failed to load chain links', e)
     linksRef.value = []
   }
+
+  // 节点渲染完成后测量容器并计算连线位置
+  await nextTick()
+  measureGraph()
 }
 
 // ─── Filters ───────────────────────────────────────────────
@@ -454,8 +499,7 @@ function applyFilters() {
     const searchMatch = !query || n.name.toLowerCase().includes(query)
     n.filtered = !(layerMatch && statusMatch && searchMatch)
   })
-
-  nextTick(() => computeLinks())
+  measureGraph()  // 筛选后节点显隐变化，重新计算连线位置
 }
 
 function resetFilters() {
@@ -463,7 +507,7 @@ function resetFilters() {
   statusFilter.value = 'all'
   searchQuery.value = ''
   nodes.value.forEach(n => { n.filtered = false })
-  nextTick(() => computeLinks())
+  measureGraph()
 }
 
 // ─── Chain switching ──────────────────────────────────────
@@ -473,7 +517,6 @@ async function switchChain(chainId) {
   panelOpen.value = false
   resetFilters()
   await loadChainData(chainId)
-  scheduleLinkDraw()
 }
 
 // ─── Node selection ───────────────────────────────────────
@@ -523,12 +566,18 @@ function goToInvestment() {
 }
 
 // ─── Layers ────────────────────────────────────────────────
+function nodeSize(node) {
+  const pat = parseInt(node.patents) || 1
+  return Math.max(68, Math.min(100, 42 + Math.round(pat / 50)))
+}
+
 function getNodesByLayer(layer) {
   return nodes.value.filter(n => n.layer === layer)
 }
 
 // ─── Mount ─────────────────────────────────────────────────
 onMounted(async () => {
+  window.addEventListener('resize', measureGraph)
   try {
     const chains = await getChainList()
     chainList.value = (chains || []).map(c => ({
@@ -544,12 +593,6 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load chain list', e)
   }
-  scheduleLinkDraw()
-  window.addEventListener('resize', computeLinks)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', computeLinks)
 })
 </script>
 
@@ -593,6 +636,24 @@ onUnmounted(() => {
 
 .graph-node { transition: all .25s; cursor: pointer; position: relative; z-index: 2; }
 .graph-node:hover { z-index: 10; transform: scale(1.08); }
+
+/* 连线层：SVG 覆盖在三个层级列之上（z-index 0），鼠标不拦截点击 */
+.link-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.link-path {
+  fill: none;
+  stroke-width: 1.8;
+  opacity: .9;
+  transition: opacity .2s, stroke-width .2s;
+  cursor: pointer;
+}
+.link-path.link-dimmed { opacity: .15; }
+.link-path.link-hl { stroke-width: 3; opacity: 1; }
+.link-path.link-faded { opacity: .15; }
 
 .select-field {
   width: 100%;
