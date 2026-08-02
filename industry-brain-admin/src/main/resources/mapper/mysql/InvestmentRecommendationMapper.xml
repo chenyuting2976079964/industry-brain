@@ -45,7 +45,7 @@
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
         <where>
-            ir.is_deleted = 0 and e.is_local = 0
+            ir.is_deleted = 0 and e.is_local = 0 and ir.business_fit_score &gt; 0
             <if test="regionId != null">and ir.region_id = #{regionId}</if>
             <if test="weakness != null and weakness != 'all'">and nd.diagnosis_tag = #{weakness}</if>
             <if test="matchMin != null and matchMin > 0">and ir.total_score &gt;= #{matchMin}</if>
@@ -69,7 +69,7 @@
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
         <where>
-            ir.is_deleted = 0 and e.is_local = 0
+            ir.is_deleted = 0 and e.is_local = 0 and ir.business_fit_score &gt; 0
             <if test="regionId != null">and ir.region_id = #{regionId}</if>
             <if test="weakness != null and weakness != 'all'">and nd.diagnosis_tag = #{weakness}</if>
             <if test="matchMin != null and matchMin > 0">and ir.total_score &gt;= #{matchMin}</if>
@@ -110,6 +110,10 @@
         and status = 'wishlist'
         and is_deleted = 0
     </select>
+
+    <delete id="deleteAll">
+        delete from investment_recommendation
+    </delete>
 
     <update id="addToWishlist">
         update investment_recommendation

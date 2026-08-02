@@ -199,13 +199,33 @@
 
     <!-- ==================== PAGINATION ==================== -->
     <div class="flex items-center justify-between mt-5">
-      <p class="text-xs text-slate-400">共 {{ totalCount }} 家匹配企业，当前显示 {{ displayList.length }} 家</p>
+      <div class="flex items-center gap-4">
+        <p class="text-xs text-slate-400">共 {{ totalCount }} 家匹配企业</p>
+        <select v-model="pageSize" class="select-field text-xs w-auto" @change="goToPage(1)">
+          <option :value="10">10条/页</option>
+          <option :value="20">20条/页</option>
+          <option :value="50">50条/页</option>
+        </select>
+      </div>
       <div class="flex items-center gap-1">
-        <button class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-500 flex items-center justify-center hover:bg-slate-50">
+        <button
+          class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-500 flex items-center justify-center hover:bg-slate-50"
+          :disabled="currentPage <= 1"
+          @click="goToPage(currentPage - 1)"
+        >
           <i class="fa-solid fa-chevron-left text-[10px]"></i>
         </button>
-        <button class="w-8 h-8 rounded-lg bg-blue-600 text-white text-xs font-medium flex items-center justify-center">1</button>
-        <button class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-500 flex items-center justify-center hover:bg-slate-50">
+        <button
+          v-for="p in visiblePages"
+          :key="p"
+          :class="['w-8 h-8 rounded-lg text-xs font-medium flex items-center justify-center', p === currentPage ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50']"
+          @click="goToPage(p)"
+        >{{ p }}</button>
+        <button
+          class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-500 flex items-center justify-center hover:bg-slate-50"
+          :disabled="currentPage >= totalPages"
+          @click="goToPage(currentPage + 1)"
+        >
           <i class="fa-solid fa-chevron-right text-[10px]"></i>
         </button>
       </div>
@@ -295,8 +315,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { investmentService } from '@/services/investment.service'
+import { reportsService } from '@/services/reports.service'
+import { getDiagnosisList } from '@/services/diagnosis.service'
 
 // ---- State ----
 const pageSubtitle = ref('基于弱链/缺链节点自动匹配 · 综合评估招商价值')
@@ -308,12 +330,31 @@ const totalCount = ref(0)
 const wishList = ref([])
 const rematching = ref(false)
 const exporting = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
 const filters = reactive({
   weakness: 'all',
   minMatch: 'all',
   scale: 'all',
   sortBy: 'match',
   keyword: ''
+})
+
+// ---- Pagination ----
+const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
+
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const pages = []
+  let start = Math.max(1, current - 2)
+  let end = Math.min(total, current + 2)
+  if (end - start < 4) {
+    if (start === 1) end = Math.min(total, start + 4)
+    else start = Math.max(1, end - 4)
+  }
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
 })
 
 // 薄弱环节选项（从数据中动态提取）
@@ -331,7 +372,7 @@ onMounted(async () => {
     sessionStorage.removeItem('navContext')
   } catch (e) { console.error('[Investment] Failed to parse nav context:', e) }
 
-  await loadData()
+  await Promise.all([loadWeaknessOptions(), loadData()])
 })
 
 // ---- Data loading ----
@@ -342,26 +383,38 @@ async function loadData() {
       minMatch: filters.minMatch,
       scale: filters.scale,
       sortBy: filters.sortBy,
-      keyword: filters.keyword
+      keyword: filters.keyword,
+      page: currentPage.value,
+      size: pageSize.value
     })
     totalCount.value = res.total
     displayList.value = res.enterprises || []
-
-    // 从全量数据中提取薄弱环节选项（仅第一次加载时）
-    if (filters.weakness === 'all' && weaknessOptions.value.length === 0 && displayList.value.length > 0) {
-      const seen = new Set()
-      weaknessOptions.value = displayList.value
-        .filter(e => e.nodeName && e.diagnosisTag)
-        .filter(e => { const k = e.nodeName; if (seen.has(k)) return false; seen.add(k); return true })
-        .map(e => ({ nodeName: e.nodeName, diagnosisTag: e.diagnosisTag }))
-    }
   } catch (e) {
     console.error('Failed to load investment data:', e)
   }
 }
 
+function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  loadData()
+}
+
+// 从诊断 API 加载全部薄弱环节节点（缺链+弱链+补链）
+async function loadWeaknessOptions() {
+  try {
+    const allResults = await getDiagnosisList()
+    const tags = ['缺链', '弱链', '补链']
+    weaknessOptions.value = (allResults || [])
+      .filter(item => tags.includes(item.diagnosisTag))
+      .map(item => ({ nodeName: item.nodeName, diagnosisTag: item.diagnosisTag }))
+  } catch (e) {
+    console.error('Failed to load weakness options:', e)
+  }
+}
+
 // ---- Actions ----
-async function applyFilters() { await loadData() }
+async function applyFilters() { currentPage.value = 1; await loadData() }
 
 function applySort() {
   const list = [...displayList.value]
@@ -392,8 +445,18 @@ function toggleWishlist(ent) {
 async function handleExport() {
   exporting.value = true
   try {
-    await investmentService.exportList({})
-    alert('导出成功！招商清单已生成。')
+    const reportId = await reportsService.generateReport({
+      type: 'investment_list',
+      format: 'Excel',
+      weakness: filters.weakness !== 'all' ? filters.weakness : undefined,
+      matchMin: filters.minMatch !== 'all' ? filters.minMatch : undefined,
+      scale: filters.scale !== 'all' ? filters.scale : undefined,
+      keyword: filters.keyword || undefined,
+      sortBy: filters.sortBy
+    })
+    // 跳转到招商报告页，高亮刚生成的报告
+    sessionStorage.setItem('navContext', JSON.stringify({ newReportId: reportId }))
+    router.push('/reports')
   } catch (e) {
     alert('导出失败，请稍后重试。')
   } finally {

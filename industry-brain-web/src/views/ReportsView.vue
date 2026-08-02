@@ -36,34 +36,40 @@
       <div
         v-for="r in reports"
         :key="r.id"
-        class="bg-white rounded-xl p-4 border border-slate-100 flex items-center justify-between"
+        class="bg-white rounded-xl p-4 border flex items-center justify-between report-item"
+        :class="String(r.id) === String(highlightId) ? 'border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.2)] highlight-pulse' : 'border-slate-100'"
       >
         <div class="flex items-center gap-3 flex-1 min-w-0">
           <div class="w-10 h-10 rounded-lg flex items-center justify-center"
-            :class="r.status === 'completed' ? 'bg-emerald-50' : r.status === 'processing' ? 'bg-blue-50' : 'bg-red-50'"
+            :class="(r.status === 'completed' || r.status === 'done') || r.status === 'done' ? 'bg-emerald-50' : r.status === 'processing' || r.status === 'pending' ? 'bg-blue-50' : 'bg-red-50'"
           >
-            <i :class="r.status === 'completed' ? 'fa-regular fa-file-excel text-emerald-500' : r.status === 'processing' ? 'fa-solid fa-spinner fa-spin text-blue-500' : 'fa-regular fa-circle-exclamation text-red-400'"></i>
+            <i :class="(r.status === 'completed' || r.status === 'done') || r.status === 'done' ? 'fa-regular fa-file-excel text-emerald-500' : r.status === 'processing' || r.status === 'pending' ? 'fa-solid fa-spinner fa-spin text-blue-500' : 'fa-regular fa-circle-exclamation text-red-400'"></i>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-700 truncate">{{ r.title || '招商推荐报告' }}</p>
+            <div class="flex items-center gap-2">
+              <p class="text-sm font-medium text-slate-700 truncate">{{ r.title || '招商推荐报告' }}</p>
+              <span v-if="String(r.id) === String(highlightId)" class="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-medium">新生成</span>
+            </div>
             <p class="text-xs text-slate-400 mt-0.5">
-              <span v-if="r.reportDate">生成时间: {{ formatDate(r.reportDate) }}</span>
-              <span v-if="r.status === 'processing'">正在生成中...</span>
-              <span v-if="r.status === 'failed'">生成失败</span>
-              <span v-if="r.enterpriseCount" class="ml-2">· {{ r.enterpriseCount }} 家企业</span>
-              <span v-if="r.nodeCount" class="ml-2">· {{ r.nodeCount }} 个节点</span>
+              <span>{{ typeLabels[r.reportType] || r.reportType || '招商推荐清单' }}</span>
+              <span class="mx-1.5">·</span>
+              <span v-if="r.reportDate || r.createdAt">{{ formatDate(r.reportDate || r.createdAt) }}</span>
+              <span v-else-if="r.status === 'processing' || r.status === 'pending'">正在生成中...</span>
+              <span v-if="r.status === 'failed'" class="text-red-400">生成失败</span>
+              <span v-if="r.enterpriseCount" class="ml-1.5">· {{ r.enterpriseCount }} 家企业</span>
+              <span v-if="r.format || r.outputFormat" class="ml-1.5">· {{ r.format || r.outputFormat }}</span>
             </p>
           </div>
         </div>
         <button
-          v-if="r.status === 'completed'"
+          v-if="(r.status === 'completed' || r.status === 'done') || r.status === 'done'"
           class="btn-outline text-xs flex-shrink-0 ml-3"
           @click="downloadReport(r)"
         >
           <i class="fa-solid fa-download"></i>下载
         </button>
         <button
-          v-if="r.status === 'completed' || r.status === 'failed'"
+          v-if="(r.status === 'completed' || r.status === 'done') || r.status === 'done' || r.status === 'failed'"
           class="btn-outline text-xs flex-shrink-0 ml-2 text-red-400"
           @click="handleDeleteReport(r)"
         >
@@ -108,13 +114,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { reportsService } from '@/services/reports.service'
 
 // ---- State ----
 const reports = ref([])
 const stats = reactive({ monthCount: 0, totalCount: 0, enterpriseCount: 0 })
 const generating = ref(false)
+const highlightId = ref(null)
+let pollTimer = null
 
 const genForm = reactive({
   type: 'investment_list',
@@ -122,10 +130,45 @@ const genForm = reactive({
   format: 'Excel'
 })
 
+// 报告类型中文映射
+const typeLabels = {
+  investment_list: '招商推荐清单',
+  diagnosis: '产业链诊断报告',
+  enterprise_profile: '企业画像报告',
+  chain_supplement: '补链建议方案'
+}
+
 // ---- Init ----
 onMounted(async () => {
   await loadData()
+
+  // 检查是否有来自其他页面的新报告ID
+  try {
+    const ctx = JSON.parse(sessionStorage.getItem('navContext') || '{}')
+    if (ctx.newReportId) {
+      highlightId.value = ctx.newReportId
+      sessionStorage.removeItem('navContext')
+      // 开始轮询，等待报告生成完成
+      startPolling()
+    }
+  } catch (e) { /* ignore */ }
 })
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = setInterval(async () => {
+    await loadData()
+    const target = reports.value.find(r => String(r.id) === String(highlightId.value))
+    if (!target || target.status === 'completed' || target.status === 'done' || target.status === 'failed') {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+  }, 3000)
+}
 
 async function loadData() {
   try {
@@ -141,7 +184,11 @@ async function loadData() {
     } else {
       reports.value = []
     }
-    if (statsData) Object.assign(stats, statsData)
+    if (statsData) {
+      stats.monthCount = statsData.monthlyGenerated || statsData.monthCount || 0
+      stats.totalCount = statsData.totalExported || statsData.totalCount || 0
+      stats.enterpriseCount = statsData.coveredEnterprises || statsData.enterpriseCount || 0
+    }
   } catch (e) {
     console.error('Failed to load reports data:', e)
   }
@@ -192,6 +239,14 @@ async function handleDeleteReport(report) {
 </script>
 
 <style scoped>
+.report-item { transition: all 0.3s ease; }
+.highlight-pulse {
+  animation: highlightPulse 2s ease-in-out infinite;
+}
+@keyframes highlightPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(59,130,246,0.2); }
+  50% { box-shadow: 0 0 20px rgba(59,130,246,0.4); }
+}
 /* Tab Button */
 .tab-btn {
   padding: 8px 20px;

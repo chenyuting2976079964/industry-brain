@@ -29,4 +29,16 @@ public class ReportGenerateRequest {
 
     /** 企业ID（可选，针对企业画像报告） */
     private Long enterpriseId;
+
+    // ─── 招商清单导出筛选条件 ───
+    /** 薄弱环节筛选 */
+    private String weakness;
+    /** 最小匹配度 */
+    private Integer matchMin;
+    /** 企业规模 */
+    private String scale;
+    /** 搜索关键词 */
+    private String keyword;
+    /** 排序方式 */
+    private String sortBy;
 }

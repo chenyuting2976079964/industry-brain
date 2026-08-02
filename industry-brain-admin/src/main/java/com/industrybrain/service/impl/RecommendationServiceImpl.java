@@ -3,10 +3,13 @@ package com.industrybrain.service.impl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.industrybrain.domain.model.Enterprise;
 import com.industrybrain.domain.model.IndustryChain;
 import com.industrybrain.domain.model.IndustryChainNode;
 import com.industrybrain.domain.model.InvestmentRecommendation;
 import com.industrybrain.domain.model.MatchScoreResult;
+import com.industrybrain.domain.model.NodeDiagnosis;
+import com.industrybrain.domain.model.Region;
 import com.industrybrain.domain.model.ReportRecord;
 import com.industrybrain.dto.request.*;
 import com.industrybrain.dto.response.*;
@@ -98,6 +101,15 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
     @Resource
     private ReportMapper reportMapper;
+
+    @Resource
+    private NodeDiagnosisMapper nodeDiagnosisMapper;
+
+    @Resource
+    private RegionMapper regionMapper;
+
+    @Resource
+    private ChainNodeMapper chainNodeMapper;
 
     // ==================== 公开方法 ====================
 
@@ -259,39 +271,25 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
     @Override
     public String exportRecommendations(RecommendationRequest request) {
-        log.info("导出招商推荐报告: chainId={}", request.getChainId());
+        log.info("导出招商推荐报告(异步): chainId={}", request.getChainId());
+        String taskId = "EXPORT_" + UUID.randomUUID().toString().substring(0, 8);
 
-        try {
-            // 1. 获取推荐列表
-            RecommendationResponse recommendations = getRecommendations(request);
-
-            // 2. 生成 Excel 文件
-            byte[] excelData = buildRecommendationExcel(recommendations, request);
-
-            // 3. 上传到 MinIO
-            String timestamp = LocalDateTime.now()
-                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = "investment_recommendation_" + timestamp + ".xlsx";
-            String contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
-            if (minioFileService == null) {
-                log.warn("MinIO 未启用，返回本地文件名");
-                return fileName;
+        // 异步执行导出
+        new Thread(() -> {
+            try {
+                RecommendationResponse recommendations = getRecommendations(request);
+                byte[] excelData = buildRecommendationExcel(recommendations, request);
+                String fileName = "export_" + taskId + ".xlsx";
+                if (minioFileService != null) {
+                    minioFileService.uploadToCategory("exports", fileName, excelData, EXCEL_MIME);
+                }
+                log.info("导出完成: taskId={}", taskId);
+            } catch (Exception e) {
+                log.error("导出失败: taskId={}, error={}", taskId, e.getMessage());
             }
-            String url = minioFileService.uploadToCategory("reports", fileName, excelData, contentType);
+        }).start();
 
-            if (url == null) {
-                log.warn("推荐报告上传 MinIO 失败，返回本地文件名");
-                return fileName;
-            }
-
-            log.info("招商推荐报告导出成功: url={}, 企业数={}", url, recommendations.getTotal());
-            return url;
-
-        } catch (Exception e) {
-            log.error("导出招商推荐报告失败: chainId={}, error={}", request.getChainId(), e.getMessage(), e);
-            return null;
-        }
+        return taskId;
     }
 
     // ==================== 私有辅助方法 ====================
@@ -484,6 +482,15 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 request.getScale(), request.getSortBy(), request.getKeyword(),
                 request.getNodeId(), request.getTab());
 
+        // 空表时异步触发全量生成（不阻塞当前请求）
+        if (total == 0 && request.getNodeId() == null && request.getKeyword() == null) {
+            log.info("=== 招商推荐表为空，异步触发三维度匹配生成 ===");
+            new Thread(() -> {
+                int cnt = autoGenerateAll();
+                log.info("=== 自动生成完成: {} 条 ===", cnt);
+            }).start();
+        }
+
         InvestmentMatchResponse response = new InvestmentMatchResponse();
         response.setTotal(total);
         response.setPage(page);
@@ -622,6 +629,12 @@ public class RecommendationServiceImpl implements IRecommendationService {
                         }
                     }
                 }
+            } else {
+                // nodeId 为空 → 全量重新匹配（清旧数据+重新生成）
+                log.info("全量重新匹配: 清空旧数据并重新生成");
+                recommendationMapper.deleteAll();
+                int cnt = autoGenerateAll();
+                log.info("全量重新匹配完成: {} 条", cnt);
             }
         } catch (Exception e) {
             log.error("重新匹配执行失败: {}", e.getMessage(), e);
@@ -693,26 +706,31 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
     @Override
     public String generateReport(ReportGenerateRequest request) {
-        log.info("生成新报告, type={}, format={}, scope={}", request.getType(), request.getFormat(), request.getScope());
+        log.info("生成新报告, type={}, format={}, weakness={}, keyword={}",
+                request.getType(), request.getFormat(), request.getWeakness(), request.getKeyword());
 
         String title = buildReportTitle(request);
 
         ReportRecord record = new ReportRecord();
         record.setTitle(title);
-        record.setReportType(request.getType());
+        // 数据库CHECK约束要求中文值，将英文key映射为中文
+        record.setReportType(mapReportType(request.getType()));
         record.setScope(request.getScope());
-        record.setOutputFormat(request.getFormat() != null ? request.getFormat() : "Excel");
+        String fmt = request.getFormat() != null ? request.getFormat() : "Excel";
+        // 数据库CHECK约束: format IN ('PDF','XLSX')，将Excel规范化为XLSX
+        if ("Excel".equalsIgnoreCase(fmt) || "XLS".equalsIgnoreCase(fmt)) fmt = "XLSX";
+        record.setOutputFormat(fmt);
         record.setStatus("pending");
         record.setUserId(1L); // 默认系统用户
 
         reportMapper.insert(record);
 
-        String taskId = "GEN_" + record.getId();
-        log.info("报告记录已创建, reportId={}, taskId={}", record.getId(), taskId);
+        log.info("报告记录已创建, reportId={}", record.getId());
 
         generateReportAsync(record.getId(), request);
 
-        return taskId;
+        // 返回报告ID，前端可以跳转到报告页查看
+        return String.valueOf(record.getId());
     }
 
     @Override
@@ -824,8 +842,14 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
             if ("investment_list".equals(request.getType())) {
                 List<InvestmentRecommendation> enterprises = recommendationMapper.selectMatchList(
-                        null, null, null, null, null, null,
-                        request.getNodeId(), null, 0, 50);
+                        null,
+                        request.getWeakness(),
+                        request.getMatchMin(),
+                        request.getScale(),
+                        request.getSortBy(),
+                        request.getKeyword(),
+                        request.getNodeId(),
+                        null, 0, 200);
                 enterpriseCount = enterprises.size();
                 excelData = buildInvestmentListExcel(enterprises, record.getTitle());
             } else {
@@ -833,7 +857,8 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 excelData = buildGenericReportExcel(record);
             }
 
-            String format = request.getFormat() != null ? request.getFormat() : "Excel";
+            String format = request.getFormat() != null ? request.getFormat() : "XLSX";
+            if ("Excel".equalsIgnoreCase(format)) format = "XLSX";
             String fileName = "report_" + reportId + "_" + timestamp() + "." + format.toLowerCase();
             if (minioFileService == null) {
                 log.warn("MinIO 未启用，跳过报告上传");
@@ -855,7 +880,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
             record.setFileSize((long) excelData.length);
             record.setEnterpriseCount(enterpriseCount);
             record.setOutputFormat(format);
-            record.setStatus("completed");
+            record.setStatus("done");
             record.setGenerationTime(elapsed);
             reportMapper.update(record);
 
@@ -920,12 +945,12 @@ public class RecommendationServiceImpl implements IRecommendationService {
             Cell titleCell = titleRow.createCell(0);
             titleCell.setCellValue(title);
             titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 9));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 10));
             rowIdx++;
 
             Row hRow = sheet.createRow(rowIdx++);
             String[] headers = {"序号", "企业名称", "行业", "区域", "节点名称", "诊断标签",
-                    "匹配度", "专利实力", "产业适配", "带动潜力", "综合评分", "评级"};
+                    "业务匹配度", "规模实力", "地域协同", "综合评分", "评级"};
             for (int i = 0; i < headers.length; i++) {
                 Cell c = hRow.createCell(i);
                 c.setCellValue(headers[i]);
@@ -947,19 +972,19 @@ public class RecommendationServiceImpl implements IRecommendationService {
                 r.createCell(9).setCellValue(ent.getTotalScore() != null ? ent.getTotalScore().doubleValue() : 0);
 
                 String rating = ent.getRating();
-                r.createCell(11).setCellValue(rating != null ? rating : "");
+                r.createCell(10).setCellValue(rating != null ? rating : "");
                 CellStyle ratingStyle = dataStyle;
                 if ("A".equals(rating)) ratingStyle = aStyle;
                 else if ("B".equals(rating)) ratingStyle = bStyle;
                 else if ("C".equals(rating)) ratingStyle = cStyle;
 
                 for (int i = 0; i < headers.length; i++) {
-                    if (i == 11) r.getCell(i).setCellStyle(ratingStyle);
+                    if (i == 10) r.getCell(i).setCellStyle(ratingStyle);
                     else r.getCell(i).setCellStyle(dataStyle);
                 }
             }
 
-            int[] widths = {6, 28, 16, 10, 14, 10, 10, 10, 10, 10, 10, 8};
+            int[] widths = {6, 28, 16, 10, 14, 10, 10, 10, 10, 10, 8};
             for (int i = 0; i < widths.length; i++) sheet.setColumnWidth(i, widths[i] * 256);
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -1082,10 +1107,71 @@ public class RecommendationServiceImpl implements IRecommendationService {
         }
     }
 
+    /** 映射前端英文type → 数据库CHECK约束中文值 */
+    private String mapReportType(String type) {
+        if (type == null) return "招商推荐清单";
+        switch (type) {
+            case "investment_list": return "招商推荐清单";
+            case "diagnosis": return "产业链诊断报告";
+            case "enterprise_profile": return "企业画像报告";
+            case "chain_supplement": return "补链建议方案";
+            default: return type;
+        }
+    }
+
     private String buildReportTitle(ReportGenerateRequest request) {
         String typeName = getReportTypeName(request.getType());
         String dateStr = java.time.LocalDate.now().toString();
         return typeName + "（" + dateStr + "）";
+    }
+
+    /**
+     * 自动生成全量招商推荐数据
+     * 遍历弱链/缺链/补链节点 × 外地企业 → 计算三维度评分 → 写入investment_recommendation
+     */
+    private int autoGenerateAll() {
+        int generated = 0;
+        List<NodeDiagnosis> allNodes = new ArrayList<>();
+
+        // 查询弱链、缺链、补链三类节点
+        for (String tag : new String[]{"弱链", "缺链", "补链"}) {
+            List<NodeDiagnosis> nodes = nodeDiagnosisMapper.selectByTag(tag);
+            if (nodes != null) allNodes.addAll(nodes);
+        }
+
+        // 去重
+        Set<Long> seen = new HashSet<>();
+        List<NodeDiagnosis> uniqueNodes = new ArrayList<>();
+        for (NodeDiagnosis nd : allNodes) {
+            if (seen.add(nd.getNodeId())) uniqueNodes.add(nd);
+        }
+
+        // 获取外地企业（限制150家，兼顾覆盖面和生成速度）
+        List<Enterprise> nonLocalEnts = enterpriseMapper.selectList(null).stream()
+                .filter(e -> e.getIsLocal() == null || e.getIsLocal() == 0)
+                .limit(150)
+                .collect(Collectors.toList());
+
+        log.info("autoGenerateAll: {} nodes (弱+缺+补) × {} non-local enterprises", uniqueNodes.size(), nonLocalEnts.size());
+
+        for (NodeDiagnosis nd : uniqueNodes) {
+            String demandProvince = null;
+            if (nd.getRegionId() != null) {
+                Region r = regionMapper.selectById(nd.getRegionId());
+                if (r != null && r.getCode() != null && r.getCode().length() >= 2) {
+                    demandProvince = r.getCode().substring(0, 2);
+                }
+            }
+            for (Enterprise ent : nonLocalEnts) {
+                try {
+                    calculateMatchScore(ent.getId(), nd.getNodeId(), demandProvince);
+                    generated++;
+                } catch (Exception e) {
+                    log.debug("generate failed: ent={}, node={}", ent.getId(), nd.getNodeId());
+                }
+            }
+        }
+        return generated;
     }
 
     private String timestamp() {

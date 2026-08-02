@@ -92,6 +92,8 @@ public interface InvestmentRecommendationMapper {
      */
     int deleteById(@Param("id") Long id);
 
+    int deleteAll();
+
     /**
      * 根据企业ID和节点ID查询
      */
