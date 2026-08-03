@@ -316,11 +316,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { investmentService } from '@/services/investment.service'
 import { reportsService } from '@/services/reports.service'
 import { getDiagnosisList } from '@/services/diagnosis.service'
 
 // ---- State ----
+const router = useRouter()
 const pageSubtitle = ref('基于弱链/缺链节点自动匹配 · 综合评估招商价值')
 const contextNode = ref('')
 const panelVisible = ref(false)
@@ -416,18 +418,36 @@ async function loadWeaknessOptions() {
 // ---- Actions ----
 async function applyFilters() { currentPage.value = 1; await loadData() }
 
+// 排序交给后端处理（mapper 已支持 sortBy），重新拉取确保全量排序而非仅当前页
 function applySort() {
-  const list = [...displayList.value]
-  if (filters.sortBy === 'business') list.sort((a, b) => (b.businessFitScore || 0) - (a.businessFitScore || 0))
-  else if (filters.sortBy === 'scale') list.sort((a, b) => (b.scaleStrengthScore || 0) - (a.scaleStrengthScore || 0))
-  else if (filters.sortBy === 'region') list.sort((a, b) => (b.regionalSynergyScore || 0) - (a.regionalSynergyScore || 0))
-  else list.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-  displayList.value = list
+  currentPage.value = 1
+  loadData()
 }
 
-function openDetail(ent) {
+async function openDetail(ent) {
   selectedEnt.value = { ...ent, descExpanded: false }
   panelVisible.value = true
+  // I02 — 从后端拉取完整详情（企业画像/专利统计等）
+  try {
+    const detail = await investmentService.getEnterpriseDetail(ent.enterpriseId, ent.nodeId)
+    if (detail && detail.enterprise) {
+      selectedEnt.value = {
+        ...selectedEnt.value,
+        ...detail,
+        ...detail.enterprise,
+        businessFitScore: detail.scores?.businessFitScore ?? ent.businessFitScore,
+        scaleStrengthScore: detail.scores?.scaleStrengthScore ?? ent.scaleStrengthScore,
+        regionalSynergyScore: detail.scores?.regionalSynergyScore ?? ent.regionalSynergyScore,
+        totalScore: detail.scores?.totalScore ?? ent.totalScore,
+        matchLevelText: detail.scores?.matchLevel ?? ent.matchLevelText,
+        rating: detail.scores?.rating ?? ent.rating,
+        matchReasons: detail.matchReasons?.length ? detail.matchReasons : ent.matchReasons,
+        descExpanded: false
+      }
+    }
+  } catch (e) {
+    console.error('[Investment] 获取企业详情失败:', e)
+  }
 }
 
 function closeDetail() {
@@ -435,11 +455,25 @@ function closeDetail() {
   setTimeout(() => { selectedEnt.value = null }, 300)
 }
 
-function toggleWishlist(ent) {
-  const id = ent.enterpriseId
-  const idx = wishList.value.indexOf(id)
-  if (idx > -1) { wishList.value.splice(idx, 1); ent.inWishlist = false }
-  else { wishList.value.push(id); ent.inWishlist = true }
+async function toggleWishlist(ent) {
+  // 先乐观更新 UI，再同步后端；失败则回滚
+  const wasInWishlist = ent.inWishlist
+  try {
+    if (wasInWishlist) {
+      await investmentService.removeFromWishlist(ent.recommendationId)
+      ent.inWishlist = false
+      wishList.value = wishList.value.filter(id => id !== ent.enterpriseId)
+    } else {
+      // I04 — 加入清单：优先用推荐记录ID，否则用企业+节点
+      await investmentService.addToWishlist(ent.enterpriseId, ent.nodeId, ent.recommendationId)
+      ent.inWishlist = true
+      wishList.value.push(ent.enterpriseId)
+    }
+  } catch (e) {
+    ent.inWishlist = wasInWishlist
+    console.error('[Investment] 清单操作失败:', e)
+    alert('清单操作失败，请重试')
+  }
 }
 
 async function handleExport() {

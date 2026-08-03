@@ -10,6 +10,9 @@
         <result column="high_value_patent_count" property="highValuePatentCount"/>
         <result column="total_patent_count" property="totalPatentCount"/>
         <result column="enterprise_count" property="enterpriseCount"/>
+        <result column="national_enterprise_count" property="nationalEnterpriseCount"/>
+        <result column="local_enterprise_count" property="localEnterpriseCount"/>
+        <result column="local_enterprise_share" property="localEnterpriseShare"/>
         <result column="diagnosis_basis" property="diagnosisBasis"/>
         <result column="diagnosis_date" property="diagnosisDate"/>
         <result column="created_at" property="createdAt"/>
@@ -25,6 +28,9 @@
             nd.high_value_patent_count,
             nd.total_patent_count,
             nd.enterprise_count,
+            nd.national_enterprise_count,
+            nd.local_enterprise_count,
+            nd.local_enterprise_share,
             nd.diagnosis_basis,
             nd.diagnosis_date,
             nd.created_at,

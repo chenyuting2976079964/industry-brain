@@ -14,6 +14,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -622,7 +623,6 @@ public class GraphBuildService implements ApplicationRunner {
                 List<String> tags = layerEntry.getValue();
                 if (tags == null) continue;
 
-                // 1. 同层内合并语义近亲标签（企业数降序 → 贪心归组）
                 List<LayerNode> layerNodes = buildLayerNodes(chain.getId(), layer, tags);
                 if (layerNodes.isEmpty()) continue;
 
@@ -692,6 +692,8 @@ public class GraphBuildService implements ApplicationRunner {
                     .nodeName(rep)
                     .layer(layer)
                     .description(buildGroupDescription(group))
+                    // 持久化覆盖标签到 firms（逗号分隔），供诊断重算等路径读取节点→标签映射
+                    .firms(String.join(",", group))
                     .sortOrder(0)
                     .isDeleted(0)
                     .createdAt(NOW)
@@ -884,6 +886,7 @@ public class GraphBuildService implements ApplicationRunner {
 
     /**
      * 聚合生成节点诊断数据
+     * 强弱链判定口径：本地企业占全国企业比例（只考虑企业，不考虑专利）。
      */
     private int buildDiagnosis() {
         List<ChainNode> allNodes = chainNodeMapper.selectList(null);
@@ -892,11 +895,26 @@ public class GraphBuildService implements ApplicationRunner {
         int inserted = 0;
         LocalDate today = LocalDate.now();
         for (ChainNode node : allNodes) {
-            int largeScaleCount = enterpriseNodeMapper.countLargeScaleByNodeId(node.getId());
+            // 节点覆盖标签：优先用构建期内存 nodeCoveredTags，否则从 firms 解析
+            List<String> covered = nodeCoveredTags.getOrDefault(node.getId(), parseFirms(node.getFirms(), node.getNodeName()));
+
+            // 全国/本地企业并集（enterprise_tag 表含全国企业）
+            Set<Long> nationalIds = new LinkedHashSet<>();
+            Set<Long> localIds = new LinkedHashSet<>();
+            for (String tag : covered) {
+                List<Long> nat = enterpriseTagMapper.selectEnterpriseIdsByTagName(tag);
+                if (nat != null) nationalIds.addAll(nat);
+                List<Long> loc = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
+                if (loc != null) localIds.addAll(loc);
+            }
+            int nationalCount = nationalIds.size();
+            int localCount = localIds.size();
+            double share = nationalCount > 0 ? (double) localCount / nationalCount : 0;
+
             int patentCount = patentNodeMapper.countByNodeId(node.getId());
             int highValueCount = patentNodeMapper.countHighValueByNodeId(node.getId());
 
-            String tag = diagnoseTag(largeScaleCount, highValueCount);
+            String tag = diagnoseByShare(share);
 
             NodeDiagnosis diag = NodeDiagnosis.builder()
                     .regionId(340500L)  // 马鞍山市
@@ -904,9 +922,12 @@ public class GraphBuildService implements ApplicationRunner {
                     .diagnosisTag(tag)
                     .highValuePatentCount(highValueCount)
                     .totalPatentCount(patentCount)
-                    .enterpriseCount(largeScaleCount)
-                    .patentDensity(patentCount > 0 ? new BigDecimal((double) patentCount / (largeScaleCount > 0 ? largeScaleCount : 1)) : BigDecimal.ZERO)
-                    .diagnosisBasis("基于IPC专利聚类自动生成")
+                    .enterpriseCount(localCount)
+                    .nationalEnterpriseCount(nationalCount)
+                    .localEnterpriseCount(localCount)
+                    .localEnterpriseShare(nationalCount > 0 ? BigDecimal.valueOf(share).setScale(4, RoundingMode.HALF_UP) : null)
+                    .patentDensity(patentCount > 0 ? new BigDecimal((double) patentCount / (localCount > 0 ? localCount : 1)) : BigDecimal.ZERO)
+                    .diagnosisBasis(buildShareBasis(share, nationalCount, localCount, tag))
                     .diagnosisDate(today)
                     .isDeleted(0)
                     .createdAt(NOW)
@@ -920,22 +941,43 @@ public class GraphBuildService implements ApplicationRunner {
     }
 
     /**
-     * 强弱链诊断判定标准（大规模企业数 × 高价值专利数）：
-     *   强链：大规模企业≥20，或 高价值专利≥100
-     *   补链：大规模企业 10~19，或 高价值专利 50~99
-     *   弱链：大规模企业 5~9，或 高价值专利 20~49
-     *   缺链：大规模企业=0，或 高价值专利=0（完全空白）
-     * 逐级判定，强链优先；不满足任一档但仍有规模/专利基础的兜底为弱链。
+     * 本地企业全国占比 → 强弱链判定（只考虑企业占比）：
+     *   缺链：share < 1%
+     *   弱链：1% ≤ share < 5%
+     *   补链：5% ≤ share < 15%
+     *   强链：share ≥ 15%
+     * 判断优先级：缺 → 弱 → 补 → 强，兜底缺链。
      *
-     * @param largeScaleCount 大规模企业数（员工规模 大型/中大型）
-     * @param highValueCount  高价值专利数
+     * @param share 本地企业占全国比例 (0~1)
      */
-    private String diagnoseTag(int largeScaleCount, int highValueCount) {
-        if (largeScaleCount >= 20 || highValueCount >= 100) return "强链";
-        if ((largeScaleCount >= 10 && largeScaleCount < 20) || (highValueCount >= 50 && highValueCount < 100)) return "补链";
-        if ((largeScaleCount >= 5 && largeScaleCount < 10) || (highValueCount >= 20 && highValueCount < 50)) return "弱链";
-        if (largeScaleCount == 0 || highValueCount == 0) return "缺链";
-        return "弱链";
+    private String diagnoseByShare(double share) {
+        if (share < 0.01) return "缺链";
+        if (share < 0.05) return "弱链";
+        if (share < 0.15) return "补链";
+        return "强链";
+    }
+
+    /** 诊断依据文案：本地/全国企业数 + 占比 */
+    private String buildShareBasis(double share, int nationalCount, int localCount, String tag) {
+        String pct = String.format("%.1f%%", share * 100);
+        String base = String.format("本地企业%d家/全国%d家(占比%s)", localCount, nationalCount, pct);
+        switch (tag) {
+            case "强链": return base + "，本地企业全国占比≥15%，该环节在全国具有比较优势";
+            case "补链": return base + "，本地企业全国占比5%~15%，具备一定基础";
+            case "弱链": return base + "，本地企业全国占比1%~5%，环节薄弱需重点招商";
+            default: return base + "，本地企业全国占比<1%，环节空白最优先级招商";
+        }
+    }
+
+    /** 从 firms 字段（逗号分隔）解析覆盖标签；firms 为空时回退 nodeName */
+    private List<String> parseFirms(String firms, String nodeName) {
+        if (firms != null && !firms.isBlank()) {
+            return Arrays.stream(firms.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+        return nodeName != null ? List.of(nodeName) : Collections.emptyList();
     }
 
     /**

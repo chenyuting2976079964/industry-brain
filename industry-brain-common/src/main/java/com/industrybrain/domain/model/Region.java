@@ -26,7 +26,8 @@ public class Region {
     /** 区域编码 (GB/T 2260国家标准) */
     private String code;
 
-    /** 级别：省/市/区县 */
+    /** 级别：省/市/区县（region表无此列，仅导入时临时字段，DB不含） */
+    @TableField(exist = false)
     private String level;
 
     /** 父级区域ID */

@@ -142,7 +142,7 @@
             :key="alert.id"
             class="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors"
             :class="alertLevelClass(alert.level)"
-            @click="openAlertDetail(alert.id)"
+            @click="jumpToDiagnosisFromAlert(alert)"
           >
             <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" :class="alertIconBgClass(alert.level)">
               <i :class="alertIconClass(alert.level)" class="text-xs"></i>
@@ -415,9 +415,33 @@ async function openDiagnosisSummary() {
     navigate: (el) => {
       const page = el.getAttribute('data-page')
       modal.close()
-      if (page) router.push(`/${page}`)
+      if (page === 'diagnosis') {
+        // 诊断汇总 → 强弱诊断：聚焦薄弱环节（缺链）
+        sessionStorage.setItem('navContext', JSON.stringify({ filter: 'missing' }))
+        router.push('/diagnosis')
+      } else if (page) {
+        router.push(`/${page}`)
+      }
     }
   })
+}
+
+// 根据预警标题推断对应的诊断状态（缺链/弱链），用于跳转诊断页后自动筛选
+function alertFilterFromTitle(title) {
+  if (!title) return 'missing'
+  if (title.includes('缺链')) return 'missing'
+  if (title.includes('弱链')) return 'weak'
+  if (title.includes('补链')) return 'supplement'
+  if (title.includes('强链')) return 'strong'
+  return 'missing'
+}
+
+// 点击预警 → 跳转强弱诊断并自动筛选对应状态（缺链预警→缺链，弱链预警→弱链）
+function jumpToDiagnosisFromAlert(alert) {
+  const ctx = { filter: alertFilterFromTitle(alert && alert.title) }
+  if (alert && alert.nodeName) ctx.nodeName = alert.nodeName
+  sessionStorage.setItem('navContext', JSON.stringify(ctx))
+  router.push('/diagnosis')
 }
 
 // ---- Alert Detail Modal (H09) ----
@@ -430,7 +454,6 @@ async function openAlertDetail(id) {
     return
   }
   if (!alert) return
-
   const color = alert.level === 'high' ? 'red' : alert.level === 'medium' ? 'amber' : 'blue'
 
   modal.open(alert.title, `
@@ -454,6 +477,10 @@ async function openAlertDetail(id) {
   `, {
     'alert-diagnosis': () => {
       modal.close()
+      // 预警跳转强弱诊断并自动筛选对应状态（缺链/弱链等，按标题推断）
+      const ctx = { filter: alertFilterFromTitle(alert && alert.title) }
+      if (alert && alert.nodeName) ctx.nodeName = alert.nodeName
+      sessionStorage.setItem('navContext', JSON.stringify(ctx))
       router.push('/diagnosis')
     },
     [`#dismissBtn_${alert.id}`]: async () => {

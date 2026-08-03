@@ -90,6 +90,9 @@ public class InvestmentMatchResponse {
         /** 是否已加入清单 */
         private Boolean inWishlist;
 
+        /** 产业链节点ID（对应 target_node_id，用于清单/详情操作） */
+        private Long nodeId;
+
         /** 产业链节点名称 */
         private String nodeName;
 

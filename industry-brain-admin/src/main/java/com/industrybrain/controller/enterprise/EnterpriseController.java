@@ -26,8 +26,8 @@ public class EnterpriseController {
 
     private final IEnterpriseService appService;
 
-    /** E01: 获取企业基本信息 */
-    @GetMapping("/{id}")
+    /** E01: 获取企业基本信息 (id 限定为数字，避免与 /search /listByType 等静态路径冲突) */
+    @GetMapping("/{id:\\d+}")
     public AjaxResult getEnterprise(@PathVariable Long id) {
         EnterpriseResponse resp = appService.getEnterprise(id);
         if (resp == null) return AjaxResult.error(404, "Enterprise not found");
@@ -35,13 +35,13 @@ public class EnterpriseController {
     }
 
     /** E02: 获取企业技术画像 */
-    @GetMapping("/{id}/profile")
+    @GetMapping("/{id:\\d+}/profile")
     public AjaxResult getProfile(@PathVariable Long id) {
         return AjaxResult.success(appService.getProfile(id));
     }
 
     /** E03: 获取企业专利列表 (分页+搜索+过滤) */
-    @GetMapping("/{id}/patents")
+    @GetMapping("/{id:\\d+}/patents")
     public AjaxResult getPatents(@PathVariable Long id,
                                  @RequestParam(defaultValue = "1") int page,
                                  @RequestParam(defaultValue = "10") int size,
@@ -53,7 +53,7 @@ public class EnterpriseController {
     }
 
     /** E04: 获取企业综合评估 */
-    @GetMapping("/{id}/evaluate")
+    @GetMapping("/{id:\\d+}/evaluate")
     public AjaxResult getEvaluate(@PathVariable Long id) {
         return AjaxResult.success(appService.getEvaluate(id));
     }

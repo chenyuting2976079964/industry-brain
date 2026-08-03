@@ -29,6 +29,7 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
     private final ChainNodeMapper chainNodeMapper;
     private final PatentMapper patentMapper;
     private final EnterpriseNodeMapper enterpriseNodeMapper;
+    private final EnterpriseTagMapper enterpriseTagMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     @Resource
     private java.util.concurrent.Executor taskExecutor;
@@ -146,10 +147,10 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
         vo.setMissingCount(missing);
         vo.setTotalCount(strong + supplement + weak + missing);
         vo.setCategories(Arrays.asList(
-            new DiagnosisSummaryResponse.CategoryDetail("强链", "强链", strong, "大规模企业≥20 或 高价值专利≥100", "#52c41a"),
-            new DiagnosisSummaryResponse.CategoryDetail("补链", "补链", supplement, "大规模企业10~19 或 高价值专利50~99", "#faad14"),
-            new DiagnosisSummaryResponse.CategoryDetail("弱链", "弱链", weak, "大规模企业5~9 或 高价值专利20~49", "#ff4d4f"),
-            new DiagnosisSummaryResponse.CategoryDetail("缺链", "缺链", missing, "大规模企业=0 或 高价值专利=0", "#bfbfbf")
+            new DiagnosisSummaryResponse.CategoryDetail("强链", "强链", strong, "本地企业全国占比≥15%", "#52c41a"),
+            new DiagnosisSummaryResponse.CategoryDetail("补链", "补链", supplement, "本地企业全国占比5%~15%", "#faad14"),
+            new DiagnosisSummaryResponse.CategoryDetail("弱链", "弱链", weak, "本地企业全国占比1%~5%", "#ff4d4f"),
+            new DiagnosisSummaryResponse.CategoryDetail("缺链", "缺链", missing, "本地企业全国占比<1%", "#bfbfbf")
         ));
         return vo;
     }
@@ -185,8 +186,21 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
                 try {
                     int patentCount = patentMapper.selectCountByNodeId(node.getId());
                     int highValueCount = patentMapper.selectHighValueCountByNodeId(node.getId());
-                    int largeScaleCount = enterpriseNodeMapper.countLargeScaleByNodeId(node.getId());
-                    diagnoseAndSave(node.getId(), regionId, patentCount, highValueCount, largeScaleCount);
+                    // 本地企业占全国比例：按节点覆盖标签（firms）取全国/本地企业并集
+                    List<String> covered = parseFirms(node.getFirms(), node.getNodeName());
+                    Set<Long> nationalIds = new LinkedHashSet<>();
+                    Set<Long> localIds = new LinkedHashSet<>();
+                    for (String tag : covered) {
+                        List<Long> nat = enterpriseTagMapper.selectEnterpriseIdsByTagName(tag);
+                        if (nat != null) nationalIds.addAll(nat);
+                        List<Long> loc = enterpriseTagMapper.selectLocalEnterpriseIdsByTagName(tag);
+                        if (loc != null) localIds.addAll(loc);
+                    }
+                    int nationalCount = nationalIds.size();
+                    int localCount = localIds.size();
+                    double share = nationalCount > 0 ? (double) localCount / nationalCount : 0;
+                    diagnoseAndSave(node.getId(), regionId, patentCount, highValueCount,
+                            localCount, nationalCount, share);
                 } catch (Exception e) {
                     failed++;
                     log.error("Recalc: node#{} ({}) failed", node.getId(), node.getNodeName(), e);
@@ -205,54 +219,60 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
     }
 
     /**
-     * 强弱链诊断判定（大规模企业数 × 高价值专利数）：
-     *   强链：大规模企业≥20，或 高价值专利≥100
-     *   补链：大规模企业 10~19，或 高价值专利 50~99
-     *   弱链：大规模企业 5~9，或 高价值专利 20~49
-     *   缺链：大规模企业=0，或 高价值专利=0
-     * 逐级判定，强链优先命中。
+     * 强弱链诊断判定（本地企业全国占比，只考虑企业）：
+     *   缺链：本地企业全国占比 < 1%
+     *   弱链：1% ≤ 占比 < 5%
+     *   补链：5% ≤ 占比 < 15%
+     *   强链：占比 ≥ 15%
+     * 判断优先级：缺 → 弱 → 补 → 强，兜底缺链。
      *
-     * @param largeScaleCount 大规模企业数（员工规模 大型/中大型）
-     * @param highValueCount  高价值专利数
+     * @param localCount    本地企业数
+     * @param nationalCount 全国企业数
+     * @param share         本地企业全国占比 (0~1)
      */
-    private void diagnoseAndSave(Long nodeId, Long regionId, int patentCount, int highValueCount, int largeScaleCount) {
-        String tag, basis;
-        if (largeScaleCount >= 20 || highValueCount >= 100) {
-            tag = "强链";
-            String reason = largeScaleCount >= 20
-                    ? String.format("大规模企业%d家(≥20)", largeScaleCount)
-                    : String.format("高价值专利%d件(≥100)", highValueCount);
-            basis = reason + "，该环节在全国具有比较优势，技术实力强";
-        } else if ((largeScaleCount >= 10 && largeScaleCount < 20) || (highValueCount >= 50 && highValueCount < 100)) {
-            tag = "补链";
-            String reason = (largeScaleCount >= 10 && largeScaleCount < 20)
-                    ? String.format("大规模企业%d家(10~19)", largeScaleCount)
-                    : String.format("高价值专利%d件(50~99)", highValueCount);
-            basis = reason + "，该环节有一定基础但质量待提升，需引进高价值技术";
-        } else if ((largeScaleCount >= 5 && largeScaleCount < 10) || (highValueCount >= 20 && highValueCount < 50)) {
-            tag = "弱链";
-            String reason = (largeScaleCount >= 5 && largeScaleCount < 10)
-                    ? String.format("大规模企业%d家(5~9)", largeScaleCount)
-                    : String.format("高价值专利%d件(20~49)", highValueCount);
-            basis = reason + "，该环节技术薄弱，需重点招商引进";
-        } else if (largeScaleCount == 0 || highValueCount == 0) {
-            tag = "缺链";
-            basis = largeScaleCount == 0
-                    ? "该环节无大规模企业覆盖，完全空白，最优先级招商"
-                    : "该环节无高价值专利，技术空白，最优先级招商";
-        } else {
-            tag = "弱链";
-            basis = String.format("大规模企业%d家且高价值专利%d件，规模不足需重点招商引进", largeScaleCount, highValueCount);
+    private void diagnoseAndSave(Long nodeId, Long regionId, int patentCount, int highValueCount,
+                                 int localCount, int nationalCount, double share) {
+        String tag;
+        if (share < 0.01) tag = "缺链";
+        else if (share < 0.05) tag = "弱链";
+        else if (share < 0.15) tag = "补链";
+        else tag = "强链";
+
+        String pct = String.format("%.1f%%", share * 100);
+        String basis = String.format("本地企业%d家/全国%d家(占比%s)", localCount, nationalCount, pct);
+        switch (tag) {
+            case "强链": basis += "，本地企业全国占比≥15%，该环节在全国具有比较优势"; break;
+            case "补链": basis += "，本地企业全国占比5%~15%，具备一定基础"; break;
+            case "弱链": basis += "，本地企业全国占比1%~5%，环节薄弱需重点招商"; break;
+            default: basis += "，本地企业全国占比<1%，环节空白最优先级招商"; break;
         }
+
         NodeDiagnosis diagnosis = NodeDiagnosis.builder()
                 .regionId(regionId).nodeId(nodeId).diagnosisTag(tag)
                 .highValuePatentCount(highValueCount).totalPatentCount(patentCount)
-                .enterpriseCount(largeScaleCount).diagnosisBasis(basis)
+                .enterpriseCount(localCount)
+                .nationalEnterpriseCount(nationalCount)
+                .localEnterpriseCount(localCount)
+                .localEnterpriseShare(nationalCount > 0
+                        ? java.math.BigDecimal.valueOf(share).setScale(4, java.math.RoundingMode.HALF_UP)
+                        : null)
+                .diagnosisBasis(basis)
                 .diagnosisDate(LocalDate.now()).build();
         // 物理删除该节点当日的旧诊断（uk_region_node_date 唯一键约束，避免重复插入冲突；
         // 不能用 MyBatis-Plus delete()——它走逻辑删除，物理行仍在，唯一键仍冲突）
         nodeDiagnosisMapper.physicallyDelete(regionId, nodeId, diagnosis.getDiagnosisDate());
         nodeDiagnosisMapper.insert(diagnosis);
+    }
+
+    /** 从 firms 字段（逗号分隔）解析覆盖标签；firms 为空时回退 nodeName */
+    private List<String> parseFirms(String firms, String nodeName) {
+        if (firms != null && !firms.isBlank()) {
+            return Arrays.stream(firms.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+        return nodeName != null ? List.of(nodeName) : Collections.emptyList();
     }
 
     private void updateTaskStatus(String taskId, String status, int progress, String message) {

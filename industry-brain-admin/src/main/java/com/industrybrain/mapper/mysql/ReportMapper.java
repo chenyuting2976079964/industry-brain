@@ -63,4 +63,9 @@ public interface ReportMapper {
      * 统计上月报告数（用于计算增长率）
      */
     int countLastMonth();
+
+    /**
+     * 查询创建超过10分钟且仍为 processing 状态的报告（用于兜底恢复）
+     */
+    List<ReportRecord> selectStaleProcessing();
 }

@@ -432,6 +432,14 @@ onMounted(async () => {
   nextTick(() => {
     try {
       const ctx = JSON.parse(sessionStorage.getItem('navContext')) || {}
+      // 首页预警等入口 → 按状态自动筛选（强链/补链/弱链/缺链）
+      if (ctx.filter && ['strong', 'supplement', 'weak', 'missing'].includes(ctx.filter)) {
+        currentFilter.value = ctx.filter
+        if (ctx.nodeName) {
+          pageSubtitle.value = '正在查看"' + ctx.nodeName + '"的诊断详情 · 已按' +
+            ({ strong: '强链', supplement: '补链', weak: '弱链', missing: '缺链' })[ctx.filter] + '筛选'
+        }
+      }
       if (ctx.focusNode) {
         pageSubtitle.value = '正在查看"' + ctx.focusNode + '"的诊断详情 · 点击节点穿透查看企业'
         const node = diagnosisData.value.find(n => n.name === ctx.focusNode)
@@ -447,6 +455,8 @@ onMounted(async () => {
             }
           }
         }
+      }
+      if (ctx.filter || ctx.focusNode) {
         sessionStorage.removeItem('navContext')
       }
     } catch (e) { /* ignore */ }

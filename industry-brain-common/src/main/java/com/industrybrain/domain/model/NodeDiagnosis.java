@@ -39,6 +39,15 @@ public class NodeDiagnosis {
     /** 覆盖企业数量 */
     private Integer enterpriseCount;
 
+    /** 全国该节点企业数（本地+外地） */
+    private Integer nationalEnterpriseCount;
+
+    /** 本地该节点企业数 */
+    private Integer localEnterpriseCount;
+
+    /** 本地企业全国占比(小数,0~1) */
+    private java.math.BigDecimal localEnterpriseShare;
+
     /** 专利密集度百分比 (v2.1) */
     private java.math.BigDecimal patentDensity;
 

@@ -155,7 +155,6 @@ public class DataImportServiceImpl implements IDataImportService {
 
                 Region region = new Region();
                 region.setName(name);
-                region.setLevel((String) row.get("级别"));
                 region.setCode(generateRegionCode(name));
                 region.setCreatedAt(LocalDateTime.now());
                 region.setUpdatedAt(LocalDateTime.now());

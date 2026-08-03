@@ -48,3 +48,7 @@ logs/
 CLAUDE.md
 MEMORY.md
 industry-brain-date/
+_backup/*.sql
+__pycache__/
+*.png
+*.jpg

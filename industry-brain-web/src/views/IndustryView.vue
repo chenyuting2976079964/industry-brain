@@ -44,21 +44,26 @@
               :viewBox="'0 0 ' + svgSize.w + ' ' + svgSize.h"
             >
               <defs>
-                <!-- 按层级的渐变色：上游蓝 → 中游青 → 下游绿，与列头颜色呼应 -->
-                <linearGradient id="grad-up-mid" x1="0" y1="0" x2="1" y2="0">
+                <!-- 按层级的渐变色：上游蓝 → 中游青 → 下游绿，与列头颜色呼应
+                     gradientUnits=userSpaceOnUse：基于图谱用户坐标而非路径 bbox。
+                     默认 objectBoundingBox 在水平连线（bbox 高度=0）上会退化成白色，
+                     导致连线中段不可见。这里用图谱宽度（~900）作为渐变范围。 -->
+                <linearGradient id="grad-up-mid" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="900" y2="0">
                   <stop offset="0%" stop-color="#93c5fd"/>
                   <stop offset="100%" stop-color="#5eead4"/>
                 </linearGradient>
-                <linearGradient id="grad-mid-down" x1="0" y1="0" x2="1" y2="0">
+                <linearGradient id="grad-mid-down" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="900" y2="0">
                   <stop offset="0%" stop-color="#5eead4"/>
                   <stop offset="100%" stop-color="#6ee7b7"/>
                 </linearGradient>
-                <linearGradient id="grad-same" x1="0" y1="0" x2="1" y2="0">
+                <linearGradient id="grad-same" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="900" y2="0">
                   <stop offset="0%" stop-color="#cbd5e1"/>
                   <stop offset="100%" stop-color="#cbd5e1"/>
                 </linearGradient>
-                <!-- 柔和发光，增强线条立体感 -->
-                <filter id="link-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <!-- 柔和发光，增强线条立体感
+                     注意：水平连线（bbox 高度=0）会让默认 objectBoundingBox 的 filter 区域坍缩成一条线，
+                     导致连线中段被裁剪不可见。改用 userSpaceOnUse + 绝对区域（覆盖整个图谱）避免裁剪。 -->
+                <filter id="link-glow" x="-50" y="-50" width="1000" height="700" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
                   <feDropShadow dx="0" dy="0.6" stdDeviation="1.2" flood-color="rgba(51,65,85,0.12)"/>
                 </filter>
                 <!-- 箭头按目标层级配色 -->
@@ -374,7 +379,9 @@ const linkPaths = computed(() => {
     const src = nodes.value.find(n => n.id === l.sourceNodeId)
     const tgt = nodes.value.find(n => n.id === l.targetNodeId)
     if (!src || !tgt) return
+    // 节点被隐藏（筛选过滤）时，其连线也应隐藏，避免残留悬空连线
     if (src.hidden || tgt.hidden) return
+    if (src.filtered || tgt.filtered) return
     const a = pos(src)
     const b = pos(tgt)
     if (!a || !b) return
@@ -526,13 +533,17 @@ async function selectNode(id) {
   selectedNode.value = { ...node }
   panelOpen.value = true
 
-  // Fetch node detail for firm info
+  // Fetch node detail for firm info + 诊断依据描述
   try {
     const detail = await getNodeDetail(node._raw ? node._raw.id : id)
     const holders = detail.enterprises || []
     selectedNode.value.firms = holders.length > 0
       ? holders.map(h => h.enterpriseName).join('、')
       : '（暂无企业）'
+    // 用详情接口的诊断依据更新描述（节点列表接口的 diagnosisLabel 只是"强链"等标签）
+    if (detail.description) {
+      selectedNode.value.desc = detail.description
+    }
   } catch (e) {
     // firms remains as set by transformNode
   }

@@ -33,17 +33,64 @@
       <p class="text-sm text-slate-400">暂无报告，请在右侧"生成新报告"面板创建</p>
     </div>
     <div v-else class="space-y-2">
-      <div
-        v-for="r in reports"
-        :key="r.id"
-        class="bg-white rounded-xl p-4 border flex items-center justify-between report-item"
-        :class="String(r.id) === String(highlightId) ? 'border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.2)] highlight-pulse' : 'border-slate-100'"
-      >
-        <div class="flex items-center gap-3 flex-1 min-w-0">
-          <div class="w-10 h-10 rounded-lg flex items-center justify-center"
-            :class="(r.status === 'completed' || r.status === 'done') || r.status === 'done' ? 'bg-emerald-50' : r.status === 'processing' || r.status === 'pending' ? 'bg-blue-50' : 'bg-red-50'"
+      <!-- 批量操作栏 -->
+      <div v-if="selectedIds.length > 0" class="bg-blue-50 rounded-xl p-3 border border-blue-200 flex items-center justify-between mb-3">
+        <span class="text-sm text-blue-700">
+          <i class="fa-solid fa-check-circle mr-1"></i>
+          已选择 <strong>{{ selectedIds.length }}</strong> 份报告
+        </span>
+        <div class="flex items-center gap-2">
+          <button
+            class="btn-outline text-xs"
+            @click="clearSelection"
           >
-            <i :class="(r.status === 'completed' || r.status === 'done') || r.status === 'done' ? 'fa-regular fa-file-excel text-emerald-500' : r.status === 'processing' || r.status === 'pending' ? 'fa-solid fa-spinner fa-spin text-blue-500' : 'fa-regular fa-circle-exclamation text-red-400'"></i>
+            <i class="fa-regular fa-circle-xmark"></i>清空
+          </button>
+          <button
+            class="btn-danger text-xs"
+            @click="handleBatchDelete"
+          >
+            <i class="fa-regular fa-trash-can"></i>删除所选 ({{ selectedIds.length }})
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-2 px-1">
+        <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            :indeterminate.prop="isIndeterminate"
+            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            @change="toggleSelectAll"
+          >
+          <span>全选</span>
+        </label>
+        <span class="text-xs text-slate-400">共 {{ reports.length }} 份报告</span>
+      </div>
+
+      <div class="space-y-2">
+        <div
+          v-for="r in reports"
+          :key="r.id"
+          class="bg-white rounded-xl p-4 border flex items-center gap-4 report-item"
+          :class="[
+            String(r.id) === String(highlightId) ? 'border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.2)] highlight-pulse' : 'border-slate-100',
+            selectedIds.includes(r.id) ? 'border-blue-400 bg-blue-50' : ''
+          ]"
+        >
+          <!-- 多选框 -->
+          <input
+            type="checkbox"
+            :checked="selectedIds.includes(r.id)"
+            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+            @change="toggleSelect(r.id)"
+          >
+
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+            :class="reportIconBg(r)"
+          >
+            <i :class="reportIcon(r)"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
@@ -54,27 +101,27 @@
               <span>{{ typeLabels[r.reportType] || r.reportType || '招商推荐清单' }}</span>
               <span class="mx-1.5">·</span>
               <span v-if="r.reportDate || r.createdAt">{{ formatDate(r.reportDate || r.createdAt) }}</span>
-              <span v-else-if="r.status === 'processing' || r.status === 'pending'">正在生成中...</span>
+              <span v-else-if="isPending(r.status)">正在生成中...</span>
               <span v-if="r.status === 'failed'" class="text-red-400">生成失败</span>
               <span v-if="r.enterpriseCount" class="ml-1.5">· {{ r.enterpriseCount }} 家企业</span>
               <span v-if="r.format || r.outputFormat" class="ml-1.5">· {{ r.format || r.outputFormat }}</span>
             </p>
           </div>
+          <button
+            v-if="isDone(r.status)"
+            class="btn-outline text-xs flex-shrink-0 ml-3"
+            @click="downloadReport(r)"
+          >
+            <i class="fa-solid fa-download"></i>下载
+          </button>
+          <button
+            v-if="isDone(r.status) || r.status === 'failed'"
+            class="btn-outline text-xs flex-shrink-0 ml-2 text-red-400"
+            @click="handleDeleteReport(r)"
+          >
+            <i class="fa-regular fa-trash-can"></i>
+          </button>
         </div>
-        <button
-          v-if="(r.status === 'completed' || r.status === 'done') || r.status === 'done'"
-          class="btn-outline text-xs flex-shrink-0 ml-3"
-          @click="downloadReport(r)"
-        >
-          <i class="fa-solid fa-download"></i>下载
-        </button>
-        <button
-          v-if="(r.status === 'completed' || r.status === 'done') || r.status === 'done' || r.status === 'failed'"
-          class="btn-outline text-xs flex-shrink-0 ml-2 text-red-400"
-          @click="handleDeleteReport(r)"
-        >
-          <i class="fa-regular fa-trash-can"></i>
-        </button>
       </div>
     </div>
 
@@ -95,7 +142,7 @@
         <div>
           <label class="text-xs text-slate-500 block mb-1">输出格式</label>
           <select v-model="genForm.format" class="select-field">
-            <option value="Excel">Excel</option>
+            <option value="Excel">Excel（XLSX）</option>
             <option value="PDF">PDF</option>
           </select>
         </div>
@@ -114,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { reportsService } from '@/services/reports.service'
 
 // ---- State ----
@@ -122,7 +169,9 @@ const reports = ref([])
 const stats = reactive({ monthCount: 0, totalCount: 0, enterpriseCount: 0 })
 const generating = ref(false)
 const highlightId = ref(null)
+const selectedIds = ref([])
 let pollTimer = null
+let pollCount = 0
 
 const genForm = reactive({
   type: 'investment_list',
@@ -160,14 +209,99 @@ onUnmounted(() => {
 
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer)
+  pollCount = 0
   pollTimer = setInterval(async () => {
     await loadData()
+    pollCount++
     const target = reports.value.find(r => String(r.id) === String(highlightId.value))
-    if (!target || target.status === 'completed' || target.status === 'done' || target.status === 'failed') {
+    // 目标已找到且完成 → 停止；未找到但还在轮询中 → 继续（报告可能在列表第一页之外）
+    // 最长轮询 2 分钟（40 次 × 3s），避免网络异常时无限轮询
+    if ((target && (isDone(target.status) || target.status === 'failed')) || pollCount >= 40) {
       clearInterval(pollTimer)
       pollTimer = null
     }
   }, 3000)
+}
+
+// 数据库 status: pending/processing/done/failed（CHECK约束）
+function isDone(status) { return status === 'done' || status === 'completed' }
+function isPending(status) { return status === 'pending' || status === 'processing' }
+
+// ---- 多选功能 ----
+const isAllSelected = computed(() => {
+  const selectable = reports.value.filter(r => isDone(r.status) || r.status === 'failed')
+  return selectable.length > 0 && selectable.every(r => selectedIds.value.includes(r.id))
+})
+
+const isIndeterminate = computed(() => {
+  const selectable = reports.value.filter(r => isDone(r.status) || r.status === 'failed')
+  const selectedCount = selectable.filter(r => selectedIds.value.includes(r.id)).length
+  return selectedCount > 0 && selectedCount < selectable.length
+})
+
+function toggleSelectAll() {
+  const selectable = reports.value.filter(r => isDone(r.status) || r.status === 'failed')
+  if (isAllSelected.value) {
+    // 取消全选
+    selectedIds.value = selectedIds.value.filter(id => !selectable.some(r => r.id === id))
+  } else {
+    // 全选
+    selectable.forEach(r => {
+      if (!selectedIds.value.includes(r.id)) {
+        selectedIds.value.push(r.id)
+      }
+    })
+  }
+}
+
+function toggleSelect(id) {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedIds.value.splice(idx, 1)
+  } else {
+    selectedIds.value.push(id)
+  }
+}
+
+function clearSelection() {
+  selectedIds.value = []
+}
+
+async function handleBatchDelete() {
+  if (selectedIds.value.length === 0) return
+  const count = selectedIds.value.length
+  if (!confirm(`确认删除选中的 ${count} 份报告？此操作不可恢复。`)) return
+
+  try {
+    // 并发删除
+    await Promise.all(selectedIds.value.map(id => reportsService.deleteReport(id)))
+    // 从列表中移除
+    reports.value = reports.value.filter(r => !selectedIds.value.includes(r.id))
+    // 清空选中
+    selectedIds.value = []
+    // 刷新统计
+    await loadData()
+  } catch (e) {
+    console.error('[Reports] Batch delete failed:', e)
+    alert('删除失败，请重试')
+  }
+}
+
+// ---- 报告图标：按格式区分（PDF=红色文件图标，Excel=绿色表格图标） ----
+function reportIcon(r) {
+  if (isPending(r.status)) return 'fa-solid fa-spinner fa-spin text-blue-500'
+  if (r.status === 'failed') return 'fa-regular fa-circle-exclamation text-red-400'
+  const fmt = (r.format || r.outputFormat || '').toUpperCase()
+  return fmt === 'PDF'
+    ? 'fa-solid fa-file-pdf text-red-500'
+    : 'fa-regular fa-file-excel text-emerald-500'
+}
+
+function reportIconBg(r) {
+  if (isPending(r.status)) return 'bg-blue-50'
+  if (r.status === 'failed') return 'bg-red-50'
+  const fmt = (r.format || r.outputFormat || '').toUpperCase()
+  return fmt === 'PDF' ? 'bg-red-50' : 'bg-emerald-50'
 }
 
 async function loadData() {
@@ -215,11 +349,14 @@ async function downloadReport(report) {
 async function handleGenerate() {
   generating.value = true
   try {
-    await reportsService.generateReport({
+    const reportId = await reportsService.generateReport({
       type: genForm.type,
       format: genForm.format
     })
+    // 高亮新报告，启动轮询等待生成完成（本页生成同样需要自动刷新）
+    highlightId.value = reportId
     await loadData()
+    startPolling()
   } catch (e) {
     console.error('[Reports] Generation failed:', e)
   } finally {
@@ -306,6 +443,24 @@ async function handleDeleteReport(report) {
 .btn-outline:hover {
   border-color: #1e40af;
   color: #1e40af;
+}
+
+.btn-danger {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-danger:hover {
+  background: #fee2e2;
+  border-color: #f87171;
 }
 
 .select-field {

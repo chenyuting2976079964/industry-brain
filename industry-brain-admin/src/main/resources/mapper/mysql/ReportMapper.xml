@@ -103,4 +103,12 @@
         where date_format(created_at, '%Y-%m') = date_format(date_sub(now(), interval 1 month), '%Y-%m')
     </select>
 
+    <!-- 查询创建超过10分钟且仍为 processing 状态的报告 -->
+    <select id="selectStaleProcessing" resultMap="ReportRecordMap">
+        select * from report
+        where status = 'processing'
+        and created_at &lt; date_sub(now(), interval 10 minute)
+        order by created_at asc
+    </select>
+
 </mapper>

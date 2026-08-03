@@ -32,7 +32,6 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -101,6 +100,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
     @Resource
     private ReportMapper reportMapper;
+
+    @Resource
+    private ReportAsyncService reportAsyncService;
 
     @Resource
     private NodeDiagnosisMapper nodeDiagnosisMapper;
@@ -661,6 +663,9 @@ public class RecommendationServiceImpl implements IRecommendationService {
     public ReportListResponse getReports(Integer page, Integer size) {
         log.info("查询报告列表, page={}, size={}", page, size);
 
+        // 兜底恢复：长时间卡在 processing（生成中断/进程被杀）的记录标记为 failed
+        recoverStaleProcessingReports();
+
         int pg = page != null ? page : 1;
         int sz = size != null ? size : 10;
         int offset = (pg - 1) * sz;
@@ -675,6 +680,28 @@ public class RecommendationServiceImpl implements IRecommendationService {
         response.setReports(records.stream().map(this::convertToItem).collect(Collectors.toList()));
 
         return response;
+    }
+
+    /**
+     * 恢复长时间卡在 processing 状态的报告记录。
+     * 正常异步生成通常数秒内完成；超过10分钟仍为 processing 说明生成已中断
+     * （进程重启/异常退出/线程池拒绝），将其标记为 failed，便于前端删除或重新生成。
+     *
+     * 注意：直接使用 SQL 查询数据库时间，避免 Java 系统时间与 MySQL 时间的时区差异问题。
+     */
+    private void recoverStaleProcessingReports() {
+        try {
+            // 查询创建超过10分钟且仍为 processing 的报告
+            // 使用数据库的 NOW() 函数，避免时区问题
+            List<ReportRecord> staleReports = reportMapper.selectStaleProcessing();
+            for (ReportRecord r : staleReports) {
+                r.setStatus("failed");
+                reportMapper.update(r);
+                log.info("兜底恢复: 报告 {} 卡在 processing 超过10分钟，已标记为 failed", r.getId());
+            }
+        } catch (Exception e) {
+            log.warn("兜底恢复 processing 状态失败: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -727,7 +754,8 @@ public class RecommendationServiceImpl implements IRecommendationService {
 
         log.info("报告记录已创建, reportId={}", record.getId());
 
-        generateReportAsync(record.getId(), request);
+        // 通过独立 Bean 的代理调用异步方法（同类自调用会让 @Async 失效）
+        reportAsyncService.generateReportAsync(record.getId(), request);
 
         // 返回报告ID，前端可以跳转到报告页查看
         return String.valueOf(record.getId());
@@ -753,16 +781,24 @@ public class RecommendationServiceImpl implements IRecommendationService {
         ReportRecord record = reportMapper.selectById(id);
         if (record != null && record.getFileUrl() != null) {
             try {
+                // 预签名URL格式: http://host:port/{bucket}/{object}?X-Amz-...
+                // 从 URL 中提取 bucket 和 object 路径，而非硬编码 bucket 名
                 String url = record.getFileUrl();
-                int bucketIdx = url.indexOf("/industry-brain/");
-                if (bucketIdx > 0) {
-                    String objectName = url.substring(bucketIdx + "/industry-brain/".length());
-                    int queryIdx = objectName.indexOf('?');
-                    if (queryIdx > 0) {
-                        objectName = objectName.substring(0, queryIdx);
+                String[] parts = url.split("/");
+                if (parts.length >= 5) {
+                    String bucket = parts[3]; // 实际 bucket 位于路径第4段
+                    String objectName = null;
+                    int bucketIdx = url.indexOf("/" + bucket + "/");
+                    if (bucketIdx > 0) {
+                        objectName = url.substring(bucketIdx + bucket.length() + 2);
+                        int queryIdx = objectName.indexOf('?');
+                        if (queryIdx > 0) {
+                            objectName = objectName.substring(0, queryIdx);
+                        }
                     }
-                    if (minioFileService != null) {
+                    if (objectName != null && minioFileService != null) {
                         minioFileService.delete(objectName);
+                        log.info("删除 MinIO 文件: bucket={}, object={}", bucket, objectName);
                     }
                 }
             } catch (Exception e) {
@@ -809,7 +845,8 @@ public class RecommendationServiceImpl implements IRecommendationService {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_FMT));
             String taskId = "EXPORT_ALL_" + UUID.randomUUID().toString().substring(0, 8);
 
-            exportAllAsync(taskId, format, timestamp);
+            // 通过独立 Bean 的代理调用异步方法（同类自调用会让 @Async 失效）
+            reportAsyncService.exportAllAsync(taskId, format, timestamp);
 
             log.info("批量导出任务已提交, taskId={}", taskId);
             return taskId;
@@ -820,263 +857,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
         }
     }
 
-    // ==================== 报告异步方法 ====================
-
-    @Async("reportTaskExecutor")
-    public void generateReportAsync(Long reportId, ReportGenerateRequest request) {
-        long startTime = System.currentTimeMillis();
-        log.info("异步报告生成开始: reportId={}, type={}", reportId, request.getType());
-
-        ReportRecord record = reportMapper.selectById(reportId);
-        if (record == null) {
-            log.error("报告记录不存在: reportId={}", reportId);
-            return;
-        }
-
-        try {
-            record.setStatus("processing");
-            reportMapper.update(record);
-
-            byte[] excelData;
-            int enterpriseCount;
-
-            if ("investment_list".equals(request.getType())) {
-                List<InvestmentRecommendation> enterprises = recommendationMapper.selectMatchList(
-                        null,
-                        request.getWeakness(),
-                        request.getMatchMin(),
-                        request.getScale(),
-                        request.getSortBy(),
-                        request.getKeyword(),
-                        request.getNodeId(),
-                        null, 0, 200);
-                enterpriseCount = enterprises.size();
-                excelData = buildInvestmentListExcel(enterprises, record.getTitle());
-            } else {
-                enterpriseCount = 0;
-                excelData = buildGenericReportExcel(record);
-            }
-
-            String format = request.getFormat() != null ? request.getFormat() : "XLSX";
-            if ("Excel".equalsIgnoreCase(format)) format = "XLSX";
-            String fileName = "report_" + reportId + "_" + timestamp() + "." + format.toLowerCase();
-            if (minioFileService == null) {
-                log.warn("MinIO 未启用，跳过报告上传");
-                record.setStatus("failed");
-                reportMapper.update(record);
-                return;
-            }
-            String url = minioFileService.uploadToCategory("reports", fileName, excelData, EXCEL_MIME);
-
-            if (url == null) {
-                log.error("报告文件上传 MinIO 失败: reportId={}", reportId);
-                record.setStatus("failed");
-                reportMapper.update(record);
-                return;
-            }
-
-            long elapsed = System.currentTimeMillis() - startTime;
-            record.setFileUrl(url);
-            record.setFileSize((long) excelData.length);
-            record.setEnterpriseCount(enterpriseCount);
-            record.setOutputFormat(format);
-            record.setStatus("done");
-            record.setGenerationTime(elapsed);
-            reportMapper.update(record);
-
-            log.info("异步报告生成完成: reportId={}, 企业数={}, 耗时={}ms", reportId, enterpriseCount, elapsed);
-
-        } catch (Exception e) {
-            log.error("异步报告生成失败: reportId={}, error={}", reportId, e.getMessage(), e);
-            try {
-                record.setStatus("failed");
-                reportMapper.update(record);
-            } catch (Exception ex) {
-                log.error("更新报告失败状态异常: {}", ex.getMessage());
-            }
-        }
-    }
-
-    @Async("reportTaskExecutor")
-    public void exportAllAsync(String taskId, String format, String timestamp) {
-        log.info("异步批量导出开始: taskId={}, format={}", taskId, format);
-
-        try {
-            List<ReportRecord> allReports = reportMapper.selectList(0, 1000);
-            List<ReportRecord> completedReports = allReports.stream()
-                    .filter(r -> "completed".equals(r.getStatus()))
-                    .collect(Collectors.toList());
-
-            byte[] excelData = buildBatchExportExcel(completedReports);
-
-            String fileName = "batch_export_" + taskId + "_" + timestamp + ".xlsx";
-            if (minioFileService == null) {
-                log.warn("MinIO 未启用，跳过批量导出上传");
-                return;
-            }
-            String url = minioFileService.uploadToCategory("exports", fileName, excelData, EXCEL_MIME);
-
-            if (url != null) {
-                log.info("批量导出完成: taskId={}, 报告数={}, url={}", taskId, completedReports.size(), url);
-            } else {
-                log.warn("批量导出上传 MinIO 失败: taskId={}", taskId);
-            }
-
-        } catch (Exception e) {
-            log.error("批量导出失败: taskId={}, error={}", taskId, e.getMessage(), e);
-        }
-    }
-
-    // ==================== Excel 生成方法 ====================
-
-    private byte[] buildInvestmentListExcel(List<InvestmentRecommendation> enterprises, String title) throws Exception {
-        try (Workbook wb = new XSSFWorkbook()) {
-            CellStyle titleStyle = ExcelStyleUtils.createTitleStyle(wb);
-            CellStyle headerStyle = ExcelStyleUtils.createHeaderStyle(wb);
-            CellStyle dataStyle = ExcelStyleUtils.createDataStyle(wb);
-            CellStyle aStyle = ExcelStyleUtils.createHighlightStyle(wb, IndexedColors.GREEN);
-            CellStyle bStyle = ExcelStyleUtils.createHighlightStyle(wb, IndexedColors.LIGHT_BLUE);
-            CellStyle cStyle = ExcelStyleUtils.createHighlightStyle(wb, IndexedColors.GREY_40_PERCENT);
-
-            Sheet sheet = wb.createSheet("招商推荐清单");
-
-            int rowIdx = 0;
-            Row titleRow = sheet.createRow(rowIdx++);
-            Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue(title);
-            titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 10));
-            rowIdx++;
-
-            Row hRow = sheet.createRow(rowIdx++);
-            String[] headers = {"序号", "企业名称", "行业", "区域", "节点名称", "诊断标签",
-                    "业务匹配度", "规模实力", "地域协同", "综合评分", "评级"};
-            for (int i = 0; i < headers.length; i++) {
-                Cell c = hRow.createCell(i);
-                c.setCellValue(headers[i]);
-                c.setCellStyle(headerStyle);
-            }
-
-            int seq = 1;
-            for (InvestmentRecommendation ent : enterprises) {
-                Row r = sheet.createRow(rowIdx++);
-                r.createCell(0).setCellValue(seq++);
-                r.createCell(1).setCellValue(ent.getEnterpriseName() != null ? ent.getEnterpriseName() : "");
-                r.createCell(2).setCellValue(ent.getIndustry() != null ? ent.getIndustry() : "");
-                r.createCell(3).setCellValue(ent.getRegionCode() != null ? ent.getRegionCode() : "");
-                r.createCell(4).setCellValue(ent.getNodeName() != null ? ent.getNodeName() : "");
-                r.createCell(5).setCellValue(ent.getDiagnosisTag() != null ? ent.getDiagnosisTag() : "");
-                r.createCell(6).setCellValue(ent.getBusinessFitScore() != null ? ent.getBusinessFitScore().doubleValue() : 0);
-                r.createCell(7).setCellValue(ent.getScaleStrengthScore() != null ? ent.getScaleStrengthScore().doubleValue() : 0);
-                r.createCell(8).setCellValue(ent.getRegionalSynergyScore() != null ? ent.getRegionalSynergyScore().doubleValue() : 0);
-                r.createCell(9).setCellValue(ent.getTotalScore() != null ? ent.getTotalScore().doubleValue() : 0);
-
-                String rating = ent.getRating();
-                r.createCell(10).setCellValue(rating != null ? rating : "");
-                CellStyle ratingStyle = dataStyle;
-                if ("A".equals(rating)) ratingStyle = aStyle;
-                else if ("B".equals(rating)) ratingStyle = bStyle;
-                else if ("C".equals(rating)) ratingStyle = cStyle;
-
-                for (int i = 0; i < headers.length; i++) {
-                    if (i == 10) r.getCell(i).setCellStyle(ratingStyle);
-                    else r.getCell(i).setCellStyle(dataStyle);
-                }
-            }
-
-            int[] widths = {6, 28, 16, 10, 14, 10, 10, 10, 10, 10, 8};
-            for (int i = 0; i < widths.length; i++) sheet.setColumnWidth(i, widths[i] * 256);
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            wb.write(bos);
-            return bos.toByteArray();
-        }
-    }
-
-    private byte[] buildGenericReportExcel(ReportRecord record) throws Exception {
-        try (Workbook wb = new XSSFWorkbook()) {
-            CellStyle titleStyle = ExcelStyleUtils.createTitleStyle(wb);
-            CellStyle headerStyle = ExcelStyleUtils.createHeaderStyle(wb);
-            CellStyle dataStyle = ExcelStyleUtils.createDataStyle(wb);
-            CellStyle labelStyle = ExcelStyleUtils.createLabelStyle(wb);
-
-            Sheet sheet = wb.createSheet("报告摘要");
-            int rowIdx = 0;
-            Row titleRow = sheet.createRow(rowIdx++);
-            Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue(record.getTitle());
-            titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 3));
-            rowIdx++;
-
-            ExcelStyleUtils.addKvRow(sheet, rowIdx++, "报告类型", getReportTypeName(record.getReportType()), labelStyle, dataStyle);
-            ExcelStyleUtils.addKvRow(sheet, rowIdx++, "产业链", record.getChainName() != null ? record.getChainName() : "-", labelStyle, dataStyle);
-            ExcelStyleUtils.addKvRow(sheet, rowIdx++, "范围", record.getScope() != null ? record.getScope() : "全部", labelStyle, dataStyle);
-            ExcelStyleUtils.addKvRow(sheet, rowIdx++, "输出格式", record.getOutputFormat() != null ? record.getOutputFormat() : "Excel", labelStyle, dataStyle);
-            ExcelStyleUtils.addKvRow(sheet, rowIdx++, "生成时间", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), labelStyle, dataStyle);
-            rowIdx++;
-
-            Row noteRow = sheet.createRow(rowIdx);
-            Cell noteCell = noteRow.createCell(0);
-            noteCell.setCellValue("此报告为自动生成，具体企业详情请通过招商推荐模块查看。");
-            noteCell.setCellStyle(dataStyle);
-            sheet.addMergedRegion(new CellRangeAddress(rowIdx, rowIdx, 0, 3));
-
-            sheet.setColumnWidth(0, 16 * 256);
-            sheet.setColumnWidth(1, 40 * 256);
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            wb.write(bos);
-            return bos.toByteArray();
-        }
-    }
-
-    private byte[] buildBatchExportExcel(List<ReportRecord> reports) throws Exception {
-        try (Workbook wb = new XSSFWorkbook()) {
-            CellStyle titleStyle = ExcelStyleUtils.createTitleStyle(wb);
-            CellStyle headerStyle = ExcelStyleUtils.createHeaderStyle(wb);
-            CellStyle dataStyle = ExcelStyleUtils.createDataStyle(wb);
-
-            Sheet sheet = wb.createSheet("批量导出汇总");
-            int rowIdx = 0;
-            Row titleRow = sheet.createRow(rowIdx++);
-            Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("招商报告批量导出汇总");
-            titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
-            rowIdx++;
-
-            Row hRow = sheet.createRow(rowIdx++);
-            String[] headers = {"序号", "报告标题", "类型", "企业数", "格式", "状态", "生成时间"};
-            for (int i = 0; i < headers.length; i++) {
-                Cell c = hRow.createCell(i);
-                c.setCellValue(headers[i]);
-                c.setCellStyle(headerStyle);
-            }
-
-            int seq = 1;
-            for (ReportRecord r : reports) {
-                Row row = sheet.createRow(rowIdx++);
-                row.createCell(0).setCellValue(seq++);
-                row.createCell(1).setCellValue(r.getTitle() != null ? r.getTitle() : "");
-                row.createCell(2).setCellValue(getReportTypeName(r.getReportType()));
-                row.createCell(3).setCellValue(r.getEnterpriseCount() != null ? r.getEnterpriseCount() : 0);
-                row.createCell(4).setCellValue(r.getOutputFormat() != null ? r.getOutputFormat() : "");
-                row.createCell(5).setCellValue("completed".equals(r.getStatus()) ? "已完成" : r.getStatus());
-                row.createCell(6).setCellValue(r.getCreatedAt() != null ? r.getCreatedAt().toString() : "");
-                for (int i = 0; i < headers.length; i++) row.getCell(i).setCellStyle(dataStyle);
-            }
-
-            int[] widths = {6, 36, 18, 10, 10, 10, 20};
-            for (int i = 0; i < widths.length; i++) sheet.setColumnWidth(i, widths[i] * 256);
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            wb.write(bos);
-            return bos.toByteArray();
-        }
-    }
-
-    // ==================== 招商报告辅助方法 ====================
+    // ==================== 报告辅助方法 ====================
 
     private ReportItem convertToItem(ReportRecord record) {
         ReportItem item = new ReportItem();
@@ -1185,6 +966,7 @@ public class RecommendationServiceImpl implements IRecommendationService {
         InvestmentEnterprise ent = new InvestmentEnterprise();
         ent.setRecommendationId(rec.getId());
         ent.setEnterpriseId(rec.getEnterpriseId());
+        ent.setNodeId(rec.getTargetNodeId());
         ent.setEnterpriseName(rec.getEnterpriseName());
         ent.setInitial(firstChar(rec.getEnterpriseName()));
         ent.setDescription(rec.getIndustry());

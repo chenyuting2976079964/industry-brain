@@ -12,7 +12,7 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:10.69.156.93}:${MYSQL_PORT:3307}/industry_brain?useUnicode=true&characterEncoding=utf8&zeroDateTimePolicy=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3307}/industry_brain?useUnicode=true&characterEncoding=utf8&zeroDateTimePolicy=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USER:root}
     password: ${MYSQL_PASSWORD:root123}
     hikari:
@@ -22,7 +22,7 @@ spring:
       connection-timeout: 30000
       connection-test-query: SELECT 1
   redis:
-    host: ${REDIS_HOST:10.69.156.93}
+    host: ${REDIS_HOST:127.0.0.1}
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:}
     database: 0
@@ -33,7 +33,7 @@ spring:
         max-idle: 20
         min-idle: 5
   neo4j:
-    uri: ${NEO4J_URI:bolt://10.69.156.93:7687}
+    uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
     authentication:
       username: ${NEO4J_USERNAME:neo4j}
       password: ${NEO4J_PASSWORD:neo4j123}
@@ -60,7 +60,7 @@ elasticsearch:
 
 neo4j:
   enabled: true
-  uri: ${NEO4J_URI:bolt://10.69.156.93:7687}
+  uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
   username: ${NEO4J_USERNAME:neo4j}
   password: ${NEO4J_PASSWORD:neo4j123}
 
@@ -96,3 +96,18 @@ logging:
     org.springframework: info
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+
+# ==========================================
+# LLM 大模型配置（用于报告分析增强）
+# 复用 SiliconFlow OpenAI 兼容接口
+# ==========================================
+llm:
+  enabled: ${LLM_ENABLED:true}
+  base-url: ${LLM_BASE_URL:https://api.siliconflow.cn/v1}
+  api-key: ${LLM_API_KEY:sk-wsffznbtsdfbulrbjzjnptanrbebykwajglmpfxwrejoboaq}
+  model: ${LLM_MODEL:deepseek-ai/DeepSeek-V3}
+  max-tokens: ${LLM_MAX_TOKENS:2000}
+  temperature: ${LLM_TEMPERATURE:0.3}
+  timeout-ms: ${LLM_TIMEOUT_MS:30000}
+  max-retries: ${LLM_MAX_RETRIES:2}
+  retry-backoff-ms: ${LLM_RETRY_BACKOFF_MS:500}

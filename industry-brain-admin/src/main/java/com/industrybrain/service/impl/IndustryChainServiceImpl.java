@@ -48,9 +48,10 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
     /**
      * 构建单条产业链响应；不满足显示条件时返回 null（调用方隐藏该链）。
      *
-     * 显示条件（两个条件同时满足）：
-     *   1. 节点非空（有诊断记录）
-     *   2. 上中下游三层（up/mid/down）都有节点
+     * 本地产业链归属判定（用户规则）：
+     *   产业链中至少有 2 个不同层（上中下游）含「补链」或「强链」节点 → 判定为本地产业链。
+     *   本地产业链的所有节点（含缺链节点）全部展示。
+     *   非本地产业链隐藏（其节点多为外地企业支撑，不属本地招商重点）。
      */
     private ChainResponse buildChainResponse(IndustryChain c) {
         ChainResponse vo = new ChainResponse();
@@ -61,38 +62,48 @@ public class IndustryChainServiceImpl implements IIndustryChainService {
         List<NodeDiagnosis> latestResults = nodeDiagnosisMapper.selectLatestByChainId(c.getId());
         if (latestResults == null || latestResults.isEmpty()) {
             log.debug("产业链「{}」无节点，隐藏", c.getName());
-            return null;  // 条件1：节点为空 → 隐藏
-        }
-
-        // 条件2：上中下游三层都要有节点（up/mid/down）
-        Set<String> coveredLayers = new HashSet<>();
-        List<ChainNode> nodes = chainNodeMapper.selectByChainId(c.getId());
-        if (nodes != null) {
-            for (ChainNode n : nodes) {
-                if (n.getLayer() != null && !n.getLayer().isBlank()) {
-                    coveredLayers.add(n.getLayer());
-                }
-            }
-        }
-        if (coveredLayers.size() < 3
-                || !coveredLayers.contains("up")
-                || !coveredLayers.contains("mid")
-                || !coveredLayers.contains("down")) {
-            log.debug("产业链「{}」上中下游三层不完整，隐藏（覆盖: {}）", c.getName(), coveredLayers);
             return null;
         }
 
+        // 节点层级映射：node_diagnosis 关联 chain_node 的 layer
+        Map<Long, String> nodeLayerMap = new HashMap<>();
+        List<ChainNode> nodes = chainNodeMapper.selectByChainId(c.getId());
+        if (nodes != null) {
+            for (ChainNode n : nodes) {
+                nodeLayerMap.put(n.getId(), n.getLayer());
+            }
+        }
+
+        // 统计每层含「补链/强链」节点的层集合
+        Set<String> strongOrSupplementLayers = new HashSet<>();
         int strong = 0, supplement = 0, weak = 0, missing = 0;
         int totalPatents = 0, totalEnterprises = 0;
         for (NodeDiagnosis r : latestResults) {
             totalPatents += r.getTotalPatentCount() != null ? r.getTotalPatentCount() : 0;
             totalEnterprises += r.getEnterpriseCount() != null ? r.getEnterpriseCount() : 0;
             String tag = r.getDiagnosisTag();
-            if ("强链".equals(tag)) strong++;
-            else if ("补链".equals(tag)) supplement++;
-            else if ("弱链".equals(tag)) weak++;
-            else if ("缺链".equals(tag)) missing++;
+            if ("强链".equals(tag)) {
+                strong++;
+                String layer = nodeLayerMap.get(r.getNodeId());
+                if (layer != null) strongOrSupplementLayers.add(layer);
+            } else if ("补链".equals(tag)) {
+                supplement++;
+                String layer = nodeLayerMap.get(r.getNodeId());
+                if (layer != null) strongOrSupplementLayers.add(layer);
+            } else if ("弱链".equals(tag)) {
+                weak++;
+            } else if ("缺链".equals(tag)) {
+                missing++;
+            }
         }
+
+        // 本地产业链判定：至少 2 个不同层含补链/强链节点
+        if (strongOrSupplementLayers.size() < 2) {
+            log.debug("产业链「{}」少于2层含补链/强链节点（含补强层: {}），判定为非本地产业链，隐藏",
+                    c.getName(), strongOrSupplementLayers);
+            return null;
+        }
+
         vo.setNodeCount(latestResults.size());
         vo.setTotalPatents(totalPatents);
         vo.setTotalEnterprises(totalEnterprises);
