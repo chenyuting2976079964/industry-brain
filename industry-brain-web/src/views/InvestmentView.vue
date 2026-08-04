@@ -29,9 +29,9 @@
       <div class="flex items-center gap-4 flex-wrap">
         <div>
           <label class="text-xs text-slate-400 block mb-1">薄弱环节</label>
-          <select v-model="filters.weakness" class="select-field text-xs" @change="applyFilters">
-            <option value="all">全部薄弱环节</option>
-            <option v-for="w in weaknessOptions" :key="w.nodeName" :value="w.diagnosisTag">{{ w.nodeName }}（{{ w.diagnosisTag }}）</option>
+          <select v-model="filters.nodeId" class="select-field text-xs" @change="applyFilters" style="max-width:180px">
+            <option value="">全部薄弱环节</option>
+            <option v-for="w in weaknessOptions" :key="w.nodeId" :value="w.nodeId">{{ w.nodeName }}（{{ w.diagnosisTag }}）</option>
           </select>
         </div>
         <div>
@@ -92,7 +92,12 @@
     </div>
 
     <!-- ==================== ENTERPRISE CARDS ==================== -->
-    <div class="space-y-3">
+    <div v-if="displayList.length === 0" class="text-center py-16">
+      <i class="fa-solid fa-inbox text-4xl text-slate-300 mb-3"></i>
+      <p class="text-slate-400 text-sm">暂无匹配企业数据</p>
+      <p class="text-slate-300 text-xs mt-1">可尝试切换薄弱环节或调整筛选条件</p>
+    </div>
+    <div v-else class="space-y-3">
       <div
         v-for="ent in displayList"
         :key="ent.recommendationId"
@@ -339,7 +344,8 @@ const filters = reactive({
   minMatch: 'all',
   scale: 'all',
   sortBy: 'match',
-  keyword: ''
+  keyword: '',
+  nodeId: ''
 })
 
 // ---- Pagination ----
@@ -371,6 +377,7 @@ onMounted(async () => {
       pageSubtitle.value = `来自 ${contextNode.value} 环节的招商匹配`
       if (ctx.weaknessKey) filters.weakness = ctx.weaknessKey
     }
+    if (ctx.nodeId) filters.nodeId = ctx.nodeId
     sessionStorage.removeItem('navContext')
   } catch (e) { console.error('[Investment] Failed to parse nav context:', e) }
 
@@ -386,6 +393,7 @@ async function loadData() {
       scale: filters.scale,
       sortBy: filters.sortBy,
       keyword: filters.keyword,
+      nodeId: filters.nodeId,
       page: currentPage.value,
       size: pageSize.value
     })
@@ -402,14 +410,25 @@ function goToPage(page) {
   loadData()
 }
 
-// 从诊断 API 加载全部薄弱环节节点（缺链+弱链+补链）
+// 从诊断 API 加载全部薄弱环节节点（缺链+弱链+补链），有数据的排前面
 async function loadWeaknessOptions() {
   try {
-    const allResults = await getDiagnosisList()
+    const [allResults, matchData] = await Promise.all([
+      getDiagnosisList(),
+      investmentService.getEnterprises({ page: 1, size: 500 })
+    ])
     const tags = ['缺链', '弱链', '补链']
-    weaknessOptions.value = (allResults || [])
+    const nodeIdsWithData = new Set((matchData.enterprises || []).map(e => e.nodeId))
+    const items = (allResults || [])
       .filter(item => tags.includes(item.diagnosisTag))
-      .map(item => ({ nodeName: item.nodeName, diagnosisTag: item.diagnosisTag }))
+      .map(item => ({ nodeId: item.nodeId, nodeName: item.nodeName, diagnosisTag: item.diagnosisTag }))
+    // 有数据排前，无数据排后
+    items.sort((a, b) => {
+      const aHas = nodeIdsWithData.has(a.nodeId) ? 0 : 1
+      const bHas = nodeIdsWithData.has(b.nodeId) ? 0 : 1
+      return aHas - bHas
+    })
+    weaknessOptions.value = items
   } catch (e) {
     console.error('Failed to load weakness options:', e)
   }

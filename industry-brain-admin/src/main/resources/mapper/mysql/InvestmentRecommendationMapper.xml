@@ -34,6 +34,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         where ir.id = #{id}
     </select>
 
@@ -44,6 +47,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         <where>
             ir.is_deleted = 0 and e.is_local = 0 and ir.business_fit_score &gt; 0
             <if test="regionId != null">and ir.region_id = #{regionId}</if>
@@ -68,6 +74,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         <where>
             ir.is_deleted = 0 and e.is_local = 0 and ir.business_fit_score &gt; 0
             <if test="regionId != null">and ir.region_id = #{regionId}</if>
@@ -86,6 +95,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         where ir.enterprise_id = #{enterpriseId}
         <if test="nodeId != null">and ir.target_node_id = #{nodeId}</if>
         order by ir.total_score desc limit 1
@@ -98,6 +110,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         where ir.status = 'wishlist' and ir.is_deleted = 0
         <if test="regionId != null">and ir.region_id = #{regionId}</if>
         order by ir.updated_at desc
@@ -204,6 +219,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         where ir.enterprise_id = #{enterpriseId} and ir.is_deleted = 0
         order by ir.total_score desc
     </select>
@@ -214,6 +232,9 @@
         left join enterprise e on ir.enterprise_id = e.id
         left join chain_node cn on ir.target_node_id = cn.id
         left join node_diagnosis nd on cn.id = nd.node_id
+            and nd.is_deleted = 0
+            and nd.id = (select max(n2.id) from node_diagnosis n2
+                         where n2.node_id = cn.id and n2.is_deleted = 0)
         where ir.target_node_id = #{nodeId} and ir.is_deleted = 0
         order by ir.total_score desc
     </select>

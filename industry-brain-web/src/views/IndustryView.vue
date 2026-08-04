@@ -570,7 +570,12 @@ function goToDiagnosis() {
 
 function goToInvestment() {
   if (selectedNode.value) {
-    sessionStorage.setItem('navContext', JSON.stringify({ fromNode: selectedNode.value.name }))
+    const raw = selectedNode.value._raw || {}
+    sessionStorage.setItem('navContext', JSON.stringify({
+      fromNode: selectedNode.value.name,
+      weaknessKey: raw.diagnosisTag,
+      nodeId: selectedNode.value.id
+    }))
   }
   closePanel()
   router.push('/investment')

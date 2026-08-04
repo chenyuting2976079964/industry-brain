@@ -419,7 +419,12 @@ async function loadDiagnosisData(filterStatus = 'all') {
 // ─── Navigation ───────────────────────────────────────────
 function goToInvestment() {
   if (panelNode.value) {
-    sessionStorage.setItem('navContext', JSON.stringify({ fromNode: panelNode.value.name }))
+    const raw = panelNode.value._raw || {}
+    sessionStorage.setItem('navContext', JSON.stringify({
+      fromNode: panelNode.value.name,
+      weaknessKey: raw.diagnosisTag,
+      nodeId: panelNode.value.id
+    }))
   }
   closePanel()
   router.push('/investment')
