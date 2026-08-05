@@ -25,7 +25,6 @@ async function request(method, path, body) {
 
   if (body) options.body = JSON.stringify(body)
 
-  console.log(`[API] ${method} ${url}`)
   const res = await fetch(url, options)
 
   // Handle 401 unauthorized

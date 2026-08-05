@@ -14,7 +14,7 @@
           <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border-2 border-dashed border-slate-400 bg-white"></span>缺链</span>
         </div>
       </div>
-      <div class="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+      <div class="flex items-center gap-2 flex-wrap pb-0.5">
         <button
           v-for="chain in chainList"
           :key="chain.key"
@@ -62,8 +62,10 @@
                 </linearGradient>
                 <!-- 柔和发光，增强线条立体感
                      注意：水平连线（bbox 高度=0）会让默认 objectBoundingBox 的 filter 区域坍缩成一条线，
-                     导致连线中段被裁剪不可见。改用 userSpaceOnUse + 绝对区域（覆盖整个图谱）避免裁剪。 -->
-                <filter id="link-glow" x="-50" y="-50" width="1000" height="700" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                     导致连线中段被裁剪不可见。改用 userSpaceOnUse + 动态区域（跟随实际图谱尺寸）避免裁剪。
+                     此前高度写死为 700px，当图谱因节点增多变高（如"电子化学品"节点下探到 y>650）时，
+                     靠近底部的连线会被滤镜裁剪、线在到达节点前断裂。 -->
+                <filter id="link-glow" :x="-50" :y="-50" :width="svgSize.w + 100" :height="svgSize.h + 100" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
                   <feDropShadow dx="0" dy="0.6" stdDeviation="1.2" flood-color="rgba(51,65,85,0.12)"/>
                 </filter>
                 <!-- 箭头按目标层级配色 -->

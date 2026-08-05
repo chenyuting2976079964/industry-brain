@@ -29,7 +29,6 @@ public class AuthController {
         String password = loginBody.get("password");
 
         // Simple credential check (admin / 123456)
-        // TODO: replace with real user service
         if (!"admin".equals(username) || !"123456".equals(password)) {
             return AjaxResult.error("用户名或密码错误");
         }

@@ -292,7 +292,6 @@ onMounted(async () => {
   try {
     const res = await getLocalEnterprises()
     enterprises.value = (res && res.list ? res.list : (Array.isArray(res) ? res : [])).map(mapEnterprise)
-    console.log('Loaded', enterprises.value.length, 'enterprises')
   } catch (e) {
     console.error('Failed to load local enterprises:', e)
   }

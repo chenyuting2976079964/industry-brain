@@ -31,11 +31,6 @@ export function getChainStrength(regionCode = '340500') {
   return get(`${BASE}/chain-strength?regionCode=${regionCode}`)
 }
 
-/** F06: 地图标注点 */
-export function getMapMarkers(regionCode = '340500') {
-  return get(`${BASE}/map-markers?regionCode=${regionCode}`)
-}
-
 /** F07: 本地企业总体分布 */
 export function getLocalEnterpriseStats(regionCode = '340500') {
   return get(`${BASE}/local-enterprise-stats?regionCode=${regionCode}`)

@@ -39,7 +39,6 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String key = "rate_limit:" + clientIp;
 
         // TODO: 基于 Redis 滑动窗口/令牌桶实现限流（需 Redis 可用）
-        // 当前降级：不启用限流
         return true;
     }
 

@@ -22,7 +22,6 @@ import java.util.Arrays;
  */
 @Configuration
 @EnableWebSecurity
-// @EnableGlobalMethodSecurity(prePostEnabled = true)  // 暂时注释，开发阶段跳过权限检查
 public class SecurityConfig {
 
     /**
@@ -45,19 +44,6 @@ public class SecurityConfig {
             // 禁用 Session（使用 JWT）
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
-// =============== TODO: 恢复安全配置 - 当前为开发阶段关闭 ===============
-//            // 授权规则
-//            .authorizeRequests()
-//                // 公开接口
-//                .antMatchers(
-//                    "/api/**"
-//                ).permitAll()
-//                // 其余接口需要认证
-//                .anyRequest().authenticated()
-//            .and()
-//            // 添加 JWT 认证过滤器占位
-//            // .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-// =============== 开发阶段关闭认证 ===============
             .authorizeRequests()
                 .anyRequest().permitAll()
             .and()

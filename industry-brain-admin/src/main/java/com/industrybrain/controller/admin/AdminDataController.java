@@ -1,15 +1,34 @@
 package com.industrybrain.controller.admin;
 
 import com.industrybrain.common.core.domain.AjaxResult;
-import com.industrybrain.domain.model.*;
-import com.industrybrain.mapper.mysql.*;
+import com.industrybrain.domain.model.ChainNode;
+import com.industrybrain.domain.model.IndustrialPark;
+import com.industrybrain.domain.model.IndustryChain;
+import com.industrybrain.domain.model.Region;
+import com.industrybrain.domain.model.DataSyncLog;
+import com.industrybrain.mapper.mysql.ChainInfoMapper;
+import com.industrybrain.mapper.mysql.ChainNodeMapper;
+import com.industrybrain.mapper.mysql.DataSyncLogMapper;
+import com.industrybrain.mapper.mysql.IndustrialParkMapper;
+import com.industrybrain.mapper.mysql.NodeDiagnosisMapper;
+import com.industrybrain.mapper.mysql.RegionMapper;
 import lombok.RequiredArgsConstructor;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 数据管理接口 — S01~S08（查英）

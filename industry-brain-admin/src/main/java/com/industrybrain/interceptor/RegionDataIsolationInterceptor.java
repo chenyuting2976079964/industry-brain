@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,21 +26,15 @@ public class RegionDataIsolationInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // TODO: 从当前用户上下文获取 regionCode
-        // 1. 从 SecurityContext 获取用户区域权限
-        // 2. 将 regionCode 存入 ThreadLocal
-        // 3. MyBatis/ES/Neo4j 查询时自动附加 region_code 条件
         String regionCode = request.getHeader(REGION_CODE_HEADER);
         if (regionCode != null) {
             log.debug("区域数据隔离: regionCode={}", regionCode);
-            // TODO: 设置到 ThreadLocal 供 Mapper 层使用
         }
         return true;
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
-                                Object handler, Exception ex) throws Exception {
-        // TODO: 清理 ThreadLocal
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+                           ModelAndView modelAndView) throws Exception {
     }
 }
