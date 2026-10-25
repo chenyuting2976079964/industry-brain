@@ -67,3 +67,5 @@ industry-brain-date/
 # 参赛图件例外（架构图 + UI 截图需入库）
 !docs/competition/*.png
 !docs/competition/screenshots/*.png
+tools/models/
+# 91MB 模型权重, 用 tools/download_embedding_model.py 从 ModelScope 拉取
