@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>企开得胜 - 专利驱动的产业大脑与精准招商平台 — 技术架构</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#F8FAFC; font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif; color:#1E293B; padding:40px 24px; }
+  .wrap { max-width:1360px; margin:0 auto; }
+  .hdr { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+  .logo { width:54px; height:54px; border-radius:14px; background:linear-gradient(135deg,#4F46E5,#7C3AED); display:flex; align-items:center; justify-content:center;
+          color:#fff; font-size:28px; font-weight:800; box-shadow:0 6px 18px rgba(99,102,241,.35); }
+  .hdr h1 { font-size:26px; font-weight:800; letter-spacing:.5px; }
+  .hdr h1 small { font-size:14px; font-weight:500; color:#64748B; margin-left:10px; }
+  .layer { background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:18px 22px; margin-bottom:14px;
+           box-shadow:0 2px 10px rgba(15,23,42,.05); }
+  .lrow { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .lnum { background:linear-gradient(135deg,#4F46E5,#7C3AED); color:#fff; font-size:12px; font-weight:700;
+          min-width:34px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+  .ltit { font-size:16px; font-weight:700; }
+  .lsub { font-size:12px; color:#94A3B8; margin-left:2px; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; }
+  .card { flex:1 1 180px; min-height:74px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:12px 14px; }
+  .card .t { font-size:13.5px; font-weight:700; margin-bottom:4px; }
+  .card .d { font-size:12px; color:#64748B; line-height:1.55; }
+  .card.hl { background:linear-gradient(135deg,#EEF2FF,#F5F3FF); border-color:#C7D2FE; }
+  .chip { display:inline-block; font-size:10.5px; background:#EEF2FF; color:#4F46E5; border-radius:5px; padding:1px 7px; margin-left:6px; vertical-align:1px; font-weight:600;}
+  .footer { text-align:center; font-size:12px; color:#94A3B8; margin-top:22px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="logo">企</div>
+    <h1>企开得胜 <small>专利驱动的产业大脑与精准招商平台 · 技术架构</small></h1>
+  </div>
+
+  <div class="layer">
+    <div class="lrow"><span class="lnum">01</span><span class="ltit">客户端层</span><span class="lsub">Browser / 大屏终端</span></div>
+    <div class="cards">
+      <div class="card"><div class="t">Vue 3 + Vite 单页应用<span class="chip">:8888</span></div><div class="d">ECharts 图表 · Pinia 状态管理 · Hash 路由 · 大屏全屏模式</div></div>
+      <div class="card"><div class="t">浏览器兼容</div><div class="d">Chrome / Edge 现代浏览器，无桌面端依赖</div></div>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lrow"><span class="lnum">02</span><span class="ltit">后端服务层</span><span class="lsub">Spring Boot 单体 + 本地辅助服务</span></div>
+    <div class="cards">
+      <div class="card hl"><div class="t">业务服务<span class="chip">:8890</span></div><div class="d">若依框架 + MyBatis-Plus · 认证鉴权 / 产业链 / 招商匹配 / 报告 / 企业画像 / 系统管理</div></div>
+      <div class="card"><div class="t">本地语义服务<span class="chip">:8701</span></div><div class="d">Python ONNX · BAAI/bge-small-zh-v1.5（512 维）· OpenAI 兼容 HTTP 端点，推理不出网</div></div>
+      <div class="card"><div class="t">LLM 适配层</div><div class="d">OpenAI 兼容协议调用大模型（报告智能撰写），可切换任意兼容后端</div></div>
+      <div class="card"><div class="t">开放接口</div><div class="d">Swagger / OpenAPI 标准文档 · 统一响应与错误码</div></div>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lrow"><span class="lnum">03</span><span class="ltit">数据处理层</span><span class="lsub">流水线与算法</span></div>
+    <div class="cards">
+      <div class="card"><div class="t">全文索引构建</div><div class="d">349,999 文档批量入 ES · 分词与多字段检索</div></div>
+      <div class="card"><div class="t">图谱同步</div><div class="d">企业—行业—专利三元组写入 Neo4j（1,136 节点 / 1,364 关系）</div></div>
+      <div class="card"><div class="t">招商匹配评分</div><div class="d">业务契合 / 规模实力 / 地域协同三维加权 · 规则 + 向量混合排序</div></div>
+      <div class="card hl"><div class="t">诊断报告流水线</div><div class="d">断点识别 → 目标企业圈选 → LLM 分析撰写 → 报告归档</div></div>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lrow"><span class="lnum">04</span><span class="ltit">数据存储层</span><span class="lsub">Docker 中间件栈（5 容器）</span></div>
+    <div class="cards">
+      <div class="card"><div class="t">MySQL 8<span class="chip">:13307</span></div><div class="d">329,145 家企业主数据 · 业务台账</div></div>
+      <div class="card"><div class="t">Elasticsearch 8<span class="chip">:13306</span></div><div class="d">企业全文检索 · 向量与关键词混合</div></div>
+      <div class="card"><div class="t">Neo4j 5<span class="chip">:13305</span></div><div class="d">产业链关系图谱存储</div></div>
+      <div class="card"><div class="t">Redis<span class="chip">:13308</span></div><div class="d">缓存与会话</div></div>
+      <div class="card"><div class="t">MinIO<span class="chip">:13309</span></div><div class="d">对象存储 · 报告文件 / 附件</div></div>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lrow"><span class="lnum">05</span><span class="ltit">部署与接入层</span><span class="lsub">运维与数据接入</span></div>
+    <div class="cards">
+      <div class="card"><div class="t">Docker Compose 编排</div><div class="d">一键拉起全部中间件 · 数据卷持久化（外部 3.2GB 企业数据卷）</div></div>
+      <div class="card"><div class="t">外部数据接入</div><div class="d">工商 / 专利 / 产业链批量导入流水线（CSV → 校验 → 入库）</div></div>
+      <div class="card"><div class="t">环境变量配置</div><div class="d">.env 单一配置源 · 端口 / 凭据集中管理</div></div>
+    </div>
+  </div>
+
+  <div class="footer">企开得胜 - 专利驱动的产业大脑与精准招商平台 — 技术架构 · 数据底座视角 · 概念级分层</div>
+</div>
+</body>
+</html>

@@ -62,3 +62,8 @@ industry-brain-date/
 
 # Office 临时锁文件
 ~$*
+.edge-shots/
+.edge-arch/
+# 参赛图件例外（架构图 + UI 截图需入库）
+!docs/competition/*.png
+!docs/competition/screenshots/*.png
