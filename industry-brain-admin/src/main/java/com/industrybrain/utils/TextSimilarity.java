@@ -7,7 +7,7 @@ import java.util.Set;
  * 文本相似度工具（Jaccard / 字符 n-gram）
  * 用于产业链自动聚类的规则亲和度计算。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 public final class TextSimilarity {
 

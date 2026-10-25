@@ -17,7 +17,7 @@
       </div>
       <div class="dash-topbar-center">
         <img :src="isDark ? '/logo_white.png' : '/logo.png'" alt="" class="dash-logo" />
-        <span class="dash-title">{{ regionName }} · 产业大脑</span>
+        <span class="dash-title">{{ regionName }} · 企开得胜</span>
       </div>
       <div class="dash-topbar-right">
         <span class="dash-location"><i class="fa-solid fa-location-dot"></i> {{ regionName }}</span>

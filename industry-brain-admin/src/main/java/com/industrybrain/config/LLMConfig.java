@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
  * 使用 SiliconFlow OpenAI 兼容接口（支持 DeepSeek/Qwen/GLM 等模型）。
  * enabled=false 时报告生成降级为纯规则模板，不阻断流程。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Configuration
 public class LLMConfig {

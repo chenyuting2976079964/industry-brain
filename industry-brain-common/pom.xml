@@ -12,7 +12,7 @@
 
     <artifactId>industry-brain-common</artifactId>
     <name>industry-brain-common</name>
-    <description>产业大脑平台 - 共享模块 (DTO/Model/Utils)</description>
+    <description>企开得胜 - 专利驱动的产业大脑与精准招商平台 - 共享模块 (DTO/Model/Utils)</description>
 
     <dependencies>
         <!-- MyBatis-Plus -->

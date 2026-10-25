@@ -7,7 +7,7 @@ import java.util.List;
  * 向量运算工具（余弦相似度 / 归一化 / 质心）
  * 用于产业链自动聚类的标签向量相似度计算。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 public final class VectorOps {
 

@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
- * 产业链智能分析与招商推荐平台 - 启动入口
+ * 企开得胜 - 专利驱动的产业大脑与精准招商平台 - 启动入口
  * 基于若依（RuoYi）框架扩展
  */
 @EnableAsync
@@ -18,6 +18,6 @@ public class IndustryBrainApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(IndustryBrainApplication.class, args);
-        log.info("产业链智能分析与招商推荐平台 启动成功！");
+        log.info("企开得胜 - 专利驱动的产业大脑与精准招商平台 启动成功！");
     }
 }

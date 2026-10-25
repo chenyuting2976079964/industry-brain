@@ -1,8 +1,8 @@
-# 产业大脑平台前端开发指南
+# 企开得胜前端开发指南
 
 ## 1. 项目概览
 
-**项目名称**: industry-brain-platform（产业大脑平台 v2.0）  
+**项目名称**: industry-brain-platform（企开得胜 - 专利驱动的产业大脑与精准招商平台）  
 **技术栈**: Vue 3 + Vite + Pinia + Vue Router + ECharts + Tailwind CSS  
 **架构风格**: 单页应用（SPA），前后端分离，Mock Server 调试模式  
 

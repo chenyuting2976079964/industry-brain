@@ -3,7 +3,7 @@ chcp 65001 >nul
 rem configure_remote_mysql.bat - 配置 MySQL 远程访问（Windows 版）
 
 echo ========================================
-echo   产业大脑平台 - MySQL 远程访问配置工具
+echo   企开得胜 - MySQL 远程访问配置工具
 echo ========================================
 
 cd /d %~dp0

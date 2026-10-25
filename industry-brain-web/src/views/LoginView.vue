@@ -11,8 +11,8 @@
 
       <div class="brand-content">
         <div class="brand-logo">
-          <img src="/logo_white.png" alt="产业大脑" class="brand-logo-img" />
-          <span class="brand-logo-text">产业大脑</span>
+          <img src="/logo_white.png" alt="企开得胜" class="brand-logo-img" />
+          <span class="brand-logo-text">企开得胜</span>
         </div>
 
         <div class="brand-main">
@@ -126,7 +126,7 @@
           </button>
         </form>
 
-        <p class="form-footer">© 2026 产业大脑平台 · 数据驱动精准招商</p>
+        <p class="form-footer">© 2026 企开得胜 - 专利驱动的产业大脑与精准招商平台</p>
       </div>
     </div>
   </div>

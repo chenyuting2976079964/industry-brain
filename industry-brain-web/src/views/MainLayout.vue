@@ -8,7 +8,7 @@
           <img src="/logo_white.png" alt="" class="sidebar-logo-img" />
         </div>
         <div>
-          <p class="sidebar-logo-title">产业大脑</p>
+          <p class="sidebar-logo-title">企开得胜</p>
           <p class="sidebar-logo-ver">决策引擎 v2.0</p>
         </div>
       </div>

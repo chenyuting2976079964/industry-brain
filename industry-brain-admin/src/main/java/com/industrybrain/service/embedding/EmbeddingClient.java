@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * 使用 JDK17 内置 HttpClient，无新增依赖。
  * 失败时按批次交给 FallbackEmbeddingProvider 生成确定性伪向量，不抛异常。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Slf4j
 @Component

@@ -15,11 +15,13 @@
     <artifactId>industry-brain</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Industry Brain</name>
-    <description>产业链智能分析与招商推荐平台 - 基于若依框架</description>
+    <name>企开得胜</name>
+    <description>企开得胜 - 专利驱动的产业大脑与精准招商平台（基于若依框架）</description>
 
     <properties>
         <java.version>17</java.version>
+        <!-- JDK 25 必须显式注解处理；spring-boot-parent 默认 lombok 1.18.30 不支持新 JDK -->
+        <lombok.version>1.18.46</lombok.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <ruoyi.version>3.9.2</ruoyi.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
@@ -166,6 +168,14 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
+                    <!-- JDK 23+ 禁用隐式注解处理，Lombok 必须显式注册 -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>

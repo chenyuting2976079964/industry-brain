@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * 使用 JDK17 内置 HttpClient，无新增依赖。
  * 失败时返回 null，调用方应降级到规则模板。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Slf4j
 @Component

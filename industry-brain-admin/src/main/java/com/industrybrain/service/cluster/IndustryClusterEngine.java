@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * embedding 不可用时（enabled=false 或失败率>50%）降级为纯规则聚类。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Slf4j
 @Service

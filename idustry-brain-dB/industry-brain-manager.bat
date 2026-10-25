@@ -1,11 +1,11 @@
 @echo off
 chcp 65001 >nul
-title 产业大脑平台 - 中间件启动器
+title 企开得胜 - 中间件启动器
 
 cd /d %~dp0
 
 echo ========================================
-echo   产业大脑平台 Docker 中间件管理
+echo   企开得胜 Docker 中间件管理
 echo ========================================
 echo.
 echo   MySQL  :3307  ? Redis:6379  ? ES:9200

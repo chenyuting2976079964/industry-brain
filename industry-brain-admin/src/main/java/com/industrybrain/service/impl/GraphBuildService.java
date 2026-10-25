@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  *
  * 启动时若 industry_chain 为空或 chain_node 为空则自动构建一次。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Slf4j
 @Service

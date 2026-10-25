@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
  * 绑定 embedding.* 配置项，供自动聚类构建产业链时调用外部 LLM 嵌入 API。
  * 未配置 api-key（enabled=false）时走纯规则聚类降级，不阻断构建。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Configuration
 public class EmbeddingConfig {

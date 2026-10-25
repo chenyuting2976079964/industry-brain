@@ -52,3 +52,13 @@ _backup/*.sql
 __pycache__/
 *.png
 *.jpg
+
+# 大 CSV / 数据文件（超 GitHub 100MB 限制，勿入库）
+industry-brain-date/
+*.csv
+
+# Vite 预构建缓存
+.vite/
+
+# Office 临时锁文件
+~$*

@@ -20,7 +20,7 @@ import java.util.Map;
  * - ChainNodeLink 上下游连线 → SUPPLIES_TO 关系
  * - Enterprise 企业节点 + PARTICIPATES_IN 关系（按节点抽样，避免全量爆炸）
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Slf4j
 @Service

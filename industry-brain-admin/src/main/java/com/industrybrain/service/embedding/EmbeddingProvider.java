@@ -6,7 +6,7 @@ import java.util.List;
  * 向量嵌入提供者接口
  * 抽象外部 LLM 嵌入 API 与本地降级实现，便于单测注入 fake provider。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 public interface EmbeddingProvider {
 

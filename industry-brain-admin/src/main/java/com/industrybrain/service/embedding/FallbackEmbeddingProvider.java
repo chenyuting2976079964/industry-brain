@@ -13,7 +13,7 @@ import java.util.List;
  *
  * 伪向量含关键词 bucket 增强：同产业关键词（AI/数据/材料/化工等）的标签向量更接近。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 @Component
 public class FallbackEmbeddingProvider implements EmbeddingProvider {

@@ -9,7 +9,7 @@ import java.util.Map;
  * 自动聚类结果 DTO
  * 每簇 = 一条产业链（ChainDef），标签按上中下游分层归入节点。
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 public class ClusterResult {
 

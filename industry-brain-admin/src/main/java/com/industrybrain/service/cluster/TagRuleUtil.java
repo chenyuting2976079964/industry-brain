@@ -14,7 +14,7 @@ import java.util.Set;
  *  - TAG_LAYER       标签 → up/mid/down（分层兜底）
  *  - SAME_CHAIN      语义近亲标签对（向量失效时的规则兜底，如 钢铁冶炼↔金属材料）
  *
- * @author 产业大脑平台
+ * @author 企开得胜
  */
 public final class TagRuleUtil {
 
