@@ -168,7 +168,8 @@ services:
       - minio_data:/root/.minio
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      # minio 官方镜像无 curl, 用自带的 mc 探活（与运行态一致）
+      test: ["CMD-SHELL", "mc ready local 2>/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
