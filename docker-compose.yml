@@ -37,7 +37,7 @@ services:
   mysql:
     image: mysql:8.0.34
     container_name: industry_brain_mysql
-    restart: unless-stopped
+    restart: always
     networks:
       industry_brain_net:
         ipv4_address: 172.20.0.2
@@ -64,7 +64,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: industry_brain_redis
-    restart: unless-stopped
+    restart: always
     networks:
       industry_brain_net:
         ipv4_address: 172.20.0.3
@@ -86,7 +86,7 @@ services:
   elasticsearch:
     image: elasticsearch:8.11.1
     container_name: industry_brain_es
-    restart: unless-stopped
+    restart: always
     networks:
       industry_brain_net:
         ipv4_address: 172.20.0.4
@@ -122,7 +122,7 @@ services:
   neo4j:
     image: neo4j:5.20.0-community
     container_name: industry_brain_neo4j
-    restart: unless-stopped
+    restart: always
     networks:
       industry_brain_net:
         ipv4_address: 172.20.0.5
@@ -151,7 +151,7 @@ services:
   minio:
     image: minio/minio:RELEASE.2024-01-16T16-07-38Z
     container_name: industry_brain_minio
-    restart: unless-stopped
+    restart: always
     networks:
       industry_brain_net:
         ipv4_address: 172.20.0.6
