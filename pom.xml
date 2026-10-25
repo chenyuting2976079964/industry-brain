@@ -38,8 +38,6 @@
         <module>industry-brain-admin</module>
         <module>industry-brain-common</module>
         <module>industry-brain-framework</module>
-        <module>industry-brain-quartz</module>
-        <module>industry-brain-generator</module>
     </modules>
 
     <dependencies>
@@ -77,21 +75,6 @@
                 <groupId>com.industrybrain</groupId>
                 <artifactId>industry-brain-framework</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.industrybrain</groupId>
-                <artifactId>industry-brain-quartz</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.industrybrain</groupId>
-                <artifactId>industry-brain-generator</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.industrybrain</groupId>
-                <artifactId>industry-brain-system</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
             </dependency>
 
             <!-- Hutool -->

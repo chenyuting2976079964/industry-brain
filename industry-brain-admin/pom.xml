@@ -27,18 +27,6 @@
             <artifactId>industry-brain-framework</artifactId>
         </dependency>
 
-        <!-- Quartz 定时任务 -->
-        <dependency>
-            <groupId>com.industrybrain</groupId>
-            <artifactId>industry-brain-quartz</artifactId>
-        </dependency>
-
-        <!-- 代码生成器 -->
-        <dependency>
-            <groupId>com.industrybrain</groupId>
-            <artifactId>industry-brain-generator</artifactId>
-        </dependency>
-
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
