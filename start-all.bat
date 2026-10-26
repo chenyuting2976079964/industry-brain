@@ -97,7 +97,7 @@ echo [2/4] 检查向量嵌入服务 8701...
 netstat -ano | findstr /r /c:"127.0.0.1:8701 .*LISTENING" >nul
 if errorlevel 1 (
     echo        启动中...
-    start "" /b "%PYTHON%" tools\embedding_service.py > tools\embedding-run.log 2>&1
+    start "" /min cmd /c ""%PYTHON%" tools\embedding_service.py > tools\embedding-run.log 2>&1"
     for /l %%i in (1,1,20) do (
         timeout /t 2 /nobreak >nul
         curl -s -o nul --max-time 2 http://127.0.0.1:8701/health && goto :emb_ok
@@ -114,7 +114,7 @@ echo [3/4] 检查后端 %SERVER_PORT%...
 netstat -ano | findstr /r /c:"127.0.0.1:%SERVER_PORT% .*LISTENING" >nul
 if errorlevel 1 (
     echo        启动中...
-    start "" /b "%JAVA%" -jar industry-brain-admin\target\industry-brain-admin.jar >> logs\backend-console.log 2>&1
+    start "" /min cmd /c ""%JAVA%" -jar industry-brain-admin\target\industry-brain-admin.jar >> logs\backend-console.log 2>&1"
     for /l %%i in (1,1,45) do (
         timeout /t 2 /nobreak >nul
         curl -s -o nul --max-time 2 -X POST http://127.0.0.1:%SERVER_PORT%/api/v1/auth/login -H "Content-Type: application/json" -d "{\"username\":\"admin\",\"password\":\"123456\"}" && goto :be_ok
@@ -132,7 +132,7 @@ netstat -ano | findstr /r /c:"127.0.0.1:%FRONTEND_HOST_PORT% .*LISTENING" >nul
 if errorlevel 1 (
     echo        启动中...
     pushd industry-brain-web
-    start "" /b cmd /c "npx vite --port %FRONTEND_HOST_PORT% --host 0.0.0.0 > ..\logs\frontend-vite.log 2>&1"
+    start "" /min cmd /c "npx vite --port %FRONTEND_HOST_PORT% --host 0.0.0.0 > ..\logs\frontend-vite.log 2>&1"
     popd
     for /l %%i in (1,1,30) do (
         timeout /t 2 /nobreak >nul
